@@ -7,6 +7,7 @@ interface Props {
 
 interface State {
     hasError: boolean;
+    error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -15,8 +16,8 @@ export class ErrorBoundary extends Component<Props, State> {
         this.state = { hasError: false };
     }
 
-    static getDerivedStateFromError(_: Error): State {
-        return { hasError: true };
+    static getDerivedStateFromError(error: Error): State {
+        return { hasError: true, error };
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -26,10 +27,10 @@ export class ErrorBoundary extends Component<Props, State> {
         localStorage.clear();
         console.warn("Storage cleared due to fatal error. Reloading in 2s...");
 
-        // Auto-reload almost immediately to "self-heal" as requested
-        setTimeout(() => {
-            window.location.reload();
-        }, 100);
+        // Auto-reload disabled for debugging "Not Loading" issue
+        // setTimeout(() => {
+        //     window.location.reload();
+        // }, 100);
     }
 
     render() {
@@ -43,15 +44,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Ops! Algo deu errado.</h2>
                         <p className="text-slate-500 mb-6">
-                            Detectamos um problema com sua sessão.
-                            <br />
-                            Estamos limpando seus dados locais e reiniciando o sistema.
+                            Ocorreu um erro inesperado ao carregar a aplicação.
                         </p>
 
-                        <div className="flex items-center justify-center gap-2 text-[#155645] font-medium bg-[#155645]/5 py-3 px-4 rounded-lg animate-pulse">
-                            <RefreshCw className="h-5 w-5 animate-spin" />
-                            <span>Reiniciando sistema...</span>
+                        {/* Show error for debugging */}
+                        <div className="bg-red-50 p-3 rounded text-left text-xs font-mono text-red-700 mb-6 overflow-auto max-h-32 w-full">
+                            {this.state.error?.toString() || 'Erro desconhecido'}
                         </div>
+
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="flex items-center justify-center gap-2 text-white font-medium bg-[#155645] hover:bg-[#104033] py-3 px-6 rounded-lg transition-colors w-full"
+                        >
+                            <RefreshCw className="h-5 w-5" />
+                            <span>Tentar Novamente</span>
+                        </button>
                     </div>
                 </div>
             );
