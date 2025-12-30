@@ -99,14 +99,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 5000);
 
     // Single source of truth: onAuthStateChange handles initial session too
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // DEBUG: Remove after fixing
+      console.log('Auth Event:', event);
+      // alert('Auth Event: ' + event); 
+
       try {
         if (session) {
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
+
+          if (error) {
+            console.error('Profile fetch error:', error);
+            alert(`Erro ao buscar perfil: ${error.message}`);
+          }
 
           if (profile) {
             const userData: User = {
@@ -118,9 +127,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setUser(userData);
             setIsAuthenticated(true);
           } else {
-            // Session exists but no profile? treat as not authenticated or standard user
-            // For now, logout to be safe if profile is missing (data integrity)
             console.warn('Session found but no profile. Logging out.');
+            alert('Perfil de usuário não encontrado. Contate o suporte.');
             await supabase.auth.signOut();
             setUser(null);
             setIsAuthenticated(false);
@@ -129,8 +137,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setUser(null);
           setIsAuthenticated(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error in auth state change:', err);
+        alert(`Erro fatal no Auth: ${err.message}`);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
