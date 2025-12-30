@@ -17,12 +17,16 @@ export const Login: React.FC = () => {
     const HIDDEN_PASSWORD = 'taua2025*';
 
     try {
+      // alert('Tentando login com: ' + email);
       // Attempt login with the email and the fixed shared password
       const success = await login(email, HIDDEN_PASSWORD);
+      // alert('Resultado do login: ' + success);
+
       if (!success) {
         setError('Acesso negado. Verifique se seu e-mail possui cadastro.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      alert('Erro capturado no submit: ' + err.message);
       setError('Erro ao realizar login. Tente novamente.');
     }
   };
