@@ -68,18 +68,16 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            {/* DEBUGGING STATUS */}
-            <div className="text-center text-xs p-2 bg-gray-100 rounded text-gray-500 font-mono">
-              DEBUG: App Loading State: {isLoading ? 'TRUE' : 'FALSE'}
-            </div>
-
             <button
-              type="submit"
-              // disabled={isLoading} // Temporarily enabled to test click
-              onClick={() => alert('Botão Clicado! Loading é: ' + isLoading)}
-              className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50' : ''}`}
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault();
+                // alert('Iniciando login manual...');
+                await handleSubmit(e as any);
+              }}
+              className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Verificando (Forçado)...' : 'Entrar no Sistema'}
+              {isLoading ? 'Verificando...' : 'Entrar no Sistema'}
             </button>
           </form>
 
