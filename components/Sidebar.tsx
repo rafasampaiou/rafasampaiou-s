@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  FilePlus2, 
-  Table2, 
-  Settings, 
-  Printer, 
+import {
+  LayoutDashboard,
+  FilePlus2,
+  Table2,
+  Settings,
+  Printer,
   LogOut,
   UserCircle,
   LineChart
@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
               <path d="M4 9L8.5 20L12 14L15.5 20L20 9" />
             </svg>
           </div>
-          Workforce APP
+          Workforce
         </h1>
         <p className="text-xs text-slate-300 mt-1 pl-10">Gestão de Mão de Obra</p>
       </div>
@@ -55,9 +55,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
             <p className="text-xs text-slate-300 truncate">{user?.email}</p>
           </div>
         </div>
-        <div className={`mt-2 text-xs font-bold px-2 py-1 rounded inline-block ${
-          user?.role === UserRole.ADMIN ? 'bg-[#F8981C]/20 text-[#F8981C]' : 'bg-green-400/20 text-green-300'
-        }`}>
+        <div className={`mt-2 text-xs font-bold px-2 py-1 rounded inline-block ${user?.role === UserRole.ADMIN ? 'bg-[#F8981C]/20 text-[#F8981C]' : 'bg-green-400/20 text-green-300'
+          }`}>
           {user?.role === UserRole.ADMIN ? 'ADMINISTRADOR' : 'USUÁRIO'}
         </div>
       </div>
@@ -67,11 +66,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
           <button
             key={item.id}
             onClick={() => setView(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              currentView === item.id 
-                ? 'bg-[#F8981C] text-white shadow-lg' 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentView === item.id
+                ? 'bg-[#F8981C] text-white shadow-lg'
                 : 'text-slate-300 hover:bg-white/10 hover:text-white'
-            }`}
+              }`}
           >
             <item.icon size={20} />
             <span className="text-sm font-medium">{item.label}</span>

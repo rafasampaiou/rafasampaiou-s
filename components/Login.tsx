@@ -37,7 +37,7 @@ export const Login: React.FC = () => {
               <path d="M4 9L8.5 20L12 14L15.5 20L20 9" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Workforce APP</h1>
+          <h1 className="text-2xl font-bold text-white">Workforce</h1>
           <p className="text-slate-200 text-sm mt-2">Sistema de Controle de Mão de Obra</p>
         </div>
 
