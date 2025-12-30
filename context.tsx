@@ -87,12 +87,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   ]);
 
   useEffect(() => {
-    // Check active session
-    const checkSession = async () => {
+    // Safety timeout: force loading to false after 5s if something hangs
+    const safetyTimeout = setTimeout(() => {
+      setIsLoading(prev => {
+        if (prev) {
+          console.warn('Forcing loading completion due to timeout.');
+          return false;
+        }
+        return prev;
+      });
+    }, 5000);
+
+    // Single source of truth: onAuthStateChange handles initial session too
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          // Fetch profile
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -108,44 +117,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             };
             setUser(userData);
             setIsAuthenticated(true);
+          } else {
+            // Session exists but no profile? treat as not authenticated or standard user
+            // For now, logout to be safe if profile is missing (data integrity)
+            console.warn('Session found but no profile. Logging out.');
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsAuthenticated(false);
           }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
-      } catch (error) {
-        console.error('Error checking session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-    fetchUsers();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile) {
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: profile.name || session.user.email!.split('@')[0],
-            role: profile.role as UserRole
-          };
-          setUser(userData);
-          setIsAuthenticated(true);
-        }
-      } else {
+      } catch (err) {
+        console.error('Error in auth state change:', err);
         setUser(null);
         setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+        clearTimeout(safetyTimeout);
       }
-      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    fetchUsers();
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const fetchUsers = async () => {
