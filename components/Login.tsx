@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
 import { useApp } from '../context';
-import { User, Lock } from 'lucide-react';
+import { User } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, isLoading } = useApp();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    // Strategy: Hidden Password
+    // All users created via Admin Panel have this fixed password.
+    // Security relies on the fact that only registered emails can log in.
+    const HIDDEN_PASSWORD = 'taua2025*';
+
     try {
-      const success = await login(email, password);
+      // Attempt login with the email and the fixed shared password
+      const success = await login(email, HIDDEN_PASSWORD);
       if (!success) {
-        setError('E-mail ou senha incorretos.');
+        setError('Acesso negado. Verifique se seu e-mail possui cadastro.');
       }
     } catch (err) {
-      setError('Erro ao realizar login.');
+      setError('Erro ao realizar login. Tente novamente.');
     }
   };
 
@@ -53,23 +58,8 @@ export const Login: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-slate-400" size={20} />
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#155645] focus:border-[#155645] outline-none transition-all"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center justify-center">
+              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center justify-center text-center">
                 {error}
               </div>
             )}
@@ -79,7 +69,7 @@ export const Login: React.FC = () => {
               disabled={isLoading}
               className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
+              {isLoading ? 'Verificando Acesso...' : 'Entrar no Sistema'}
             </button>
           </form>
 

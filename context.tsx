@@ -181,22 +181,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // User Management
-  const addUser = (name: string, email: string, role: UserRole) => {
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      role
-    };
-    setAvailableUsers(prev => [...prev, newUser]);
+  const addUser = async (name: string, email: string, role: UserRole) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: { name, email, role }
+      });
+
+      if (error) throw error;
+
+      alert(`Usuário ${name} criado com sucesso!`);
+      // Refresh list
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      alert(`Erro ao criar usuário: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const editUser = (id: string, name: string, email: string, role: UserRole) => {
-    setAvailableUsers(prev => prev.map(u => u.id === id ? { ...u, name, email, role } : u));
+  const editUser = async (id: string, name: string, email: string, role: UserRole) => {
+    // For now, we only update the profile data in public table, as Auth Admin update requires another function or direct update if policy allows
+    // But since we are admin, we can likely update the profile directly.
 
-    // If the edited user is the one currently "logged in", update the session state immediately
-    if (user && user.id === id) {
-      setUser(prev => prev ? { ...prev, name, email, role } : null);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name, role, email }) // Email update in Auth is harder, usually we just update profile reference
+        .eq('id', id);
+
+      if (error) throw error;
+
+      alert('Usuário atualizado com sucesso!');
+
+      // Update local state immediately for responsiveness
+      setAvailableUsers(prev => prev.map(u => u.id === id ? { ...u, name, email, role } : u));
+
+      // If the edited user is the one currently "logged in", update the session state
+      if (user && user.id === id) {
+        setUser(prev => prev ? { ...prev, name, email, role } : null);
+      }
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      alert("Erro ao atualizar usuário.");
     }
   };
 
