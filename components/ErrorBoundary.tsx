@@ -9,7 +9,7 @@ interface State {
     hasError: boolean;
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
+export class ErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = { hasError: false };
@@ -26,10 +26,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
         localStorage.clear();
         console.warn("Storage cleared due to fatal error. Reloading in 2s...");
 
-        // Auto-reload after a short delay to let the user see the message
+        // Auto-reload almost immediately to "self-heal" as requested
         setTimeout(() => {
             window.location.reload();
-        }, 2000);
+        }, 100);
     }
 
     render() {
