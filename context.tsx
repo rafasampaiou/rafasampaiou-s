@@ -8,6 +8,7 @@ interface AppContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
+  loginWithAutoRegister: (email: string) => Promise<boolean>;
   logout: () => void;
   setUserRole: (role: UserRole) => void;
 
@@ -165,6 +166,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         email: p.email,
         role: p.role as UserRole
       })));
+    }
+  };
+
+  const loginWithAutoRegister = async (email: string): Promise<boolean> => {
+    setIsLoading(true);
+    const HIDDEN_PASSWORD = 'taua2025*';
+
+    try {
+      // 1. Ensure user exists (Auto-Register) via Edge Function
+      const { error: fnError } = await supabase.functions.invoke('create-user', {
+        body: {
+          name: email.split('@')[0],
+          email,
+          role: 'USER' // Default role
+        }
+      });
+
+      if (fnError) {
+        console.warn('Auto-register warning:', fnError);
+      }
+
+      // 2. Login
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: HIDDEN_PASSWORD,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return false;
+      }
+
+      return true;
+
+    } catch (err) {
+      console.error('Fatal login error:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -409,7 +449,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{
-      user, isAuthenticated, isLoading, login, logout, setUserRole,
+      user, isAuthenticated, isLoading, login, loginWithAutoRegister, logout, setUserRole,
       availableUsers, addUser, editUser, removeUser, switchUser,
       requests, addRequest, updateRequestStatus, deleteRequest, addHistoricalRequests,
       sectors, addSector, removeSector,

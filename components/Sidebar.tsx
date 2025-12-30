@@ -26,11 +26,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: 'request', label: 'Solicitar Extra', icon: FilePlus2 },
     { id: 'extract', label: 'Impressão', icon: Printer },
     { id: 'ideal', label: 'Quadro Ideal', icon: Table2 },
+    { id: 'admin', label: 'Administração', icon: Settings }
   ];
 
+  /* 
+  // Old Admin Check Removed - accessible by everyone, protected by PIN
   if (user?.role === UserRole.ADMIN) {
     menuItems.push({ id: 'admin', label: 'Administração', icon: Settings });
   }
+  */
 
   return (
     <div className="w-64 bg-[#155645] text-white h-screen flex flex-col no-print">
@@ -67,8 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
             key={item.id}
             onClick={() => setView(item.id)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentView === item.id
-                ? 'bg-[#F8981C] text-white shadow-lg'
-                : 'text-slate-300 hover:bg-white/10 hover:text-white'
+              ? 'bg-[#F8981C] text-white shadow-lg'
+              : 'text-slate-300 hover:bg-white/10 hover:text-white'
               }`}
           >
             <item.icon size={20} />

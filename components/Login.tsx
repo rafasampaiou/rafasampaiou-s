@@ -3,31 +3,31 @@ import { useApp } from '../context';
 import { User } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { login, isLoading } = useApp();
+  const { login, loginWithAutoRegister, isLoading } = useApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+
+    if (!email.toLowerCase().endsWith('@taua.com.br')) {
+      setError('Apenas e-mails @taua.com.br são permitidos.');
+      return;
+    }
+
     setError('');
 
-    // Strategy: Hidden Password
-    // All users created via Admin Panel have this fixed password.
-    // Security relies on the fact that only registered emails can log in.
-    const HIDDEN_PASSWORD = 'taua2025*';
-
     try {
-      // alert('Tentando login com: ' + email);
-      // Attempt login with the email and the fixed shared password
-      const success = await login(email, HIDDEN_PASSWORD);
-      // alert('Resultado do login: ' + success);
+      // Auto-register login
+      const success = await loginWithAutoRegister(email);
 
       if (!success) {
-        setError('Acesso negado. Verifique se seu e-mail possui cadastro.');
+        setError('Erro ao entrar. Tente novamente.');
       }
     } catch (err: any) {
-      alert('Erro capturado no submit: ' + err.message);
-      setError('Erro ao realizar login. Tente novamente.');
+      alert('Erro login: ' + err.message);
+      setError('Erro ao realizar login.');
     }
   };
 
@@ -69,15 +69,11 @@ export const Login: React.FC = () => {
             )}
 
             <button
-              type="button"
-              onClick={async (e) => {
-                e.preventDefault();
-                // alert('Iniciando login manual...');
-                await handleSubmit(e as any);
-              }}
+              type="submit"
+              disabled={isLoading}
               className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Verificando...' : 'Entrar no Sistema'}
+              {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
             </button>
           </form>
 

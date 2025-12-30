@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { RequestForm } from './components/RequestForm';
 import { Dashboard } from './components/Dashboard';
 import { AdminPanel } from './components/AdminPanel';
+import { AdminGate } from './components/AdminGate';
 import { IdealTable } from './components/IdealTable';
 import { PrintableExtract } from './components/PrintableExtract';
 import { Indicators } from './components/Indicators';
@@ -15,11 +16,14 @@ const MainContent: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useApp();
 
   // Route protection: If user is not ADMIN, force them away from admin view
+  /*
+  // Route protection removed - Admin is now PIN protected
   useEffect(() => {
     if (currentView === 'admin' && user?.role !== UserRole.ADMIN) {
       setCurrentView('dashboard');
     }
   }, [currentView, user]);
+  */
 
   if (isLoading) {
     return (
@@ -39,8 +43,11 @@ const MainContent: React.FC = () => {
       case 'indicators': return <Indicators />;
       case 'request': return <RequestForm />;
       case 'admin':
-        // Extra security check during render
-        return user?.role === UserRole.ADMIN ? <AdminPanel /> : <Dashboard />;
+        return (
+          <AdminGate>
+            <AdminPanel />
+          </AdminGate>
+        );
       case 'ideal': return <IdealTable />;
       case 'extract': return <PrintableExtract />;
       default: return <Dashboard />;
