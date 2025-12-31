@@ -25,7 +25,7 @@ export const PrintableExtract: React.FC = () => {
     timeIn: 45,
     timeOut: 45,
     hours: 45,
-    rate: 60,
+    rate: 80,
     total: 100,
     occupancy: 50
   });
@@ -248,25 +248,22 @@ export const PrintableExtract: React.FC = () => {
           </tbody>
           <tfoot className="bg-slate-100 font-bold">
             <tr>
-              <td colSpan={10} className="border border-slate-300 p-2 text-right">SUBTOTAL</td>
-              <td className="border border-slate-300 p-2 text-right">R$ {totalRealValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-              <td className="border border-slate-300 p-2"></td>
+              <td colSpan={11} className="border border-slate-300 p-2 text-right">SUBTOTAL</td>
+              <td colSpan={2} className="border border-slate-300 p-2 text-right">R$ {totalRealValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
             </tr>
             <tr>
-              <td colSpan={10} className="border border-slate-300 p-2 text-right">
+              <td colSpan={11} className="border border-slate-300 p-2 text-right">
                 IMPOSTOS E ENCARGOS ({systemConfig.taxRate}%)
               </td>
-              <td className="border border-slate-300 p-2 text-right text-red-600">
+              <td colSpan={2} className="border border-slate-300 p-2 text-right text-red-600">
                 + R$ {taxAmount.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </td>
-              <td className="border border-slate-300 p-2"></td>
             </tr>
             <tr className="bg-slate-200 text-slate-900 border-t-2 border-slate-400">
-              <td colSpan={10} className="border border-slate-300 p-2 text-right text-sm">TOTAL GERAL DO PERÍODO</td>
-              <td className="border border-slate-300 p-2 text-right text-sm">
+              <td colSpan={11} className="border border-slate-300 p-2 text-right text-sm">TOTAL GERAL DO PERÍODO</td>
+              <td colSpan={2} className="border border-slate-300 p-2 text-right text-sm">
                 R$ {totalWithTax.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </td>
-              <td className="border border-slate-300 p-2"></td>
             </tr>
           </tfoot>
         </table>

@@ -8,10 +8,26 @@ import { Check, X, Trash2, AlertCircle, Calendar, Clock } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote } = useApp();
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  // Date Filter State with persistence
+  const [startDate, setStartDate] = useState(() => {
+    return sessionStorage.getItem('dashboard_startDate') || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    return sessionStorage.getItem('dashboard_endDate') || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
+  });
 
-  // Filter requests based on selected month (starts within month)
-  const filteredRequests = requests.filter(r => r.dateEvent.startsWith(selectedMonth));
+  // Persist dates on change
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    sessionStorage.setItem('dashboard_startDate', val);
+  };
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    sessionStorage.setItem('dashboard_endDate', val);
+  };
+
+  // Filter requests based on selected range
+  const filteredRequests = requests.filter(r => r.dateEvent >= startDate && r.dateEvent <= endDate);
   const approvedRequests = filteredRequests.filter(r => r.status === 'Aprovado');
 
   // --- KPI Calculations ---
@@ -27,39 +43,46 @@ export const Dashboard: React.FC = () => {
   const pendingCount = filteredRequests.filter(r => r.status === 'Pendente').length;
 
   // --- Detailed Data Processing (By Lote and Sector) ---
-  const lotes = getMonthlyLote(selectedMonth);
-  const [year, month] = selectedMonth.split('-').map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const reportMonthContext = startDate.slice(0, 7); // Use start date month for lote definitions
+  const lotes = getMonthlyLote(reportMonthContext);
+
+  const startObj = new Date(startDate + 'T12:00:00');
+  const endObj = new Date(endDate + 'T12:00:00');
+  const daysInRange: string[] = [];
+  let curr = new Date(startObj);
+  while (curr <= endObj) {
+    daysInRange.push(curr.toISOString().slice(0, 10));
+    curr.setDate(curr.getDate() + 1);
+  }
 
   // Initialize buckets
   const loteBuckets = lotes.map(l => ({ ...l, qty: 0, cost: 0 }));
   const sectorBuckets = sectors.map(s => ({ ...s, qty: 0, cost: 0 }));
 
-  // Iterate daily to assign costs/qty to specific Lotes accurately
-  for (let day = 1; day <= daysInMonth; day++) {
-    const currentLoopDate = new Date(year, month - 1, day, 12, 0, 0);
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  // Iterate range to assign costs/qty
+  daysInRange.forEach(dateStr => {
+    const currentLoopDate = new Date(dateStr + 'T12:00:00');
+    const dayOfMonth = currentLoopDate.getDate();
 
-    // Find active requests for this day
-    requests.filter(r => r.status === 'Aprovado').forEach(req => {
-      // Basic Filter: Must correspond to selected month context (we are iterating the month's days)
+    approvedRequests.forEach(req => {
       // Check if request covers this day
       const [rYear, rMonth, rDay] = req.dateEvent.split('-').map(Number);
-      const startDate = new Date(rYear, rMonth - 1, rDay, 12, 0, 0);
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + (req.daysQty - 1));
+      const reqStart = new Date(rYear, rMonth - 1, rDay, 12, 0, 0);
+      const reqEnd = new Date(reqStart);
+      reqEnd.setDate(reqStart.getDate() + (req.daysQty - 1));
 
-      if (currentLoopDate >= startDate && currentLoopDate <= endDate) {
-        // Calculate daily portion
+      if (currentLoopDate >= reqStart && currentLoopDate <= reqEnd) {
         const dailyCost = (req.totalValue || 0) / (req.daysQty || 1);
         const dailyCostWithTax = dailyCost * (1 + (systemConfig.taxRate / 100));
-        const dailyQty = req.extrasQty; // Man-days for this specific day
+        const dailyQty = req.extrasQty;
 
-        // Assign to Lote
-        const activeLote = loteBuckets.find(l => day >= l.startDay && day <= l.endDay);
-        if (activeLote) {
-          activeLote.qty += dailyQty;
-          activeLote.cost += dailyCostWithTax;
+        // Assign to Lote (only if it's the same month as context to be accurate, else skip lote attribution)
+        if (dateStr.startsWith(reportMonthContext)) {
+          const activeLote = loteBuckets.find(l => dayOfMonth >= l.startDay && dayOfMonth <= l.endDay);
+          if (activeLote) {
+            activeLote.qty += dailyQty;
+            activeLote.cost += dailyCostWithTax;
+          }
         }
 
         // Assign to Sector
@@ -70,7 +93,7 @@ export const Dashboard: React.FC = () => {
         }
       }
     });
-  }
+  });
 
   // Format data for Recharts
   const qtyByLoteData = loteBuckets.map(l => ({ name: l.name, value: l.qty }));
@@ -108,20 +131,30 @@ export const Dashboard: React.FC = () => {
   const ChartSection = ({ title, data, color, prefix = '' }: { title: string, data: any[], color: string, prefix?: string }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <h3 className="text-sm font-bold text-[#155645] mb-4 uppercase tracking-wider">{title}</h3>
-      <div className="h-48">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 30, right: 10, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} interval={0} />
+            <XAxis
+              dataKey="name"
+              fontSize={9}
+              tickLine={false}
+              axisLine={false}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
             <YAxis hide />
             <Tooltip cursor={{ fill: 'transparent' }} />
             <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]}>
               <LabelList
                 dataKey="value"
                 position="top"
-                fill="#64748b"
-                fontSize={11}
+                fill="#155645"
+                fontSize={9}
                 fontWeight="bold"
+                offset={8}
                 formatter={(val: number) => `${prefix}${val.toLocaleString('pt-BR')}`}
               />
             </Bar>
@@ -137,16 +170,28 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Date Filter */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between no-print">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between no-print gap-4">
         <h3 className="text-[#155645] font-bold">Resumo Executivo</h3>
-        <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645] focus-within:border-[#155645]">
-          <Calendar size={16} className="text-[#155645]" />
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="text-sm outline-none text-slate-700 bg-transparent"
-          />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645] focus-within:border-[#155645]">
+            <Calendar size={16} className="text-[#155645]" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => handleStartDateChange(e.target.value)}
+              className="text-sm outline-none text-slate-700 bg-transparent w-32"
+            />
+          </div>
+          <span className="text-slate-400">até</span>
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645] focus-within:border-[#155645]">
+            <Calendar size={16} className="text-[#155645]" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => handleEndDateChange(e.target.value)}
+              className="text-sm outline-none text-slate-700 bg-transparent w-32"
+            />
+          </div>
         </div>
       </div>
 
@@ -212,7 +257,7 @@ export const Dashboard: React.FC = () => {
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
               <h3 className="text-lg font-bold text-[#155645] flex items-center gap-2">
                 <AlertCircle size={20} className="text-[#F8981C]" />
-                Gerenciamento de Solicitações (Admin - {selectedMonth})
+                Gerenciamento de Solicitações (Admin - {formatDate(startDate)} até {formatDate(endDate)})
               </h3>
             </div>
             <div className="overflow-x-auto">

@@ -161,6 +161,20 @@ export const RequestForm: React.FC = () => {
             />
           </div>
 
+          {/* Detalhes da Função */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Quantidade de Extras</label>
+            <input
+              type="number"
+              min="1"
+              name="extrasQty"
+              required
+              className="w-full rounded-lg border-slate-300 border p-2.5 outline-none focus:ring-2 focus:ring-[#155645] focus:border-[#155645]"
+              value={formData.extrasQty}
+              onChange={handleChange}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
               <span>Valor Diária Especial (R$)</span>
@@ -176,20 +190,6 @@ export const RequestForm: React.FC = () => {
               onChange={handleChange}
             />
             <p className="text-xs text-slate-500 mt-1">Só preencher se houver negociação específica por dia.</p>
-          </div>
-
-          {/* Detalhes da Função */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Quantidade de Extras</label>
-            <input
-              type="number"
-              min="1"
-              name="extrasQty"
-              required
-              className="w-full rounded-lg border-slate-300 border p-2.5 outline-none focus:ring-2 focus:ring-[#155645] focus:border-[#155645]"
-              value={formData.extrasQty}
-              onChange={handleChange}
-            />
           </div>
 
           <div>
