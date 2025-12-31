@@ -59,10 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
             <p className="text-xs text-slate-300 truncate">{user?.email}</p>
           </div>
         </div>
-        <div className={`mt-2 text-xs font-bold px-2 py-1 rounded inline-block ${user?.role === UserRole.ADMIN ? 'bg-[#F8981C]/20 text-[#F8981C]' : 'bg-green-400/20 text-green-300'
-          }`}>
-          {user?.role === UserRole.ADMIN ? 'ADMINISTRADOR' : 'USUÁRIO'}
-        </div>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -90,6 +86,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
           <span className="text-sm">Sair do Sistema</span>
         </button>
       </div>
-    </div>
+    </div >
   );
 };

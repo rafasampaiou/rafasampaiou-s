@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context';
-import { User } from 'lucide-react';
+import { User, CheckCircle2 } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { login, loginWithAutoRegister, isLoading } = useApp();
+  const { loginWithMagicLink, isLoading } = useApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,17 +20,39 @@ export const Login: React.FC = () => {
     setError('');
 
     try {
-      // Auto-register login
-      const success = await loginWithAutoRegister(email);
+      const success = await loginWithMagicLink(email);
 
-      if (!success) {
-        setError('Erro ao entrar. Tente novamente.');
+      if (success) {
+        setSent(true);
+      } else {
+        setError('Erro ao enviar link de acesso. Tente novamente.');
       }
     } catch (err: any) {
-      alert('Erro login: ' + err.message);
       setError('Erro ao realizar login.');
     }
   };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-[#155645] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="text-green-600 w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Verifique seu e-mail</h2>
+          <p className="text-slate-600 mb-6">
+            Enviamos um link de acesso para <strong>{email}</strong>. Clique no link para entrar no sistema.
+          </p>
+          <button
+            onClick={() => setSent(false)}
+            className="text-[#155645] font-medium hover:underline text-sm"
+          >
+            Voltar para o login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#155645] flex items-center justify-center p-4">
@@ -73,7 +96,7 @@ export const Login: React.FC = () => {
               disabled={isLoading}
               className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
+              {isLoading ? 'Enviando...' : 'Receber Link de Acesso'}
             </button>
           </form>
 

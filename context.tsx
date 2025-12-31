@@ -7,17 +7,8 @@ interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<boolean>;
-  loginWithAutoRegister: (email: string) => Promise<boolean>;
+  loginWithMagicLink: (email: string) => Promise<boolean>;
   logout: () => void;
-  setUserRole: (role: UserRole) => void;
-
-  // User Management
-  availableUsers: User[];
-  addUser: (name: string, email: string, role: UserRole) => void;
-  editUser: (id: string, name: string, email: string, role: UserRole) => void;
-  removeUser: (id: string) => void;
-  switchUser: (id: string) => void;
 
   requests: RequestItem[];
   addRequest: (req: RequestItem) => void;
@@ -57,10 +48,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Mock Users Database with specific admins
-  // Mock Users removed, will fetch from DB
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-
   // Auth State
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -99,57 +86,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }, 5000);
 
-    // Single source of truth: onAuthStateChange handles initial session too
+    // Initial session check
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.email!.split('@')[0],
+          role: UserRole.USER // Default role, specific admin is just UI PIN
+        });
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+
+    checkSession();
+
+    // Auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // DEBUG: Remove after fixing
       console.log('Auth Event:', event);
-      // alert('Auth Event: ' + event); 
-
-      try {
-        if (session) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) {
-            console.error('Profile fetch error:', error);
-            alert(`Erro ao buscar perfil: ${error.message}`);
-          }
-
-          if (profile) {
-            const userData: User = {
-              id: session.user.id,
-              email: session.user.email!,
-              name: profile.name || session.user.email!.split('@')[0],
-              role: profile.role as UserRole
-            };
-            setUser(userData);
-            setIsAuthenticated(true);
-          } else {
-            console.warn('Session found but no profile. Logging out.');
-            alert('Perfil de usuário não encontrado. Contate o suporte.');
-            await supabase.auth.signOut();
-            setUser(null);
-            setIsAuthenticated(false);
-          }
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (err: any) {
-        console.error('Error in auth state change:', err);
-        alert(`Erro fatal no Auth: ${err.message}`);
+      if (session) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.email!.split('@')[0],
+          role: UserRole.USER
+        });
+        setIsAuthenticated(true);
+      } else {
         setUser(null);
         setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-        clearTimeout(safetyTimeout);
       }
+      setIsLoading(false);
     });
-
-    fetchUsers();
 
     return () => {
       subscription.unsubscribe();
@@ -157,49 +127,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  const fetchUsers = async () => {
-    const { data } = await supabase.from('profiles').select('*');
-    if (data) {
-      setAvailableUsers(data.map(p => ({
-        id: p.id,
-        name: p.name || p.email.split('@')[0],
-        email: p.email,
-        role: p.role as UserRole
-      })));
-    }
-  };
-
-  const loginWithAutoRegister = async (email: string): Promise<boolean> => {
+  const loginWithMagicLink = async (email: string): Promise<boolean> => {
     setIsLoading(true);
-    const HIDDEN_PASSWORD = 'taua2025*';
-
     try {
-      // 1. Ensure user exists (Auto-Register) via Edge Function
-      const { error: fnError } = await supabase.functions.invoke('create-user', {
-        body: {
-          name: email.split('@')[0],
-          email,
-          role: 'USER' // Default role
-        }
-      });
-
-      if (fnError) {
-        console.warn('Auto-register warning:', fnError);
-      }
-
-      // 2. Login
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password: HIDDEN_PASSWORD,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('Magic link error:', error);
         return false;
       }
 
       return true;
-
     } catch (err) {
       console.error('Fatal login error:', err);
       return false;
@@ -208,88 +151,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const login = async (email: string, pass: string): Promise<boolean> => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: pass,
-    });
-    return !error;
-  };
-
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
-  };
-
-  const setUserRole = (role: UserRole) => {
-    if (user) {
-      setUser({ ...user, role });
-    }
-  };
-
-  // User Management
-  const addUser = async (name: string, email: string, role: UserRole) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: { name, email, role }
-      });
-
-      if (error) throw error;
-
-      alert(`Usuário ${name} criado com sucesso!`);
-      // Refresh list
-      fetchUsers();
-    } catch (error: any) {
-      console.error("Error creating user:", error);
-      alert(`Erro ao criar usuário: ${error.message || 'Erro desconhecido'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const editUser = async (id: string, name: string, email: string, role: UserRole) => {
-    // For now, we only update the profile data in public table, as Auth Admin update requires another function or direct update if policy allows
-    // But since we are admin, we can likely update the profile directly.
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ name, role, email }) // Email update in Auth is harder, usually we just update profile reference
-        .eq('id', id);
-
-      if (error) throw error;
-
-      alert('Usuário atualizado com sucesso!');
-
-      // Update local state immediately for responsiveness
-      setAvailableUsers(prev => prev.map(u => u.id === id ? { ...u, name, email, role } : u));
-
-      // If the edited user is the one currently "logged in", update the session state
-      if (user && user.id === id) {
-        setUser(prev => prev ? { ...prev, name, email, role } : null);
-      }
-    } catch (error: any) {
-      console.error("Error updating user:", error);
-      alert("Erro ao atualizar usuário.");
-    }
-  };
-
-  const removeUser = (id: string) => {
-    // Prevent removing the current user
-    if (user?.id === id) {
-      alert("Você não pode remover seu próprio usuário.");
-      return;
-    }
-    setAvailableUsers(prev => prev.filter(u => u.id !== id));
-  };
-
-  const switchUser = (id: string) => {
-    const target = availableUsers.find(u => u.id === id);
-    if (target) {
-      setUser(target);
-    }
   };
 
   const addRequest = (req: RequestItem) => {
@@ -449,8 +314,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{
-      user, isAuthenticated, isLoading, login, loginWithAutoRegister, logout, setUserRole,
-      availableUsers, addUser, editUser, removeUser, switchUser,
+      user, isAuthenticated, isLoading, loginWithMagicLink, logout,
       requests, addRequest, updateRequestStatus, deleteRequest, addHistoricalRequests,
       sectors, addSector, removeSector,
       getMonthlyBudget, updateMonthlyBudget,

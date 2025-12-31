@@ -1,48 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Users, Shield, X, AlertTriangle } from 'lucide-react';
-import { UserRole, User } from '../types';
+import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2 } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
-  const { 
+  const {
     sectors, addSector, removeSector,
-    getMonthlyBudget, updateMonthlyBudget, 
-    getMonthlyLote, updateMonthlyLote, 
+    getMonthlyBudget, updateMonthlyBudget,
+    getMonthlyLote, updateMonthlyLote,
     saveOccupancyBatch, occupancyData, requests,
     systemConfig, updateSystemConfig,
     specialRoles, addSpecialRole, removeSpecialRole,
-    availableUsers, addUser, editUser, removeUser, user: currentUser
   } = useApp();
 
-  // Security Gate: Ensure only admins see this component
-  if (currentUser?.role !== UserRole.ADMIN) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-red-600 bg-red-50 p-8 rounded-xl border border-red-200">
-        <AlertTriangle size={48} className="mb-4" />
-        <h2 className="text-xl font-bold">Acesso Negado</h2>
-        <p className="text-sm">Você não tem permissão para acessar o painel administrativo.</p>
-      </div>
-    );
-  }
+  // Admin Gate handles the PIN check, so we don't need to check user role here.
+  // The fact that this component is rendered means the user passed the AdminGate.
 
   const [activeTab, setActiveTab] = useState('sectors');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-  
+
   // Occupancy State
   const [occupancyYear, setOccupancyYear] = useState(new Date().getFullYear());
-  const [gridData, setGridData] = useState<Record<string, string>>({}); 
+  const [gridData, setGridData] = useState<Record<string, string>>({});
 
   // New Inputs State
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleRate, setNewRoleRate] = useState('');
   const [newSectorName, setNewSectorName] = useState('');
   const [newSectorType, setNewSectorType] = useState<'Operacional' | 'Suporte'>('Operacional');
-
-  // User Management State
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<UserRole>(UserRole.USER);
 
   // Sync global occupancy data to local grid state when year changes
   useEffect(() => {
@@ -133,11 +117,11 @@ export const AdminPanel: React.FC = () => {
         if (!isValidDate(occupancyYear, targetMIdx, targetDay)) return;
 
         const dateKey = `${occupancyYear}-${String(targetMIdx + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
-        
+
         // Basic cleanup of value
         const stringVal = String(val);
         const cleanVal = stringVal.trim().replace(/[^\d.,]/g, ''); // Allow numbers, dots, commas
-        
+
         if (cleanVal) {
           newGridData[dateKey] = cleanVal;
           hasChanges = true;
@@ -189,46 +173,10 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  // User Management Handlers
-  const handleUserSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newUserName && newUserEmail) {
-      // Prevent user from locking themselves out by removing their own admin status
-      if (editingUserId === currentUser.id && newUserRole !== UserRole.ADMIN) {
-        alert("Você não pode remover seu próprio privilégio de Administrador.");
-        return;
-      }
-
-      if (editingUserId) {
-        editUser(editingUserId, newUserName, newUserEmail, newUserRole);
-        setEditingUserId(null);
-      } else {
-        addUser(newUserName, newUserEmail, newUserRole);
-      }
-      setNewUserName('');
-      setNewUserEmail('');
-      setNewUserRole(UserRole.USER);
-    }
-  };
-
-  const handleEditClick = (userToEdit: User) => {
-    setNewUserName(userToEdit.name);
-    setNewUserEmail(userToEdit.email);
-    setNewUserRole(userToEdit.role);
-    setEditingUserId(userToEdit.id);
-  };
-
-  const handleCancelEdit = () => {
-    setNewUserName('');
-    setNewUserEmail('');
-    setNewUserRole(UserRole.USER);
-    setEditingUserId(null);
-  };
-
   const handleExport = () => {
     const headers = [
-      'ID', 'Data Criação', 'Solicitante', 'Setor', 'Motivo', 'Tipo', 'Data Evento', 
-      'Dias', 'Qtd Extras', 'Função', 'Turno', 'Entrada', 'Saída', 'Justificativa', 
+      'ID', 'Data Criação', 'Solicitante', 'Setor', 'Motivo', 'Tipo', 'Data Evento',
+      'Dias', 'Qtd Extras', 'Função', 'Turno', 'Entrada', 'Saída', 'Justificativa',
       'Ocupação (%)', 'Valor Unit. (R$)', 'Valor Total (R$)', 'Status'
     ];
     const rows = requests.map(r => [
@@ -256,7 +204,7 @@ export const AdminPanel: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `extragestor_base_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `extragestor_base_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -267,54 +215,40 @@ export const AdminPanel: React.FC = () => {
       <div className="flex border-b border-slate-200 flex-wrap shrink-0">
         <button
           onClick={() => setActiveTab('sectors')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'sectors' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'sectors' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
         >
           <Database size={16} />
           Orçamentos Mensais
         </button>
         <button
           onClick={() => setActiveTab('config')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'config' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'config' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
         >
           <Settings size={16} />
           Config. Lotes
         </button>
         <button
           onClick={() => setActiveTab('occupancy')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'occupancy' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'occupancy' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
         >
           <Edit3 size={16} />
           Ocupação
         </button>
         <button
-          onClick={() => setActiveTab('access')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'access' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Users size={16} />
-          Gerenciar Acessos
-        </button>
-        <button
           onClick={() => setActiveTab('general')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'general' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'general' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
         >
           <Sliders size={16} />
           Config. Geral
         </button>
         <button
           onClick={() => setActiveTab('export')}
-          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'export' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'export' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
         >
           <Download size={16} />
           Exportar Base
@@ -322,12 +256,12 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <div className="p-6 flex-1 flex flex-col">
-        
+
         {(activeTab === 'sectors' || activeTab === 'config') && (
           <div className="mb-6 flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 w-fit">
             <span className="text-sm font-bold text-slate-700">Mês de Referência:</span>
-            <input 
-              type="month" 
+            <input
+              type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1 text-sm outline-none focus:border-[#155645]"
@@ -335,7 +269,6 @@ export const AdminPanel: React.FC = () => {
           </div>
         )}
 
-        {/* ... (Existing Sector, Config, Occupancy tabs - no changes needed, preserving brevity) ... */}
         {activeTab === 'sectors' && (
           <div>
             <h3 className="text-lg font-bold text-[#155645] mb-4">Orçamento por Setor ({selectedMonth})</h3>
@@ -355,7 +288,7 @@ export const AdminPanel: React.FC = () => {
                       <tr key={sector.id} className="hover:bg-slate-50">
                         <td className="p-3 font-medium text-slate-800">{sector.name}</td>
                         <td className="p-3">
-                          <input 
+                          <input
                             type="number"
                             className="border border-slate-300 rounded px-2 py-1 w-24 focus:ring-1 focus:ring-[#155645] outline-none"
                             value={budget.budgetQty || 0}
@@ -363,7 +296,7 @@ export const AdminPanel: React.FC = () => {
                           />
                         </td>
                         <td className="p-3">
-                          <input 
+                          <input
                             type="number"
                             step="0.01"
                             className="border border-slate-300 rounded px-2 py-1 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
@@ -404,28 +337,28 @@ export const AdminPanel: React.FC = () => {
                     <tr key={lote.id}>
                       <td className="p-3 border border-slate-200 bg-slate-50 font-mono text-xs">{selectedMonth}</td>
                       <td className="p-3 border border-slate-200">
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           className="border border-slate-300 rounded px-2 py-1 w-full"
                           value={lote.name}
                           onChange={(e) => handleLoteChange(idx, 'name', e.target.value)}
                         />
                       </td>
                       <td className="p-3 border border-slate-200">
-                         <input 
-                            type="number" 
-                            className="border border-slate-300 rounded px-2 py-1 w-20"
-                            value={lote.startDay}
-                            onChange={(e) => handleLoteChange(idx, 'startDay', e.target.value)}
-                          />
+                        <input
+                          type="number"
+                          className="border border-slate-300 rounded px-2 py-1 w-20"
+                          value={lote.startDay}
+                          onChange={(e) => handleLoteChange(idx, 'startDay', e.target.value)}
+                        />
                       </td>
                       <td className="p-3 border border-slate-200">
-                         <input 
-                            type="number" 
-                            className="border border-slate-300 rounded px-2 py-1 w-20"
-                            value={lote.endDay}
-                            onChange={(e) => handleLoteChange(idx, 'endDay', e.target.value)}
-                          />
+                        <input
+                          type="number"
+                          className="border border-slate-300 rounded px-2 py-1 w-20"
+                          value={lote.endDay}
+                          onChange={(e) => handleLoteChange(idx, 'endDay', e.target.value)}
+                        />
                       </td>
                       <td className="p-3 border border-slate-200 text-center">
                         <button onClick={() => removeLote(idx)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={16} /></button>
@@ -440,340 +373,187 @@ export const AdminPanel: React.FC = () => {
 
         {activeTab === 'occupancy' && (
           <div className="flex flex-col h-full overflow-hidden">
-             <div className="flex justify-between items-center mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-slate-800">Tabela de Ocupação</h3>
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-slate-600">Ano:</label>
-                    <select 
-                      value={occupancyYear}
-                      onChange={(e) => setOccupancyYear(Number(e.target.value))}
-                      className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                    >
-                      {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
+            <div className="flex justify-between items-center mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-bold text-slate-800">Tabela de Ocupação</h3>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-600">Ano:</label>
+                  <select
+                    value={occupancyYear}
+                    onChange={(e) => setOccupancyYear(Number(e.target.value))}
+                    className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                  >
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
                 </div>
-                <div className="flex items-center gap-3">
-                   <div className="text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
-                      Dica: Copie do Excel e cole na 1ª célula para preencher
-                   </div>
-                   <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
-                     <Save size={16} /> Salvar Ocupação
-                   </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                  Dica: Copie do Excel e cole na 1ª célula para preencher
                 </div>
-             </div>
-             <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
-                <table className="w-full text-center border-collapse">
-                  <thead className="bg-slate-100 text-slate-600 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                      <th className="p-2 text-xs uppercase bg-slate-200 border border-slate-300 w-12 sticky left-0 z-20">Dia</th>
-                      {months.map(m => (
-                        <th key={m} className="p-2 text-xs uppercase border border-slate-300 min-w-[60px]">{m}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {days.map(day => (
-                      <tr key={day}>
-                        <td className="p-2 text-xs font-bold bg-slate-50 border border-slate-300 sticky left-0 z-10">{day}</td>
-                        {months.map((_, mIdx) => {
-                          const valid = isValidDate(occupancyYear, mIdx, day);
-                          const dateKey = `${occupancyYear}-${String(mIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const val = gridData[dateKey] || '';
-                          return valid ? (
-                            <td key={mIdx} className="border border-slate-300 p-0">
-                              <input 
-                                id={`occ-input-${mIdx}-${day}`}
-                                type="text" 
-                                className="w-full h-full p-2 text-center text-sm outline-none focus:bg-blue-50 transition-colors"
-                                value={val}
-                                placeholder="-"
-                                onChange={(e) => handleGridChange(mIdx, day, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(e, mIdx, day)}
-                                onPaste={(e) => handlePaste(e, mIdx, day)}
-                              />
-                            </td>
-                          ) : <td key={mIdx} className="bg-slate-100 border border-slate-300"></td>;
-                        })}
-                      </tr>
+                <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
+                  <Save size={16} /> Salvar Ocupação
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
+              <table className="w-full text-center border-collapse">
+                <thead className="bg-slate-100 text-slate-600 sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th className="p-2 text-xs uppercase bg-slate-200 border border-slate-300 w-12 sticky left-0 z-20">Dia</th>
+                    {months.map(m => (
+                      <th key={m} className="p-2 text-xs uppercase border border-slate-300 min-w-[60px]">{m}</th>
                     ))}
-                  </tbody>
-                </table>
-             </div>
-          </div>
-        )}
-
-        {/* Access Management Tab */}
-        {activeTab === 'access' && (
-          <div className="max-w-4xl space-y-6">
-             <div className="bg-white p-6 rounded-lg border border-slate-200">
-               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                 <Shield size={20} className="text-[#F8981C]" /> Gerenciar Usuários
-               </h3>
-               
-               {/* Add/Edit User Form */}
-               <form onSubmit={handleUserSubmit} className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 relative transition-all">
-                 <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                   {editingUserId ? <Edit3 size={16} className="text-blue-500" /> : <Plus size={16} className="text-green-500" />}
-                   {editingUserId ? 'Editar Usuário Existente' : 'Adicionar Novo Usuário'}
-                 </h4>
-                 
-                 {editingUserId && (
-                    <button 
-                      type="button" 
-                      onClick={handleCancelEdit}
-                      className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-1 rounded-full transition-colors"
-                      title="Cancelar Edição"
-                    >
-                      <X size={16} />
-                    </button>
-                 )}
-
-                 <div className="flex flex-col md:flex-row gap-3 items-end">
-                    <div className="flex-1 w-full">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Nome Completo</label>
-                      <input 
-                        type="text" 
-                        required
-                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-[#155645] outline-none"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="Ex: João Silva"
-                      />
-                    </div>
-                    <div className="flex-1 w-full">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">E-mail</label>
-                      <input 
-                        type="email" 
-                        required
-                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-[#155645] outline-none"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="Ex: joao@taua.com.br"
-                      />
-                    </div>
-                    <div className="w-full md:w-40">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Perfil</label>
-                      <select 
-                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white"
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                      >
-                        <option value={UserRole.USER}>Usuário</option>
-                        <option value={UserRole.ADMIN}>Administrador</option>
-                      </select>
-                    </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                      <button 
-                        type="submit" 
-                        className={`flex-1 md:flex-none px-4 py-2 rounded text-sm flex items-center justify-center gap-2 h-10 min-w-[100px] transition-colors ${
-                          editingUserId 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200' 
-                            : 'bg-[#155645] hover:bg-[#104033] text-white'
-                        }`}
-                      >
-                         {editingUserId ? <Save size={16} /> : <Plus size={16} />}
-                         {editingUserId ? 'Salvar' : 'Adicionar'}
-                      </button>
-                      
-                      {editingUserId && (
-                        <button 
-                          type="button" 
-                          onClick={handleCancelEdit}
-                          className="px-3 py-2 rounded text-sm bg-slate-200 text-slate-700 hover:bg-slate-300 h-10 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                      )}
-                    </div>
-                 </div>
-               </form>
-
-               {/* Users List */}
-               <div className="overflow-hidden border border-slate-200 rounded-lg">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
-                      <tr>
-                        <th className="p-3">Nome</th>
-                        <th className="p-3">E-mail</th>
-                        <th className="p-3">Perfil</th>
-                        <th className="p-3 text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {availableUsers.map(u => (
-                        <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${u.id === currentUser?.id ? 'bg-blue-50/50' : ''} ${editingUserId === u.id ? 'bg-yellow-50' : ''}`}>
-                          <td className="p-3 font-medium text-slate-700">
-                            {u.name}
-                            {u.id === currentUser?.id && <span className="ml-2 text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-bold">VOCÊ</span>}
-                            {editingUserId === u.id && <span className="ml-2 text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded-full font-bold">EDITANDO</span>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {days.map(day => (
+                    <tr key={day}>
+                      <td className="p-2 text-xs font-bold bg-slate-50 border border-slate-300 sticky left-0 z-10">{day}</td>
+                      {months.map((_, mIdx) => {
+                        const valid = isValidDate(occupancyYear, mIdx, day);
+                        const dateKey = `${occupancyYear}-${String(mIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const val = gridData[dateKey] || '';
+                        return valid ? (
+                          <td key={mIdx} className="border border-slate-300 p-0">
+                            <input
+                              id={`occ-input-${mIdx}-${day}`}
+                              type="text"
+                              className="w-full h-full p-2 text-center text-sm outline-none focus:bg-blue-50 transition-colors"
+                              value={val}
+                              placeholder="-"
+                              onChange={(e) => handleGridChange(mIdx, day, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, mIdx, day)}
+                              onPaste={(e) => handlePaste(e, mIdx, day)}
+                            />
                           </td>
-                          <td className="p-3 text-slate-500">{u.email}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                              u.role === UserRole.ADMIN ? 'bg-[#F8981C]/20 text-[#c06e06]' : 'bg-green-100 text-green-700'
-                            }`}>
-                              {u.role === UserRole.ADMIN ? 'ADMIN' : 'USUÁRIO'}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right">
-                             <div className="flex items-center justify-end gap-2">
-                               <button 
-                                 onClick={() => handleEditClick(u)} 
-                                 className={`p-1.5 rounded transition-colors ${
-                                   editingUserId === u.id 
-                                     ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300' 
-                                     : 'text-blue-400 hover:text-blue-600 hover:bg-blue-50'
-                                 }`}
-                                 title="Editar usuário"
-                               >
-                                 <Edit3 size={16} />
-                               </button>
-                               <button 
-                                 onClick={() => removeUser(u.id)} 
-                                 className={`p-1.5 rounded transition-colors ${
-                                   u.id === currentUser?.id 
-                                    ? 'text-slate-300 cursor-not-allowed' 
-                                    : 'text-red-400 hover:text-red-600 hover:bg-red-50'
-                                 }`}
-                                 disabled={u.id === currentUser?.id}
-                                 title={u.id === currentUser?.id ? 'Você não pode remover a si mesmo' : 'Remover usuário'}
-                               >
-                                 <Trash2 size={16} />
-                               </button>
-                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-               </div>
-               <p className="mt-4 text-xs text-slate-400">
-                 * O login com senha foi desativado. Utilize esta tela para manter o registro de quem tem acesso ao sistema.
-               </p>
-             </div>
+                        ) : <td key={mIdx} className="bg-slate-100 border border-slate-300"></td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {activeTab === 'general' && (
           <div className="max-w-4xl space-y-8">
-            {/* ... (Preserving existing general tab content) ... */}
             {/* 1. Taxas Gerais */}
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
-               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                 <Settings size={20} className="text-[#F8981C]" /> Taxas Gerais e Impostos
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                     <label className="block text-sm font-medium text-slate-700 mb-1">Valor da Hora Comum (R$)</label>
-                     <input 
-                        type="number"
-                        step="0.01"
-                        className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
-                        value={systemConfig.standardHourRate}
-                        onChange={(e) => updateSystemConfig({ ...systemConfig, standardHourRate: parseFloat(e.target.value) || 0 })}
-                     />
-                  </div>
-                  <div>
-                     <label className="block text-sm font-medium text-slate-700 mb-1">Imposto sobre Total (%)</label>
-                     <input 
-                        type="number"
-                        step="0.01"
-                        className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
-                        value={systemConfig.taxRate}
-                        onChange={(e) => updateSystemConfig({ ...systemConfig, taxRate: parseFloat(e.target.value) || 0 })}
-                     />
-                     <p className="text-xs text-slate-500 mt-1">Este percentual incide sobre o valor total final das solicitações.</p>
-                  </div>
-               </div>
+              <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
+                <Settings size={20} className="text-[#F8981C]" /> Taxas Gerais e Impostos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Valor da Hora Comum (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
+                    value={systemConfig.standardHourRate}
+                    onChange={(e) => updateSystemConfig({ ...systemConfig, standardHourRate: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Imposto sobre Total (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
+                    value={systemConfig.taxRate}
+                    onChange={(e) => updateSystemConfig({ ...systemConfig, taxRate: parseFloat(e.target.value) || 0 })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Este percentual incide sobre o valor total final das solicitações.</p>
+                </div>
+              </div>
             </div>
 
             {/* 2. Cargos Especiais */}
             <div className="bg-white p-6 rounded-lg border border-slate-200">
-               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                 <Briefcase size={20} className="text-[#F8981C]" /> Cargos e Taxas Especiais
-               </h3>
-               <div className="flex gap-2 mb-4">
-                  <input 
-                    type="text" 
-                    placeholder="Nome do Cargo (ex: Bilíngue)" 
-                    className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                  />
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    placeholder="Valor Hora (R$)" 
-                    className="border border-slate-300 rounded px-3 py-2 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={newRoleRate}
-                    onChange={(e) => setNewRoleRate(e.target.value)}
-                  />
-                  <button onClick={handleAddRole} className="bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033]">
-                    <Plus size={18} />
-                  </button>
-               </div>
-               
-               <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg">
-                  {specialRoles.map(role => (
-                    <li key={role.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
-                      <div>
-                        <span className="font-medium text-slate-700">{role.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-bold text-[#155645]">R$ {role.rate.toFixed(2)} /h</span>
-                        <button onClick={() => removeSpecialRole(role.id)} className="text-red-400 hover:text-red-600">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                  {specialRoles.length === 0 && <li className="p-4 text-center text-slate-400 text-sm">Nenhum cargo especial cadastrado.</li>}
-               </ul>
-            </div>
+              <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
+                <Briefcase size={20} className="text-[#F8981C]" /> Cargos e Taxas Especiais
+              </h3>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Nome do Cargo (ex: Bilíngue)"
+                  className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Valor Hora (R$)"
+                  className="border border-slate-300 rounded px-3 py-2 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
+                  value={newRoleRate}
+                  onChange={(e) => setNewRoleRate(e.target.value)}
+                />
+                <button onClick={handleAddRole} className="bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033]">
+                  <Plus size={18} />
+                </button>
+              </div>
 
-             {/* 3. Setores */}
-             <div className="bg-white p-6 rounded-lg border border-slate-200">
-               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                 <Building2 size={20} className="text-[#F8981C]" /> Gerenciar Setores
-               </h3>
-               <div className="flex gap-2 mb-4">
-                  <input 
-                    type="text" 
-                    placeholder="Nome do Setor" 
-                    className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={newSectorName}
-                    onChange={(e) => setNewSectorName(e.target.value)}
-                  />
-                  <select 
-                    className="border border-slate-300 rounded px-3 py-2 outline-none"
-                    value={newSectorType}
-                    onChange={(e) => setNewSectorType(e.target.value as any)}
-                  >
-                    <option value="Operacional">Operacional</option>
-                    <option value="Suporte">Suporte</option>
-                  </select>
-                  <button onClick={handleAddSector} className="bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033]">
-                    <Plus size={18} />
-                  </button>
-               </div>
-               
-               <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg max-h-60 overflow-auto">
-                  {sectors.map(sector => (
-                    <li key={sector.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-slate-700">{sector.name}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${sector.type === 'Operacional' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                          {sector.type}
-                        </span>
-                      </div>
-                      <button onClick={() => removeSector(sector.id)} className="text-red-400 hover:text-red-600">
+              <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg">
+                {specialRoles.map(role => (
+                  <li key={role.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
+                    <div>
+                      <span className="font-medium text-slate-700">{role.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-bold text-[#155645]">R$ {role.rate.toFixed(2)} /h</span>
+                      <button onClick={() => removeSpecialRole(role.id)} className="text-red-400 hover:text-red-600">
                         <Trash2 size={16} />
                       </button>
-                    </li>
-                  ))}
-               </ul>
+                    </div>
+                  </li>
+                ))}
+                {specialRoles.length === 0 && <li className="p-4 text-center text-slate-400 text-sm">Nenhum cargo especial cadastrado.</li>}
+              </ul>
+            </div>
+
+            {/* 3. Setores */}
+            <div className="bg-white p-6 rounded-lg border border-slate-200">
+              <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
+                <Building2 size={20} className="text-[#F8981C]" /> Gerenciar Setores
+              </h3>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Nome do Setor"
+                  className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
+                  value={newSectorName}
+                  onChange={(e) => setNewSectorName(e.target.value)}
+                />
+                <select
+                  className="border border-slate-300 rounded px-3 py-2 outline-none"
+                  value={newSectorType}
+                  onChange={(e) => setNewSectorType(e.target.value as any)}
+                >
+                  <option value="Operacional">Operacional</option>
+                  <option value="Suporte">Suporte</option>
+                </select>
+                <button onClick={handleAddSector} className="bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033]">
+                  <Plus size={18} />
+                </button>
+              </div>
+
+              <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg max-h-60 overflow-auto">
+                {sectors.map(sector => (
+                  <li key={sector.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-slate-700">{sector.name}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${sector.type === 'Operacional' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {sector.type}
+                      </span>
+                    </div>
+                    <button onClick={() => removeSector(sector.id)} className="text-red-400 hover:text-red-600">
+                      <Trash2 size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
 
           </div>
