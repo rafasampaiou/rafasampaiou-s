@@ -53,15 +53,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS.map(r => ({
-    ...r,
-    totalValue: r.extrasQty * r.daysQty * 8 * (r.specialRate || 15.00)
-  })));
-
-  const [sectors, setSectors] = useState<SectorConfig[]>(INITIAL_SECTORS);
-  const [currentDate] = useState(new Date());
-
   // Data Stores
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [sectors, setSectors] = useState<SectorConfig[]>([]);
   const [monthlyBudgets, setMonthlyBudgets] = useState<Record<string, MonthlyBudget>>({});
   const [monthlyLotes, setMonthlyLotes] = useState<Record<string, LoteConfig[]>>({});
   const [manualRealStats, setManualRealStats] = useState<Record<string, ManualRealStat>>({});
@@ -69,23 +63,135 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // System Configs
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0, isFormLocked: false });
-  const [specialRoles, setSpecialRoles] = useState<SpecialRole[]>([
-    { id: '1', name: 'Bilíngue', rate: 25.00 },
-    { id: '2', name: 'Supervisor', rate: 22.00 }
-  ]);
+  const [specialRoles, setSpecialRoles] = useState<SpecialRole[]>([]);
+
+  const [currentDate] = useState(new Date());
+
+  // --- Data Fetching ---
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      const { data: secs, error: secErr } = await supabase.from('sectors').select('*').order('name');
+
+      // Seed initial sectors if none exist
+      if ((!secs || secs.length === 0) && !secErr) {
+        const initialSectors = INITIAL_SECTORS.map(({ name, type }) => ({ name, type }));
+        await supabase.from('sectors').insert(initialSectors);
+        fetchAllData(); // Recursive call to fetch again after seed
+        return;
+      }
+
+      const [
+        { data: reqs },
+        { data: roles },
+        { data: config },
+        { data: budgets },
+        { data: lotes },
+        { data: stats },
+        { data: occupancy }
+      ] = await Promise.all([
+        supabase.from('requests').select('*').order('created_at', { ascending: false }),
+        supabase.from('special_roles').select('*').order('name'),
+        supabase.from('system_config').select('*').single(),
+        supabase.from('monthly_budgets').select('*'),
+        supabase.from('monthly_lotes').select('*'),
+        supabase.from('manual_real_stats').select('*'),
+        supabase.from('occupancy_data').select('*')
+      ]);
+
+      if (reqs) {
+        setRequests(reqs.map((r: any) => ({
+          ...r,
+          dateEvent: r.date_event,
+          daysQty: r.days_qty,
+          specialRate: r.special_rate,
+          extrasQty: r.extras_qty,
+          functionRole: r.function_role,
+          createdAt: r.created_at,
+          totalValue: r.total_value,
+          requestorEmail: r.requestor_email
+        })));
+      }
+
+      if (secs) setSectors(secs);
+
+      if (roles) {
+        setSpecialRoles(roles);
+      } else {
+        // Seed initial special roles if none
+        const initialRoles = [
+          { name: 'Bilíngue', rate: 25.00 },
+          { name: 'Supervisor', rate: 22.00 }
+        ];
+        await supabase.from('special_roles').insert(initialRoles);
+      }
+
+      if (config) {
+        setSystemConfig({
+          standardHourRate: Number(config.standard_hour_rate),
+          taxRate: Number(config.tax_rate),
+          isFormLocked: config.is_form_locked
+        });
+      }
+
+      if (budgets) {
+        const budgetMap: Record<string, MonthlyBudget> = {};
+        budgets.forEach((b: any) => {
+          budgetMap[`${b.sector_id}_${b.month_key}`] = {
+            sectorId: b.sector_id,
+            monthKey: b.month_key,
+            budgetQty: b.budget_qty,
+            budgetValue: b.budget_value
+          };
+        });
+        setMonthlyBudgets(budgetMap);
+      }
+
+      if (lotes) {
+        const loteMap: Record<string, LoteConfig[]> = {};
+        lotes.forEach((l: any) => {
+          if (!loteMap[l.month_key]) loteMap[l.month_key] = [];
+          loteMap[l.month_key].push({
+            id: l.id,
+            name: l.name,
+            startDay: l.start_day,
+            endDay: l.end_day
+          });
+        });
+        setMonthlyLotes(loteMap);
+      }
+
+      if (stats) {
+        const statsMap: Record<string, ManualRealStat> = {};
+        stats.forEach((s: any) => {
+          statsMap[`${s.sector_id}_${s.month_key}`] = {
+            sectorId: s.sector_id,
+            monthKey: s.month_key,
+            realQty: s.real_qty,
+            realValue: s.real_value,
+            afastadosQty: s.afastados_qty,
+            apprenticesQty: s.apprentices_qty
+          };
+        });
+        setManualRealStats(statsMap);
+      }
+
+      if (occupancy) {
+        const occMap: Record<string, number> = {};
+        occupancy.forEach((o: any) => {
+          occMap[o.date_key] = Number(o.count);
+        });
+        setOccupancyData(occMap);
+      }
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Safety timeout: force loading to false after 5s if something hangs
-    const safetyTimeout = setTimeout(() => {
-      setIsLoading(prev => {
-        if (prev) {
-          console.warn('Forcing loading completion due to timeout.');
-          return false;
-        }
-        return prev;
-      });
-    }, 5000);
-
     // Initial session check
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -94,18 +200,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: session.user.id,
           email: session.user.email!,
           name: session.user.email!.split('@')[0],
-          role: UserRole.USER // Default role, specific admin is just UI PIN
+          role: UserRole.USER
         });
         setIsAuthenticated(true);
+        fetchAllData();
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSession();
 
     // Auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth Event:', event);
       if (session) {
         setUser({
           id: session.user.id,
@@ -114,17 +221,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           role: UserRole.USER
         });
         setIsAuthenticated(true);
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') fetchAllData();
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        setRequests([]);
       }
       setIsLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const loginWithMagicLink = async (email: string): Promise<boolean> => {
@@ -132,19 +238,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
+        options: { emailRedirectTo: window.location.origin },
       });
-
-      if (error) {
-        console.error('Magic link error:', error);
-        return false;
-      }
-
-      return true;
+      return !error;
     } catch (err) {
-      console.error('Fatal login error:', err);
       return false;
     } finally {
       setIsLoading(false);
@@ -157,14 +254,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAuthenticated(false);
   };
 
-  const addRequest = (req: RequestItem) => {
+  const addRequest = async (req: RequestItem) => {
     let baseTotal;
     if (req.specialRate) {
       baseTotal = req.extrasQty * req.daysQty * req.specialRate;
     } else {
       baseTotal = req.extrasQty * req.daysQty * 8 * systemConfig.standardHourRate;
     }
-    setRequests(prev => [{ ...req, totalValue: baseTotal }, ...prev]);
+
+    const { data, error } = await supabase.from('requests').insert([{
+      sector: req.sector,
+      reason: req.reason,
+      type: req.type,
+      date_event: req.dateEvent,
+      days_qty: req.daysQty,
+      special_rate: req.specialRate,
+      extras_qty: req.extrasQty,
+      function_role: req.functionRole,
+      shift: req.shift,
+      time_in: req.timeIn,
+      time_out: req.timeOut,
+      justification: req.justification,
+      occupancy_rate: req.occupancyRate,
+      status: req.status,
+      total_value: baseTotal,
+      requestor_email: user?.email || req.requestorEmail
+    }]).select();
+
+    if (data && !error) {
+      const newReq = {
+        ...req,
+        id: data[0].id,
+        totalValue: baseTotal,
+        createdAt: data[0].created_at
+      };
+      setRequests(prev => [newReq, ...prev]);
+    }
   };
 
   // Helper to parse date dd/mm/yyyy to yyyy-mm-dd
@@ -184,12 +309,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return '';
   }
 
-  const addHistoricalRequests = (text: string) => {
+  const addHistoricalRequests = async (text: string) => {
     const lines = text.trim().split(/\r?\n/);
-    const newRequests: RequestItem[] = [];
+    const newRequests: any[] = [];
     let importCount = 0;
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
       if (!line.trim()) return;
       const cols = line.split('\t');
       if (cols.length >= 8) {
@@ -213,63 +338,67 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
 
           newRequests.push({
-            id: `hist_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             sector: cols[0]?.trim(),
             reason: (cols[1]?.trim() || 'Ocupação') as any,
             type: daysQty > 1 ? RequestType.PACOTE : RequestType.DIARIA,
-            dateEvent,
-            daysQty,
-            specialRate,
-            extrasQty,
-            functionRole: cols[6]?.trim() || 'Extra',
+            date_event: dateEvent,
+            days_qty: daysQty,
+            special_rate: specialRate,
+            extras_qty: extrasQty,
+            function_role: cols[6]?.trim() || 'Extra',
             shift: (cols[7]?.trim() || Shift.MANHA) as Shift,
-            timeIn: cols[8]?.trim() || '08:00',
-            timeOut: cols[9]?.trim() || '16:00',
+            time_in: cols[8]?.trim() || '08:00',
+            time_out: cols[9]?.trim() || '16:00',
             justification: cols[10]?.trim() || 'Importado do Histórico',
-            occupancyRate,
+            occupancy_rate: occupancyRate,
             status: 'Aprovado',
-            createdAt: new Date().toISOString(),
-            totalValue,
-            requestorEmail: 'importacao.historica@taua.com.br'
+            total_value: totalValue,
+            requestor_email: 'importacao.historica@taua.com.br'
           });
           importCount++;
         } catch (e) {
-          console.error(`Error parsing line ${index}`, e);
+          console.error(`Error parsing historical line`, e);
         }
       }
     });
 
-    if (importCount > 0) {
-      setRequests(prev => [...newRequests, ...prev]);
-      alert(`${importCount} registros importados com sucesso!`);
+    if (newRequests.length > 0) {
+      const { error } = await supabase.from('requests').insert(newRequests);
+      if (!error) {
+        fetchAllData();
+        alert(`${importCount} registros importados com sucesso para o banco de dados!`);
+      } else {
+        alert("Erro ao importar para o banco de dados.");
+      }
     } else {
       alert("Nenhum registro válido encontrado.");
     }
   };
 
-  const saveOccupancyBatch = (data: Record<string, number>) => {
-    setOccupancyData(prev => ({ ...prev, ...data }));
+  const saveOccupancyBatch = async (data: Record<string, number>) => {
+    const batch = Object.entries(data).map(([date_key, count]) => ({ date_key, count }));
+    const { error } = await supabase.from('occupancy_data').upsert(batch);
+    if (!error) setOccupancyData(prev => ({ ...prev, ...data }));
   };
 
-  const updateRequestStatus = (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => {
-    setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
+  const updateRequestStatus = async (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => {
+    const { error } = await supabase.from('requests').update({ status }).eq('id', id);
+    if (!error) setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
   };
 
-  const deleteRequest = (id: string) => {
-    setRequests(prev => prev.filter(req => req.id !== id));
+  const deleteRequest = async (id: string) => {
+    const { error } = await supabase.from('requests').delete().eq('id', id);
+    if (!error) setRequests(prev => prev.filter(req => req.id !== id));
   };
 
-  const addSector = (name: string, type: 'Operacional' | 'Suporte') => {
-    const newSector: SectorConfig = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      type
-    };
-    setSectors(prev => [...prev, newSector]);
+  const addSector = async (name: string, type: 'Operacional' | 'Suporte') => {
+    const { data, error } = await supabase.from('sectors').insert([{ name, type }]).select();
+    if (data && !error) setSectors(prev => [...prev, data[0]]);
   };
 
-  const removeSector = (id: string) => {
-    setSectors(prev => prev.filter(s => s.id !== id));
+  const removeSector = async (id: string) => {
+    const { error } = await supabase.from('sectors').delete().eq('id', id);
+    if (!error) setSectors(prev => prev.filter(s => s.id !== id));
   };
 
   const getMonthlyBudget = (sectorId: string, monthKey: string): MonthlyBudget => {
@@ -277,21 +406,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return monthlyBudgets[key] || { sectorId, monthKey, budgetQty: 0, budgetValue: 0 };
   };
 
-  const updateMonthlyBudget = (data: MonthlyBudget) => {
-    const key = `${data.sectorId}_${data.monthKey}`;
-    setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
+  const updateMonthlyBudget = async (data: MonthlyBudget) => {
+    const { error } = await supabase.from('monthly_budgets').upsert({
+      sector_id: data.sectorId,
+      month_key: data.monthKey,
+      budget_qty: data.budgetQty,
+      budget_value: data.budgetValue
+    });
+    if (!error) {
+      const key = `${data.sectorId}_${data.monthKey}`;
+      setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
+    }
   };
 
   const getMonthlyLote = (monthKey: string): LoteConfig[] => {
     return monthlyLotes[monthKey] || [
-      { id: 1, name: '1º Lote', startDay: 1, endDay: 10 },
-      { id: 2, name: '2º Lote', startDay: 11, endDay: 20 },
-      { id: 3, name: '3º Lote', startDay: 21, endDay: 31 },
+      { id: Date.now(), name: '1º Lote', startDay: 1, endDay: 10 },
+      { id: Date.now() + 1, name: '2º Lote', startDay: 11, endDay: 20 },
+      { id: Date.now() + 2, name: '3º Lote', startDay: 21, endDay: 31 },
     ];
   };
 
-  const updateMonthlyLote = (monthKey: string, lotes: LoteConfig[]) => {
-    setMonthlyLotes(prev => ({ ...prev, [monthKey]: lotes }));
+  const updateMonthlyLote = async (monthKey: string, lotes: LoteConfig[]) => {
+    const { error } = await supabase.from('monthly_lotes').insert(
+      lotes.map(l => ({ month_key: monthKey, name: l.name, start_day: l.startDay, end_day: l.endDay }))
+    );
+    if (!error) {
+      setMonthlyLotes(prev => ({ ...prev, [monthKey]: lotes }));
+    }
   };
 
   const getManualRealStat = (sectorId: string, monthKey: string) => {
@@ -299,27 +441,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return manualRealStats[key];
   };
 
-  const updateManualRealStat = (data: ManualRealStat) => {
-    const key = `${data.sectorId}_${data.monthKey}`;
-    setManualRealStats(prev => ({ ...prev, [key]: data }));
+  const updateManualRealStat = async (data: ManualRealStat) => {
+    const { error } = await supabase.from('manual_real_stats').upsert({
+      sector_id: data.sectorId,
+      month_key: data.monthKey,
+      real_qty: data.realQty,
+      real_value: data.realValue,
+      afastados_qty: data.afastadosQty,
+      apprentices_qty: data.apprenticesQty
+    });
+    if (!error) {
+      const key = `${data.sectorId}_${data.monthKey}`;
+      setManualRealStats(prev => ({ ...prev, [key]: data }));
+    }
   };
 
-  const updateSystemConfig = (config: SystemConfig) => {
-    setSystemConfig(config);
+  const updateSystemConfig = async (config: SystemConfig) => {
+    const { error } = await supabase.from('system_config').update({
+      standard_hour_rate: config.standardHourRate,
+      tax_rate: config.taxRate,
+      is_form_locked: config.isFormLocked
+    }).eq('id', 1);
+    if (!error) setSystemConfig(config);
   };
 
-  const addSpecialRole = (name: string, rate: number) => {
-    const newRole: SpecialRole = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      rate
-    };
-    setSpecialRoles(prev => [...prev, newRole]);
+  const addSpecialRole = async (name: string, rate: number) => {
+    const { data, error } = await supabase.from('special_roles').insert([{ name, rate }]).select();
+    if (data && !error) setSpecialRoles(prev => [...prev, data[0]]);
   };
 
-  const removeSpecialRole = (id: string) => {
-    setSpecialRoles(prev => prev.filter(r => r.id !== id));
+  const removeSpecialRole = async (id: string) => {
+    const { error } = await supabase.from('special_roles').delete().eq('id', id);
+    if (!error) setSpecialRoles(prev => prev.filter(r => r.id !== id));
   };
+
 
   return (
     <AppContext.Provider value={{
