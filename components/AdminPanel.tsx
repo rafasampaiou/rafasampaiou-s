@@ -315,76 +315,76 @@ export const AdminPanel: React.FC = () => {
         {activeTab === 'sectors' && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-[#155645]">Orçamento por Setor ({selectedMonth})</h3>
-              <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                Cole do Excel: Valor Orçado | Valor Hora | Horas Trab. | Dias Trab.
+              <h3 className="text-lg font-bold text-[#155645]">Orçamento de Extraordinários ({selectedMonth})</h3>
+              <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 font-medium">
+                Dica: Valor Orçado | Valor Hora | Horas Trab. | Dias Trab.
               </div>
             </div>
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <div className="overflow-x-auto border border-slate-300 rounded-lg">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#155645]/5 text-[#155645] uppercase sticky top-0 bg-white">
-                  <tr className="divide-x divide-slate-200">
-                    <th className="p-3">Setor</th>
-                    <th className="p-3 bg-slate-50">Valor Orçado (R$)</th>
-                    <th className="p-3 bg-slate-50">VL. Hora (R$)</th>
-                    <th className="p-3 bg-slate-50">Hrs/Dia</th>
-                    <th className="p-3 text-orange-700">Extras Mês (Calc)</th>
-                    <th className="p-3 bg-slate-50">Dias/Mês</th>
-                    <th className="p-3 text-orange-700">Extras Dia (Calc)</th>
+                <thead className="bg-slate-100 text-slate-600 uppercase sticky top-0 z-10 shadow-sm font-bold">
+                  <tr>
+                    <th className="p-2 border border-slate-300">Setor</th>
+                    <th className="p-2 border border-slate-300 bg-slate-50">Valor Orçado (R$)</th>
+                    <th className="p-2 border border-slate-300 bg-slate-50">VL. Hora (R$)</th>
+                    <th className="p-2 border border-slate-300 bg-slate-50">Hrs/Dia</th>
+                    <th className="p-2 border border-slate-300 text-orange-700">Extras Mês (Calc)</th>
+                    <th className="p-2 border border-slate-300 bg-slate-50">Dias/Mês</th>
+                    <th className="p-2 border border-slate-300 text-orange-700">Extras Dia (Calc)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {sectors.map((sector, idx) => {
                     const budget = getMonthlyBudget(sector.id, selectedMonth);
                     return (
-                      <tr key={sector.id} className="hover:bg-slate-50 divide-x divide-slate-100 transition-colors">
-                        <td className="p-3 font-medium text-slate-800">{sector.name}</td>
-                        <td className="p-2 bg-slate-50/30">
+                      <tr key={sector.id} className="hover:bg-blue-50/30 transition-colors">
+                        <td className="p-2 font-bold text-slate-700 border border-slate-300 bg-slate-50/50">{sector.name}</td>
+                        <td className="p-0 border border-slate-300">
                           <input
                             type="number"
                             step="0.01"
                             placeholder="0,00"
-                            className="w-28 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-right"
+                            className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
                             value={budget.budgetValue || ''}
                             onChange={(e) => handleBudgetChange(sector.id, 'budgetValue', e.target.value)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
-                        <td className="p-2 bg-slate-50/30">
+                        <td className="p-0 border border-slate-300">
                           <input
                             type="number"
                             step="0.01"
                             placeholder="0,00"
-                            className="w-24 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-right"
+                            className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
                             value={budget.hourRate || ''}
                             onChange={(e) => handleBudgetChange(sector.id, 'hourRate', e.target.value)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
-                        <td className="p-2 bg-slate-50/30">
+                        <td className="p-0 border border-slate-300">
                           <input
                             type="number"
                             placeholder="8"
-                            className="w-16 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                            className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
                             value={budget.workHoursPerDay || ''}
                             onChange={(e) => handleBudgetChange(sector.id, 'workHoursPerDay', e.target.value)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
-                        <td className="p-3 font-bold text-[#155645] text-center bg-orange-50/30">
+                        <td className="p-2 font-bold text-[#155645] text-center border border-slate-300 bg-orange-50/30">
                           {budget.budgetQty}
                         </td>
-                        <td className="p-2 bg-slate-50/30">
+                        <td className="p-0 border border-slate-300">
                           <input
                             type="number"
                             placeholder="22"
-                            className="w-16 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                            className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
                             value={budget.workingDaysPerMonth || ''}
                             onChange={(e) => handleBudgetChange(sector.id, 'workingDaysPerMonth', e.target.value)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
-                        <td className="p-3 font-bold text-[#F8981C] text-center bg-orange-50/30">
+                        <td className="p-2 font-bold text-[#F8981C] text-center border border-slate-300 bg-orange-50/30">
                           {budget.extraQtyPerDay}
                         </td>
                       </tr>
@@ -409,44 +409,44 @@ export const AdminPanel: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <div className="overflow-x-auto border border-slate-300 rounded-lg">
               <table className="w-full text-left text-sm border-collapse">
-                <thead className="bg-[#155645]/5 text-[#155645] uppercase">
-                  <tr className="divide-x divide-slate-200">
-                    <th className="p-3">Nome do Lote</th>
-                    <th className="p-3">Dia Início</th>
-                    <th className="p-3">Dia Final</th>
-                    <th className="p-3 text-center">Ações</th>
+                <thead className="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th className="p-2 border border-slate-300">Nome do Lote</th>
+                    <th className="p-2 border border-slate-300 w-32">Dia Início</th>
+                    <th className="p-2 border border-slate-300 w-32">Dia Final</th>
+                    <th className="p-2 border border-slate-300 text-center w-20">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {localLotes.map((lote, idx) => (
-                    <tr key={lote.id} className="divide-x divide-slate-100">
-                      <td className="p-2">
+                    <tr key={lote.id} className="hover:bg-blue-50/20 transition-colors">
+                      <td className="p-0 border border-slate-300">
                         <input
                           type="text"
-                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645]"
+                          className="w-full h-full p-2 outline-none focus:bg-blue-50"
                           value={lote.name}
                           onChange={(e) => handleLoteChange(idx, 'name', e.target.value)}
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="p-0 border border-slate-300">
                         <input
                           type="number"
-                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                          className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center"
                           value={lote.startDay}
                           onChange={(e) => handleLoteChange(idx, 'startDay', e.target.value)}
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="p-0 border border-slate-300">
                         <input
                           type="number"
-                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                          className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center"
                           value={lote.endDay}
                           onChange={(e) => handleLoteChange(idx, 'endDay', e.target.value)}
                         />
                       </td>
-                      <td className="p-2 text-center">
+                      <td className="p-2 text-center border border-slate-300">
                         <button onClick={() => removeLote(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={16} /></button>
                       </td>
                     </tr>
