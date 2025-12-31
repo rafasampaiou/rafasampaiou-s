@@ -68,7 +68,7 @@ const MainContent: React.FC = () => {
                     currentView === 'admin' ? 'Administração' :
                       currentView === 'indicators' ? 'Indicadores' : 'Dashboard'}
             </h2>
-            <span className="text-xs text-slate-400">Logado como: {user?.name} ({user?.role})</span>
+            <span className="text-xs text-slate-400">Logado como: {user?.name}</span>
           </div>
           <div className="text-sm text-slate-500">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
