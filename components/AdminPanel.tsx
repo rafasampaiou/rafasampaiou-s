@@ -12,9 +12,6 @@ export const AdminPanel: React.FC = () => {
     specialRoles, addSpecialRole, removeSpecialRole,
   } = useApp();
 
-  // Admin Gate handles the PIN check, so we don't need to check user role here.
-  // The fact that this component is rendered means the user passed the AdminGate.
-
   const [activeTab, setActiveTab] = useState('sectors');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
@@ -28,7 +25,6 @@ export const AdminPanel: React.FC = () => {
   const [newSectorName, setNewSectorName] = useState('');
   const [newSectorType, setNewSectorType] = useState<'Operacional' | 'Suporte'>('Operacional');
 
-  // Sync global occupancy data to local grid state when year changes
   useEffect(() => {
     const newGridData: Record<string, string> = {};
     Object.entries(occupancyData).forEach(([dateStr, val]) => {
@@ -39,7 +35,6 @@ export const AdminPanel: React.FC = () => {
     setGridData(newGridData);
   }, [occupancyYear, occupancyData]);
 
-  // Helper for Occupancy Grid
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
@@ -82,7 +77,6 @@ export const AdminPanel: React.FC = () => {
     updateMonthlyLote(selectedMonth, newLotes);
   };
 
-  // Occupancy Grid Handlers
   const handleGridChange = (monthIndex: number, day: number, value: string) => {
     const dateKey = `${occupancyYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setGridData(prev => ({
@@ -102,26 +96,15 @@ export const AdminPanel: React.FC = () => {
 
     rows.forEach((rowStr, rowIndex) => {
       if (!rowStr.trim()) return;
-
-      // Handle tabs (columns) if user copied a table
       const cols = rowStr.split('\t');
-
       cols.forEach((val, colIndex) => {
         const targetMIdx = startMIdx + colIndex;
         const targetDay = startDay + rowIndex;
-
-        // Ensure we are within bounds
         if (targetMIdx > 11 || targetDay > 31) return;
-
-        // Check if date is valid (e.g. avoid Feb 30)
         if (!isValidDate(occupancyYear, targetMIdx, targetDay)) return;
-
         const dateKey = `${occupancyYear}-${String(targetMIdx + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
-
-        // Basic cleanup of value
         const stringVal = String(val);
-        const cleanVal = stringVal.trim().replace(/[^\d.,]/g, ''); // Allow numbers, dots, commas
-
+        const cleanVal = stringVal.trim().replace(/[^\d.,]/g, '');
         if (cleanVal) {
           newGridData[dateKey] = cleanVal;
           hasChanges = true;
@@ -256,7 +239,6 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <div className="p-6 flex-1 flex flex-col">
-
         {(activeTab === 'sectors' || activeTab === 'config') && (
           <div className="mb-6 flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 w-fit">
             <span className="text-sm font-bold text-slate-700">Mês de Referência:</span>
@@ -439,7 +421,6 @@ export const AdminPanel: React.FC = () => {
 
         {activeTab === 'general' && (
           <div className="max-w-4xl space-y-8">
-            {/* 1. Taxas Gerais */}
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
                 <Settings size={20} className="text-[#F8981C]" /> Taxas Gerais e Impostos
@@ -464,9 +445,7 @@ export const AdminPanel: React.FC = () => {
                     value={systemConfig.taxRate}
                     onChange={(e) => updateSystemConfig({ ...systemConfig, taxRate: parseFloat(e.target.value) || 0 })}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Este percentual incide sobre o valor total final das solicitações.</p>
                 </div>
-
                 <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação</label>
                   <button
@@ -477,18 +456,12 @@ export const AdminPanel: React.FC = () => {
                       }`}
                   >
                     {systemConfig.isFormLocked ? <Lock size={20} /> : <Unlock size={20} />}
-                    {systemConfig.isFormLocked ? 'FORMULÁRIO BLOQUEADO (Clique para Liberar)' : 'FORMULÁRIO LIBERADO (Clique para Bloquear)'}
+                    {systemConfig.isFormLocked ? 'FORMULÁRIO BLOQUEADO' : 'FORMULÁRIO LIBERADO'}
                   </button>
-                  <p className="text-xs text-slate-500 mt-2">
-                    {systemConfig.isFormLocked
-                      ? 'Nenhum usuário pode enviar solicitações no momento.'
-                      : 'O formulário está aberto para novos pedidos.'}
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* 2. Cargos Especiais */}
             <div className="bg-white p-6 rounded-lg border border-slate-200">
               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
                 <Briefcase size={20} className="text-[#F8981C]" /> Cargos e Diárias Especiais
@@ -496,16 +469,15 @@ export const AdminPanel: React.FC = () => {
               <div className="flex gap-2 mb-4">
                 <input
                   type="text"
-                  placeholder="Nome do Cargo (ex: Bilíngue)"
-                  className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
+                  placeholder="Nome do Cargo"
+                  className="border border-slate-300 rounded px-3 py-2 flex-1 outline-none"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                 />
                 <input
                   type="number"
-                  step="0.01"
-                  placeholder="Valor Diária (R$)"
-                  className="border border-slate-300 rounded px-3 py-2 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
+                  placeholder="Valor"
+                  className="border border-slate-300 rounded px-3 py-2 w-32 outline-none"
                   value={newRoleRate}
                   onChange={(e) => setNewRoleRate(e.target.value)}
                 />
@@ -513,27 +485,21 @@ export const AdminPanel: React.FC = () => {
                   <Plus size={18} />
                 </button>
               </div>
-
-              <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg">
+              <ul className="divide-y divide-slate-100">
                 {specialRoles.map(role => (
-                  <li key={role.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
-                    <div>
-                      <span className="font-medium text-slate-700">{role.name}</span>
-                    </div>
+                  <li key={role.id} className="flex justify-between items-center p-3">
+                    <span className="text-slate-700 font-medium">{role.name}</span>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-bold text-[#155645]">R$ {role.rate.toFixed(2)} /dia</span>
+                      <span className="font-bold text-[#155645]">R$ {role.rate.toFixed(2)}</span>
                       <button onClick={() => removeSpecialRole(role.id)} className="text-red-400 hover:text-red-600">
-
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </li>
                 ))}
-                {specialRoles.length === 0 && <li className="p-4 text-center text-slate-400 text-sm">Nenhum cargo especial cadastrado.</li>}
               </ul>
             </div>
 
-            {/* 3. Setores */}
             <div className="bg-white p-6 rounded-lg border border-slate-200">
               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
                 <Building2 size={20} className="text-[#F8981C]" /> Gerenciar Setores
@@ -542,7 +508,7 @@ export const AdminPanel: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Nome do Setor"
-                  className="border border-slate-300 rounded px-3 py-2 flex-1 focus:ring-1 focus:ring-[#155645] outline-none"
+                  className="border border-slate-300 rounded px-3 py-2 flex-1 outline-none"
                   value={newSectorName}
                   onChange={(e) => setNewSectorName(e.target.value)}
                 />
@@ -558,16 +524,10 @@ export const AdminPanel: React.FC = () => {
                   <Plus size={18} />
                 </button>
               </div>
-
-              <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg max-h-60 overflow-auto">
+              <ul className="divide-y divide-slate-100 max-h-60 overflow-auto">
                 {sectors.map(sector => (
-                  <li key={sector.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium text-slate-700">{sector.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${sector.type === 'Operacional' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                        {sector.type}
-                      </span>
-                    </div>
+                  <li key={sector.id} className="flex justify-between items-center p-3">
+                    <span className="text-slate-700 font-medium">{sector.name}</span>
                     <button onClick={() => removeSector(sector.id)} className="text-red-400 hover:text-red-600">
                       <Trash2 size={16} />
                     </button>
@@ -575,7 +535,6 @@ export const AdminPanel: React.FC = () => {
                 ))}
               </ul>
             </div>
-
           </div>
         )}
 
@@ -593,4 +552,4 @@ export const AdminPanel: React.FC = () => {
       </div>
     </div>
   );
-  ```
+};
