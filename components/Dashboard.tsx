@@ -209,7 +209,15 @@ export const Dashboard: React.FC = () => {
                         <button onClick={() => updateRequestStatus(req.id, 'Rejeitado')} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all">
                           <X size={14} />
                         </button>
-                        <button onClick={() => deleteRequest(req.id)} className="p-1 bg-slate-100 text-slate-500 rounded hover:bg-red-500 hover:text-white transition-all">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Excluir esta solicitação?')) {
+                              deleteRequest(req.id);
+                            }
+                          }}
+                          className="p-1 bg-slate-100 text-slate-500 rounded hover:bg-red-500 hover:text-white transition-all"
+                          title="Excluir"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -345,12 +353,14 @@ export const Dashboard: React.FC = () => {
                   </td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
                         if (window.confirm('Tem certeza que deseja excluir esta solicitação permanentemente?')) {
                           deleteRequest(req.id);
                         }
                       }}
-                      className="p-1.5 bg-slate-100 text-slate-400 rounded hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                      className="p-1.5 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-100"
                       title="Excluir Solicitação"
                     >
                       <Trash2 size={14} />

@@ -393,7 +393,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteRequest = async (id: string) => {
     const { error } = await supabase.from('requests').delete().eq('id', id);
-    if (!error) setRequests(prev => prev.filter(req => req.id !== id));
+    if (!error) {
+      setRequests(prev => prev.filter(req => req.id !== id));
+    } else {
+      console.error('Erro ao excluir:', error);
+      alert('Falha ao excluir a solicitação: ' + error.message);
+    }
   };
 
   const addSector = async (name: string, type: 'Operacional' | 'Suporte') => {
