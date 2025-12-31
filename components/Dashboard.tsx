@@ -328,7 +328,9 @@ export const Dashboard: React.FC = () => {
                 className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645] text-slate-700 w-32"
               >
                 <option value="Todos">Todos os Lotes</option>
-                {availableLotes.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+                {Array.from(new Set(availableLotes.map(l => l.name))).map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
               </select>
             </div>
           </div>
