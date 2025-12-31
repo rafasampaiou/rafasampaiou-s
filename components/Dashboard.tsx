@@ -164,6 +164,7 @@ export const Dashboard: React.FC = () => {
                   <th className="p-3">Função</th>
                   <th className="p-3">Qtd</th>
                   <th className="p-3">Horário</th>
+                  <th className="p-3">Solicitante</th>
                   <th className="p-3">Justificativa</th>
                   <th className="p-3 text-right">Valor</th>
                   <th className="p-3 text-center">Ações</th>
@@ -178,6 +179,7 @@ export const Dashboard: React.FC = () => {
                     <td className="p-3">{req.functionRole}</td>
                     <td className="p-3">{req.extrasQty}</td>
                     <td className="p-3 whitespace-nowrap">{req.timeIn} - {req.timeOut}</td>
+                    <td className="p-3 truncate max-w-[120px]" title={req.requestorEmail}>{req.requestorEmail}</td>
                     <td className="p-3 truncate max-w-[200px]" title={req.justification}>{req.justification}</td>
                     <td className="p-3 text-right font-bold">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
                     <td className="p-3">
@@ -197,7 +199,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 {pendingRequests.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-400 italic">
+                    <td colSpan={10} className="p-8 text-center text-slate-400 italic">
                       Não há solicitações pendentes no momento.
                     </td>
                   </tr>
@@ -287,11 +289,13 @@ export const Dashboard: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
               <tr>
-                <th className="p-4">Data Solicitada</th>
+                <th className="p-4">Início</th>
+                <th className="p-4">Fim</th>
                 <th className="p-4">Setor</th>
                 <th className="p-4">Função</th>
                 <th className="p-4 text-center">Extras</th>
                 <th className="p-4 text-center">Dias</th>
+                <th className="p-4">Solicitante</th>
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor Total</th>
                 <th className="p-4 text-center">Status</th>
@@ -300,17 +304,21 @@ export const Dashboard: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredRequests.map((req) => (
                 <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="p-4 font-medium">{formatDate(req.dateEvent)}</td>
+                  <td className="p-4 font-medium whitespace-nowrap">{formatDate(req.dateEvent)}</td>
+                  <td className="p-4 text-slate-400 whitespace-nowrap">
+                    {formatDate(calculateEndDate(req.dateEvent, req.daysQty))}
+                  </td>
                   <td className="p-4">{req.sector}</td>
                   <td className="p-4">{req.functionRole}</td>
                   <td className="p-4 text-center">{req.extrasQty}</td>
                   <td className="p-4 text-center">{req.daysQty}</td>
+                  <td className="p-4 truncate max-w-[150px]" title={req.requestorEmail}>{req.requestorEmail}</td>
                   <td className="p-4">{req.reason}</td>
                   <td className="p-4 text-right font-bold text-[#155645]">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${req.status === 'Aprovado' ? 'bg-green-100 text-green-700' :
-                        req.status === 'Rejeitado' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
+                      req.status === 'Rejeitado' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
                       }`}>
                       {req.status}
                     </span>
@@ -319,7 +327,7 @@ export const Dashboard: React.FC = () => {
               ))}
               {filteredRequests.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-400 italic">
+                  <td colSpan={10} className="p-12 text-center text-slate-400 italic">
                     Nenhuma solicitação encontrada para os filtros selecionados.
                   </td>
                 </tr>
