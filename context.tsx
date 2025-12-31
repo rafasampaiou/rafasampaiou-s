@@ -68,7 +68,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [occupancyData, setOccupancyData] = useState<Record<string, number>>({});
 
   // System Configs
-  const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0 });
+  const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0, isFormLocked: false });
   const [specialRoles, setSpecialRoles] = useState<SpecialRole[]>([
     { id: '1', name: 'Bilíngue', rate: 25.00 },
     { id: '2', name: 'Supervisor', rate: 22.00 }

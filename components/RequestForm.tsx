@@ -4,7 +4,7 @@ import { RequestType, Shift } from '../types';
 import { Save, AlertCircle } from 'lucide-react';
 
 export const RequestForm: React.FC = () => {
-  const { sectors, addRequest, user } = useApp();
+  const { sectors, addRequest, user, systemConfig } = useApp();
   const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -53,8 +53,27 @@ export const RequestForm: React.FC = () => {
     }));
   };
 
+  if (systemConfig.isFormLocked) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden text-center p-12">
+          <div className="bg-orange-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={40} className="text-[#F8981C]" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Formulário Bloqueado</h2>
+          <p className="text-slate-600 mb-8 max-w-md mx-auto">
+            As solicitações de mão de obra extra estão temporariamente suspensas pela administração.
+          </p>
+          <div className="text-sm text-slate-400">
+            Contate o Departamento de Gestão de Pessoas para mais informações.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
           <div>
@@ -67,10 +86,10 @@ export const RequestForm: React.FC = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 gap-5">
 
           {/* Setor */}
-          <div className="col-span-1">
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Setor</label>
             <select
               name="sector"
@@ -85,7 +104,7 @@ export const RequestForm: React.FC = () => {
           </div>
 
           {/* Motivo */}
-          <div className="col-span-1">
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Motivo</label>
             <select
               name="reason"
@@ -98,7 +117,7 @@ export const RequestForm: React.FC = () => {
             </select>
           </div>
 
-          <div className="col-span-2 border-t border-slate-100 my-2"></div>
+          <div className="border-t border-slate-100 my-1"></div>
 
           {/* Tipo e Data */}
           <div>
@@ -199,7 +218,7 @@ export const RequestForm: React.FC = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Entrada</label>
               <input
@@ -225,25 +244,23 @@ export const RequestForm: React.FC = () => {
           </div>
 
           {/* Ocupação */}
-          <div className="col-span-1">
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Ocupação (%)</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                name="occupancyRate"
-                placeholder="0.00"
-                className="w-full rounded-lg border-slate-300 border p-2.5 outline-none focus:ring-2 focus:ring-[#155645] focus:border-[#155645]"
-                value={formData.occupancyRate}
-                onChange={handleChange}
-              />
-            </div>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              name="occupancyRate"
+              placeholder="0.00"
+              className="w-full rounded-lg border-slate-300 border p-2.5 outline-none focus:ring-2 focus:ring-[#155645] focus:border-[#155645]"
+              value={formData.occupancyRate}
+              onChange={handleChange}
+            />
           </div>
 
           {/* Justificativa */}
-          <div className="col-span-1 md:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Justificativa</label>
             <textarea
               name="justification"
@@ -256,7 +273,7 @@ export const RequestForm: React.FC = () => {
             ></textarea>
           </div>
 
-          <div className="col-span-1 md:col-span-2 mt-4">
+          <div className="mt-4">
             <button
               type="submit"
               className="w-full bg-[#155645] hover:bg-[#104033] text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm"

@@ -12,14 +12,15 @@ export const Dashboard: React.FC = () => {
 
   // Filter requests based on selected month (starts within month)
   const filteredRequests = requests.filter(r => r.dateEvent.startsWith(selectedMonth));
+  const approvedRequests = filteredRequests.filter(r => r.status === 'Aprovado');
 
   // --- KPI Calculations ---
 
   // 1. Total Diárias (Man-Days)
-  const totalDiarias = filteredRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
+  const totalDiarias = approvedRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
 
   // 2. Financials
-  const totalValue = filteredRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0);
+  const totalValue = approvedRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0);
   const totalValueWithTax = totalValue * (1 + (systemConfig.taxRate / 100));
 
   // 3. Pending Count
@@ -40,7 +41,7 @@ export const Dashboard: React.FC = () => {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
     // Find active requests for this day
-    requests.forEach(req => {
+    requests.filter(r => r.status === 'Aprovado').forEach(req => {
       // Basic Filter: Must correspond to selected month context (we are iterating the month's days)
       // Check if request covers this day
       const [rYear, rMonth, rDay] = req.dateEvent.split('-').map(Number);
@@ -254,8 +255,8 @@ export const Dashboard: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${req.status === 'Aprovado' ? 'bg-green-100 text-green-700' :
-                            req.status === 'Rejeitado' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
+                          req.status === 'Rejeitado' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                           }`}>
                           {req.status}
                         </span>

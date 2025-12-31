@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2 } from 'lucide-react';
+import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
   const {
@@ -465,6 +465,25 @@ export const AdminPanel: React.FC = () => {
                     onChange={(e) => updateSystemConfig({ ...systemConfig, taxRate: parseFloat(e.target.value) || 0 })}
                   />
                   <p className="text-xs text-slate-500 mt-1">Este percentual incide sobre o valor total final das solicitações.</p>
+                </div>
+
+                <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação</label>
+                  <button
+                    onClick={() => updateSystemConfig({ ...systemConfig, isFormLocked: !systemConfig.isFormLocked })}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all ${systemConfig.isFormLocked
+                        ? 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+                        : 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+                      }`}
+                  >
+                    {systemConfig.isFormLocked ? <Lock size={20} /> : <Unlock size={20} />}
+                    {systemConfig.isFormLocked ? 'FORMULÁRIO BLOQUEADO (Clique para Liberar)' : 'FORMULÁRIO LIBERADO (Clique para Bloquear)'}
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {systemConfig.isFormLocked
+                      ? 'Nenhum usuário pode enviar solicitações no momento.'
+                      : 'O formulário está aberto para novos pedidos.'}
+                  </p>
                 </div>
               </div>
             </div>

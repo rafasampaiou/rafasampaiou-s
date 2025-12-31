@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context';
 import { Calendar, Filter, BarChart3, DollarSign, Users, Activity } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  CartesianGrid,
+  Tooltip,
   Legend,
   LabelList
 } from 'recharts';
@@ -16,16 +16,24 @@ export const Indicators: React.FC = () => {
   const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, systemConfig } = useApp();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [selectedSector, setSelectedSector] = useState('Todos');
+  const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
+
+  // Filter sectors based on selected sector and type
+  const filteredSectors = useMemo(() => {
+    return sectors.filter(s => {
+      const matchesSector = selectedSector === 'Todos' || s.name === selectedSector;
+      const matchesType = selectedType === 'Todos' || s.type === selectedType;
+      return matchesSector && matchesType;
+    });
+  }, [sectors, selectedSector, selectedType]);
 
   // Calculate Net CLT (Fixed Staff) for the selected month and sector
   // Logic: Real Qty (from Ideal Table) - Afastados - Apprentices
   const netCltCount = useMemo(() => {
     let total = 0;
-    sectors.forEach(s => {
-      if (selectedSector !== 'Todos' && s.name !== selectedSector) return;
-      
+    filteredSectors.forEach(s => {
       const stats = getManualRealStat(s.id, selectedMonth);
       if (stats) {
         const net = stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0);
@@ -33,18 +41,18 @@ export const Indicators: React.FC = () => {
       }
     });
     return total;
-  }, [sectors, selectedSector, selectedMonth, getManualRealStat]);
+  }, [filteredSectors, selectedMonth, getManualRealStat]);
 
   // Generate days for the selected month
   const [year, month] = selectedMonth.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  
+
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
     // Format: YYYY-MM-DD
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentLoopDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid timezone edge cases
-    
+
     // Get Occupancy (Ensure number)
     const occupiedUH = Number(occupancyData[dateStr] || 0);
 
@@ -54,12 +62,12 @@ export const Indicators: React.FC = () => {
       if (r.status !== 'Aprovado') return false;
 
       // 2. Check Sector
-      if (selectedSector !== 'Todos' && r.sector !== selectedSector) return false;
+      if (!filteredSectors.some(s => s.name === r.sector)) return false;
 
       // 3. Check Date Range
       const [rYear, rMonth, rDay] = r.dateEvent.split('-').map(Number);
       const startDate = new Date(rYear, rMonth - 1, rDay, 12, 0, 0);
-      
+
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + (r.daysQty - 1));
 
@@ -96,9 +104,9 @@ export const Indicators: React.FC = () => {
   const loteStats = lotes.map(lote => {
     // Filter days that fall within the lote range
     const daysInLote = dailyData.filter(d => d.day >= lote.startDay && d.day <= lote.endDay);
-    
+
     const totalOccupancy = daysInLote.reduce((acc, curr) => acc + curr.occupiedUH, 0);
-    
+
     // Summing headcount for averages
     const totalExtras = daysInLote.reduce((acc, curr) => acc + curr.extrasCount, 0);
     const totalCltSum = daysInLote.reduce((acc, curr) => acc + curr.netCltCount, 0);
@@ -123,7 +131,7 @@ export const Indicators: React.FC = () => {
 
   // Financial Matrix Calculation (Sector x Lote)
   // UPDATED: Now calculates Value, Qty and Index for the Matrix
-  const financialMatrix = sectors.map(sector => {
+  const financialMatrix = filteredSectors.map(sector => {
     const loteValues = lotes.map(lote => {
       let loteTotalBaseValue = 0;
       let loteTotalQty = 0;
@@ -138,7 +146,7 @@ export const Indicators: React.FC = () => {
 
         const [rYear, rMonth, rDay] = r.dateEvent.split('-').map(Number);
         const startDate = new Date(rYear, rMonth - 1, rDay);
-        
+
         // Calculate daily cost base
         const dailyCost = (r.totalValue || 0) / (r.daysQty || 1);
         const dailyQty = r.extrasQty;
@@ -163,12 +171,12 @@ export const Indicators: React.FC = () => {
 
       // Apply Tax Rate to the accumulated base value for this lote
       const valueWithTax = loteTotalBaseValue * (1 + (systemConfig.taxRate / 100));
-      
+
       // Calculate Index: Total Extras Days / Total Occupied Room Nights in Lote
       const sectorIndex = loteOccupancy > 0 ? (loteTotalQty / loteOccupancy) : 0;
 
-      return { 
-        loteId: lote.id, 
+      return {
+        loteId: lote.id,
         value: valueWithTax,
         qty: loteTotalQty,
         index: sectorIndex
@@ -181,9 +189,9 @@ export const Indicators: React.FC = () => {
     const monthTotalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
     const totalSectorIndex = monthTotalOccupancy > 0 ? (totalSectorQty / monthTotalOccupancy) : 0;
 
-    return { 
-      sectorName: sector.name, 
-      loteValues, 
+    return {
+      sectorName: sector.name,
+      loteValues,
       totalSectorValue,
       totalSectorQty,
       totalSectorIndex
@@ -235,12 +243,12 @@ export const Indicators: React.FC = () => {
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
         <h2 className="text-lg font-bold text-[#155645]">Indicador: Mão de Obra por UH Ocupada</h2>
-        
+
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-[#155645]" />
-            <input 
-              type="month" 
+            <input
+              type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
@@ -249,7 +257,20 @@ export const Indicators: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-[#155645]" />
-            <select 
+            <select
+              className="border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+            >
+              <option value="Todos">Todos os Tipos</option>
+              <option value="Operacional">Operacional</option>
+              <option value="Suporte">Suporte</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-[#155645]" />
+            <select
               className="border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
@@ -266,25 +287,22 @@ export const Indicators: React.FC = () => {
             <div className="flex">
               <button
                 onClick={() => setChartMetric('extras')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  chartMetric === 'extras' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${chartMetric === 'extras' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 Extras
               </button>
               <button
                 onClick={() => setChartMetric('clt')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  chartMetric === 'clt' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${chartMetric === 'clt' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 Quadro CLT
               </button>
               <button
                 onClick={() => setChartMetric('total')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  chartMetric === 'total' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${chartMetric === 'total' ? 'bg-white text-[#155645] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
               >
                 Total
               </button>
@@ -306,15 +324,15 @@ export const Indicators: React.FC = () => {
             <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" label={{ value: 'Dia', position: 'insideBottom', offset: -5 }} />
-              <Tooltip 
+              <Tooltip
                 labelFormatter={(day) => `${day}/${month}/${year}`}
                 formatter={(value: number, name: string) => [
-                  name === 'displayValue' ? value.toFixed(3) : value, 
-                  name === 'displayValue' ? 'Índice' : 
-                  name === 'occupiedUH' ? 'UH Ocupada' : 
-                  name === 'extrasCount' ? 'Extras' : 
-                  name === 'netCltCount' ? 'CLT Ativo' : 
-                  name === 'totalHeadcount' ? 'Total Pessoas' : name
+                  name === 'displayValue' ? value.toFixed(3) : value,
+                  name === 'displayValue' ? 'Índice' :
+                    name === 'occupiedUH' ? 'UH Ocupada' :
+                      name === 'extrasCount' ? 'Extras' :
+                        name === 'netCltCount' ? 'CLT Ativo' :
+                          name === 'totalHeadcount' ? 'Total Pessoas' : name
                 ]}
               />
               <Legend />
@@ -329,35 +347,35 @@ export const Indicators: React.FC = () => {
       {/* Batch Summary (Extraordinários por Lotes) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-           <h3 className="text-sm font-bold text-slate-800">Extraordinários por Lotes ({getMetricLabel()})</h3>
+          <h3 className="text-sm font-bold text-slate-800">Extraordinários por Lotes ({getMetricLabel()})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-center">
-             <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
-                <tr>
-                   <th className="p-3 border-r border-slate-200">Lote</th>
-                   <th className="p-3 border-r border-slate-200">Período</th>
-                   <th className="p-3 border-r border-slate-200">UH Total (Acum.)</th>
-                   <th className="p-3 border-r border-slate-200">{getMetricLabel()} (Acum.)</th>
-                   <th className="p-3 border-r border-slate-200 text-[#155645]">MO / UH Ocupada</th>
+            <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
+              <tr>
+                <th className="p-3 border-r border-slate-200">Lote</th>
+                <th className="p-3 border-r border-slate-200">Período</th>
+                <th className="p-3 border-r border-slate-200">UH Total (Acum.)</th>
+                <th className="p-3 border-r border-slate-200">{getMetricLabel()} (Acum.)</th>
+                <th className="p-3 border-r border-slate-200 text-[#155645]">MO / UH Ocupada</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loteStats.map((stat, idx) => (
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
+                  <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
+                  <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
+                  <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
+                  <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
                 </tr>
-             </thead>
-             <tbody className="divide-y divide-slate-100">
-                {loteStats.map((stat, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                     <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
-                     <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
-                     <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
-                     <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
-                     <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
-                  </tr>
-                ))}
-                {loteStats.length === 0 && (
-                   <tr>
-                      <td colSpan={5} className="p-4 text-slate-400">Nenhum lote configurado para este mês.</td>
-                   </tr>
-                )}
-             </tbody>
+              ))}
+              {loteStats.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-4 text-slate-400">Nenhum lote configurado para este mês.</td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       </div>
@@ -365,102 +383,99 @@ export const Indicators: React.FC = () => {
       {/* Financial Matrix (Extraordinários por setor) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-           <div className="flex flex-col">
-              <h3 className="text-sm font-bold text-slate-800">Extraordinários por Setor</h3>
-              <span className="text-xs text-slate-500">Taxa Configurada: {systemConfig.taxRate}%</span>
-           </div>
-           
-           {/* Matrix View Filter */}
-           <div className="flex bg-white border border-slate-300 rounded-lg p-1">
-              <button
-                onClick={() => setMatrixView('value')}
-                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                   matrixView === 'value' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
+          <div className="flex flex-col">
+            <h3 className="text-sm font-bold text-slate-800">Extraordinários por Setor</h3>
+            <span className="text-xs text-slate-500">Taxa Configurada: {systemConfig.taxRate}%</span>
+          </div>
+
+          {/* Matrix View Filter */}
+          <div className="flex bg-white border border-slate-300 rounded-lg p-1">
+            <button
+              onClick={() => setMatrixView('value')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${matrixView === 'value' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
                 }`}
-              >
-                 <DollarSign size={14} /> Valor Pago
-              </button>
-              <button
-                onClick={() => setMatrixView('qty')}
-                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                   matrixView === 'qty' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
+            >
+              <DollarSign size={14} /> Valor Pago
+            </button>
+            <button
+              onClick={() => setMatrixView('qty')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${matrixView === 'qty' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
                 }`}
-              >
-                 <Users size={14} /> Quantidade
-              </button>
-              <button
-                onClick={() => setMatrixView('index')}
-                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                   matrixView === 'index' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
+            >
+              <Users size={14} /> Quantidade
+            </button>
+            <button
+              onClick={() => setMatrixView('index')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${matrixView === 'index' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'
                 }`}
-              >
-                 <Activity size={14} /> MO / UH Ocupada
-              </button>
-           </div>
+            >
+              <Activity size={14} /> MO / UH Ocupada
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
-             <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
-                <tr>
-                   <th className="p-3 border-r border-slate-200 text-left">Setor</th>
-                   {lotes.map(lote => (
-                     <th key={lote.id} className="p-3 border-r border-slate-200 min-w-[100px]">
-                       {lote.name}
-                       <div className="text-[9px] text-slate-400 font-normal mt-1">Dia {lote.startDay}-{lote.endDay}</div>
-                     </th>
-                   ))}
-                   <th className="p-3 bg-slate-200 border-l border-slate-300">Total</th>
-                </tr>
-             </thead>
-             <tbody className="divide-y divide-slate-100">
-                {financialMatrix.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                     <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
-                     {row.loteValues.map((cell, cIdx) => (
-                       <td key={cIdx} className="p-3 border-r border-slate-200">
-                         {renderMatrixCell(
-                           matrixView === 'value' ? cell.value : 
-                           matrixView === 'qty' ? cell.qty : cell.index,
-                           matrixView
-                         )}
-                       </td>
-                     ))}
-                     <td className="p-3 font-bold bg-slate-50 border-l border-slate-200">
-                       {renderMatrixCell(
-                           matrixView === 'value' ? row.totalSectorValue : 
-                           matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
-                           matrixView
-                       )}
-                     </td>
-                  </tr>
+            <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
+              <tr>
+                <th className="p-3 border-r border-slate-200 text-left">Setor</th>
+                {lotes.map(lote => (
+                  <th key={lote.id} className="p-3 border-r border-slate-200 min-w-[100px]">
+                    {lote.name}
+                    <div className="text-[9px] text-slate-400 font-normal mt-1">Dia {lote.startDay}-{lote.endDay}</div>
+                  </th>
                 ))}
-                {financialMatrix.length === 0 && (
-                   <tr>
-                      <td colSpan={lotes.length + 2} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
-                   </tr>
-                )}
-             </tbody>
-             <tfoot className="bg-slate-100 font-bold border-t border-slate-300">
-               <tr>
-                 <td className="p-3 text-left">TOTAL GERAL</td>
-                 {loteTotalsWithIndex.map((total, idx) => (
-                   <td key={idx} className="p-3 border-r border-slate-300">
+                <th className="p-3 bg-slate-200 border-l border-slate-300">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {financialMatrix.map((row, idx) => (
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
+                  {row.loteValues.map((cell, cIdx) => (
+                    <td key={cIdx} className="p-3 border-r border-slate-200">
                       {renderMatrixCell(
-                           matrixView === 'value' ? total.value : 
-                           matrixView === 'qty' ? total.qty : total.index,
-                           matrixView
-                       )}
-                   </td>
-                 ))}
-                 <td className="p-3 bg-slate-200 border-l border-slate-300">
-                   {renderMatrixCell(
-                       matrixView === 'value' ? grandTotalValue : 
-                       matrixView === 'qty' ? grandTotalQty : grandTotalIndex,
-                       matrixView
-                   )}
-                 </td>
-               </tr>
-             </tfoot>
+                        matrixView === 'value' ? cell.value :
+                          matrixView === 'qty' ? cell.qty : cell.index,
+                        matrixView
+                      )}
+                    </td>
+                  ))}
+                  <td className="p-3 font-bold bg-slate-50 border-l border-slate-200">
+                    {renderMatrixCell(
+                      matrixView === 'value' ? row.totalSectorValue :
+                        matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
+                      matrixView
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {financialMatrix.length === 0 && (
+                <tr>
+                  <td colSpan={lotes.length + 2} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot className="bg-slate-100 font-bold border-t border-slate-300">
+              <tr>
+                <td className="p-3 text-left">TOTAL GERAL</td>
+                {loteTotalsWithIndex.map((total, idx) => (
+                  <td key={idx} className="p-3 border-r border-slate-300">
+                    {renderMatrixCell(
+                      matrixView === 'value' ? total.value :
+                        matrixView === 'qty' ? total.qty : total.index,
+                      matrixView
+                    )}
+                  </td>
+                ))}
+                <td className="p-3 bg-slate-200 border-l border-slate-300">
+                  {renderMatrixCell(
+                    matrixView === 'value' ? grandTotalValue :
+                      matrixView === 'qty' ? grandTotalQty : grandTotalIndex,
+                    matrixView
+                  )}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

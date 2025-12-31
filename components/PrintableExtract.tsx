@@ -6,12 +6,12 @@ export const PrintableExtract: React.FC = () => {
   const { requests, sectors, getMonthlyBudget, systemConfig, user } = useApp();
   const componentRef = useRef<HTMLDivElement>(null);
   const [selectedSector, setSelectedSector] = useState('Todos');
-  
+
   // Default to current month start/end
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-  
+
   const [startDate, setStartDate] = useState(startOfMonth);
   const [endDate, setEndDate] = useState(endOfMonth);
 
@@ -26,7 +26,7 @@ export const PrintableExtract: React.FC = () => {
     timeOut: 45,
     hours: 45,
     rate: 60,
-    total: 100, 
+    total: 100,
     occupancy: 50
   });
 
@@ -61,21 +61,21 @@ export const PrintableExtract: React.FC = () => {
   });
 
   // Calculate Totals for Real
-  const totalRealQty = filteredRequests.length > 0 
-    ? filteredRequests.reduce((acc, curr) => acc + curr.extrasQty, 0) 
+  const totalRealQty = filteredRequests.length > 0
+    ? filteredRequests.reduce((acc, curr) => acc + curr.extrasQty, 0)
     : 0;
 
   const totalRealValue = filteredRequests.length > 0
     ? filteredRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0)
     : 0;
-  
+
   // Tax Calculation
   const taxAmount = totalRealValue * (systemConfig.taxRate / 100);
   const totalWithTax = totalRealValue + taxAmount;
 
   // Calculate Totals for Orçado (Budget)
   const reportMonthKey = startDate.slice(0, 7); // YYYY-MM
-  
+
   let totalBudgetQty = 0;
   let totalBudgetValue = 0;
 
@@ -94,13 +94,27 @@ export const PrintableExtract: React.FC = () => {
     }
   }
 
+  // Helper to calculate End Date
+  const calculateEndDate = (dateStr: string, days: number) => {
+    if (!dateStr) return '';
+    if (days <= 1) return dateStr;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    // Create date at noon to avoid timezone shift
+    const date = new Date(y, m - 1, d, 12, 0, 0);
+    date.setDate(date.getDate() + (days - 1));
+    const ey = date.getFullYear();
+    const em = String(date.getMonth() + 1).padStart(2, '0');
+    const ed = String(date.getDate()).padStart(2, '0');
+    return `${ey}-${em}-${ed}`;
+  };
+
   return (
     <div className="w-full">
       <div className="mb-4 flex flex-col md:flex-row justify-between items-center no-print bg-white p-4 rounded-lg shadow-sm border border-slate-200 gap-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-[#155645]" />
-            <select 
+            <select
               className="border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
@@ -114,15 +128,15 @@ export const PrintableExtract: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-[#155645]" />
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
             />
             <span className="text-slate-400">-</span>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
@@ -131,7 +145,7 @@ export const PrintableExtract: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033] transition-colors text-sm"
           >
@@ -143,53 +157,56 @@ export const PrintableExtract: React.FC = () => {
 
       <div ref={componentRef} className="bg-white p-8 shadow-sm print:shadow-none print:p-0 print:w-full print:max-w-none w-full">
         <div className="text-center border-b-2 border-slate-800 pb-4 mb-6">
-          <h1 className="text-2xl font-bold uppercase text-[#155645]">Extrato de Solicitação de Extras</h1>
-          <p className="text-sm text-slate-500">Departamento de Gestão de Pessoas e Operações</p>
+          <h1 className="text-2xl font-bold uppercase text-[#155645]">
+            Extrato de Solicitação de Extras {selectedSector !== 'Todos' && `- ${selectedSector}`}
+          </h1>
+          <p className="text-sm text-slate-500">Departamento de Gestão de Pessoas e Operações {selectedSector !== 'Todos' && `| Setor: ${selectedSector}`}</p>
         </div>
 
         {/* Summary Cards (Real vs Orçado) */}
         <div className="grid grid-cols-2 gap-6 mb-8 border border-slate-200 rounded-lg p-4 bg-slate-50/50">
           <div className="text-center border-r border-slate-200">
-             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quadro Orçado (Mês Ref.)</h3>
-             <div className="flex justify-center gap-4 text-sm">
-                <div>
-                   <span className="block text-xl font-bold text-slate-700">{totalBudgetQty}</span>
-                   <span className="text-xs text-slate-400">Pessoas</span>
-                </div>
-                <div>
-                   <span className="block text-xl font-bold text-slate-700">R$ {totalBudgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                   <span className="text-xs text-slate-400">Verba</span>
-                </div>
-             </div>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quadro Orçado (Mês Ref.)</h3>
+            <div className="flex justify-center gap-4 text-sm">
+              <div>
+                <span className="block text-xl font-bold text-slate-700">{totalBudgetQty}</span>
+                <span className="text-xs text-slate-400">Pessoas</span>
+              </div>
+              <div>
+                <span className="block text-xl font-bold text-slate-700">R$ {totalBudgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                <span className="text-xs text-slate-400">Verba</span>
+              </div>
+            </div>
           </div>
           <div className="text-center">
-             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quadro Real (Período)</h3>
-             <div className="flex justify-center gap-4 text-sm">
-                <div>
-                   <span className="block text-xl font-bold text-[#155645]">{totalRealQty}</span>
-                   <span className="text-xs text-slate-400">Pessoas</span>
-                </div>
-                <div>
-                   <span className="block text-xl font-bold text-[#155645]">R$ {totalWithTax.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                   <span className="text-xs text-slate-400">Gasto Total (c/ Impostos)</span>
-                </div>
-             </div>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quadro Real (Período)</h3>
+            <div className="flex justify-center gap-4 text-sm">
+              <div>
+                <span className="block text-xl font-bold text-[#155645]">{totalRealQty}</span>
+                <span className="text-xs text-slate-400">Pessoas</span>
+              </div>
+              <div>
+                <span className="block text-xl font-bold text-[#155645]">R$ {totalWithTax.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                <span className="text-xs text-slate-400">Gasto Total (c/ Impostos)</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="mb-4 text-xs flex justify-between">
-           <div>
-             <strong>Período:</strong> {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
-           </div>
-           <div>
-             <strong>Setor:</strong> {selectedSector === 'Todos' ? 'Todos' : selectedSector}
-           </div>
+          <div>
+            <strong>Período:</strong> {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
+          </div>
+          <div>
+            <strong>Setor:</strong> {selectedSector === 'Todos' ? 'Todos' : selectedSector}
+          </div>
         </div>
 
-        <table className="w-full text-[11px] text-left border-collapse border border-slate-300 table-fixed">
+        <table className="w-full text-[10px] text-left border-collapse border border-slate-300 table-fixed">
           <thead>
             <tr className="bg-slate-100 font-bold text-center text-[#155645]">
-              <th className="border border-slate-300 p-1" style={{ width: `${colWidths.date}px` }}>DATA</th>
+              <th className="border border-slate-300 p-1" style={{ width: `65px` }}>ENTRADA</th>
+              <th className="border border-slate-300 p-1" style={{ width: `65px` }}>SAÍDA</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.days}px` }}>DIAS</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.qty}px` }}>QTD.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.role}px` }}>FUNÇÃO</th>
@@ -207,6 +224,7 @@ export const PrintableExtract: React.FC = () => {
             {filteredRequests.map((req) => (
               <tr key={req.id}>
                 <td className="border border-slate-300 p-1 text-center">{formatDate(req.dateEvent)}</td>
+                <td className="border border-slate-300 p-1 text-center">{formatDate(calculateEndDate(req.dateEvent, req.daysQty))}</td>
                 <td className="border border-slate-300 p-1 text-center">{req.daysQty}</td>
                 <td className="border border-slate-300 p-1 text-center">{req.extrasQty}</td>
                 <td className="border border-slate-300 p-1 truncate">{req.functionRole}</td>
@@ -217,15 +235,15 @@ export const PrintableExtract: React.FC = () => {
                 <td className="border border-slate-300 p-1 text-center font-medium">{getDuration(req.timeIn, req.timeOut)}</td>
                 <td className="border border-slate-300 p-1 text-right">R$ {(req.specialRate || 15.00).toFixed(2)}</td>
                 <td className="border border-slate-300 p-1 text-right">R$ {(req.totalValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                <td className="border border-slate-300 p-1 text-center">{req.occupancyRate.toFixed(1)}%</td>
+                <td className="border border-slate-300 p-1 text-center">{req.occupancyRate.toFixed(0)}%</td>
               </tr>
             ))}
             {filteredRequests.length === 0 && (
-               <tr>
-                 <td colSpan={12} className="border border-slate-300 p-8 text-center text-slate-500">
-                   Nenhum registro encontrado para este filtro.
-                 </td>
-               </tr>
+              <tr>
+                <td colSpan={12} className="border border-slate-300 p-8 text-center text-slate-500">
+                  Nenhum registro encontrado para este filtro.
+                </td>
+              </tr>
             )}
           </tbody>
           <tfoot className="bg-slate-100 font-bold">
@@ -255,7 +273,7 @@ export const PrintableExtract: React.FC = () => {
 
         <div className="mt-8 pt-4 border-t border-slate-300">
           <p className="text-sm font-bold mb-8">O período contratado e o horário estipulado deverão ser seguidos e não poderão ocorrer dobras.</p>
-          
+
           <div className="grid grid-cols-3 gap-8 mt-16 text-center text-xs">
             <div className="border-t border-slate-400 pt-2">
               Gerente do Setor

@@ -101,4 +101,5 @@ export interface SpecialRole {
 export interface SystemConfig {
   standardHourRate: number;
   taxRate: number; // Percentage
+  isFormLocked?: boolean;
 }
