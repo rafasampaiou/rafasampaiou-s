@@ -14,11 +14,14 @@ import {
 
 export const Indicators: React.FC = () => {
   const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, systemConfig } = useApp();
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
+
+  const monthKey = `${selectedYear}-${selectedMonth}`;
 
   // Filter sectors based on selected sector and type
   const filteredSectors = useMemo(() => {
@@ -34,17 +37,17 @@ export const Indicators: React.FC = () => {
   const netCltCount = useMemo(() => {
     let total = 0;
     filteredSectors.forEach(s => {
-      const stats = getManualRealStat(s.id, selectedMonth);
+      const stats = getManualRealStat(s.id, monthKey);
       if (stats) {
         const net = stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0);
         total += Math.max(0, net); // Ensure no negative numbers
       }
     });
     return total;
-  }, [filteredSectors, selectedMonth, getManualRealStat]);
+  }, [filteredSectors, monthKey, getManualRealStat]);
 
   // Generate days for the selected month
-  const [year, month] = selectedMonth.split('-').map(Number);
+  const [year, month] = monthKey.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
@@ -100,7 +103,7 @@ export const Indicators: React.FC = () => {
   });
 
   // Batch (Lotes) Calculation
-  const lotes = getMonthlyLote(selectedMonth);
+  const lotes = getMonthlyLote(monthKey);
   const loteStats = lotes.map(lote => {
     // Filter days that fall within the lote range
     const daysInLote = dailyData.filter(d => d.day >= lote.startDay && d.day <= lote.endDay);
@@ -247,12 +250,22 @@ export const Indicators: React.FC = () => {
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-[#155645]" />
-            <input
-              type="month"
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+            >
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+            <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
-            />
+            >
+              {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center gap-2">

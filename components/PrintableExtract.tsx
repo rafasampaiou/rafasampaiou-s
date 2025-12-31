@@ -25,7 +25,7 @@ export const PrintableExtract: React.FC = () => {
     timeIn: 45,
     timeOut: 45,
     hours: 45,
-    rate: 80,
+    rate: 95,
     total: 100,
     occupancy: 50
   });
@@ -146,8 +146,9 @@ export const PrintableExtract: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033] transition-colors text-sm"
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033] transition-colors text-sm shadow-sm"
           >
             <Printer size={18} />
             Imprimir

@@ -10,35 +10,46 @@ export const Dashboard: React.FC = () => {
   const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote } = useApp();
 
   // Filters State
-  const [startDate, setStartDate] = useState(() => {
-    return sessionStorage.getItem('dashboard_startDate') || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-  });
-  const [endDate, setEndDate] = useState(() => {
-    return sessionStorage.getItem('dashboard_endDate') || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
-  });
-  const [selectedSector, setSelectedSector] = useState(() => {
-    return sessionStorage.getItem('dashboard_sector') || 'Todos';
-  });
+  const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
+  const [selectedYear, setSelectedYear] = useState(() => sessionStorage.getItem('dashboard_year') || String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().getMonth() + 1).padStart(2, '0'));
+  const [selectedLote, setSelectedLote] = useState(() => sessionStorage.getItem('dashboard_lote') || 'Todos');
+
+  const monthKey = `${selectedYear}-${selectedMonth}`;
+  const availableLotes = getMonthlyLote(monthKey);
 
   // Persist filters
-  const handleStartDateChange = (val: string) => {
-    setStartDate(val);
-    sessionStorage.setItem('dashboard_startDate', val);
-  };
-  const handleEndDateChange = (val: string) => {
-    setEndDate(val);
-    sessionStorage.setItem('dashboard_endDate', val);
-  };
   const handleSectorChange = (val: string) => {
     setSelectedSector(val);
     sessionStorage.setItem('dashboard_sector', val);
   };
+  const handleYearChange = (val: string) => {
+    setSelectedYear(val);
+    sessionStorage.setItem('dashboard_year', val);
+  };
+  const handleMonthChange = (val: string) => {
+    setSelectedMonth(val);
+    sessionStorage.setItem('dashboard_month', val);
+  };
+  const handleLoteChange = (val: string) => {
+    setSelectedLote(val);
+    sessionStorage.setItem('dashboard_lote', val);
+  };
 
   // Filter logic for Charts and Summary Table
+  // Filter logic
   const filteredRequests = requests.filter(r => {
-    const matchDate = r.dateEvent >= startDate && r.dateEvent <= endDate;
-    const matchSector = selectedSector === 'Todos' || r.sector === selectedSector;
-    return matchDate && matchSector;
+    if (selectedSector !== 'Todos' && r.sector !== selectedSector) return false;
+    if (!r.dateEvent.startsWith(monthKey)) return false;
+
+    if (selectedLote !== 'Todos') {
+      const lote = availableLotes.find(l => l.name === selectedLote);
+      if (lote) {
+        const day = parseInt(r.dateEvent.split('-')[2]);
+        return day >= lote.startDay && day <= lote.endDay;
+      }
+    }
+    return true;
   });
 
   const approvedRequests = filteredRequests.filter(r => r.status === 'Aprovado');
@@ -52,17 +63,14 @@ export const Dashboard: React.FC = () => {
   const totalValueWithTax = totalValue * (1 + (systemConfig.taxRate / 100));
 
   // --- Data Processing (By Lote and Sector) ---
-  const reportMonthContext = startDate.slice(0, 7);
-  const lotes = getMonthlyLote(reportMonthContext);
+  // --- Data Processing (By Lote and Sector) ---
+  const reportMonthContext = monthKey;
+  const lotes = availableLotes;
 
-  const startObj = new Date(startDate + 'T12:00:00');
-  const endObj = new Date(endDate + 'T12:00:00');
-  const daysInRange: string[] = [];
-  let curr = new Date(startObj);
-  while (curr <= endObj) {
-    daysInRange.push(curr.toISOString().slice(0, 10));
-    curr.setDate(curr.getDate() + 1);
-  }
+  const daysInMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
+  const daysInRange: string[] = Array.from({ length: daysInMonth }, (_, i) =>
+    `${selectedYear}-${selectedMonth}-${String(i + 1).padStart(2, '0')}`
+  );
 
   const loteBuckets = lotes.map(l => ({ ...l, qty: 0, cost: 0 }));
   const sectorBuckets = sectors.map(s => ({ ...s, qty: 0, cost: 0 }));
@@ -141,7 +149,20 @@ export const Dashboard: React.FC = () => {
             <YAxis hide />
             <Tooltip cursor={{ fill: 'transparent' }} />
             <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]}>
-              <LabelList dataKey="value" position="top" fill="#155645" fontSize={9} fontWeight="bold" offset={8} formatter={(val: number) => `${prefix}${val.toLocaleString('pt-BR')}`} />
+              <LabelList
+                dataKey="value"
+                position="top"
+                fill="#155645"
+                fontSize={9}
+                fontWeight="bold"
+                offset={8}
+                formatter={(val: any) => {
+                  if (typeof val !== 'number') return val;
+                  return prefix === 'R$ '
+                    ? `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                    : val.toLocaleString('pt-BR');
+                }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -256,23 +277,43 @@ export const Dashboard: React.FC = () => {
               </select>
             </div>
 
-            {/* Date Filters */}
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Início</label>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
-                  <Calendar size={14} className="text-[#155645]" />
-                  <input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} className="text-sm outline-none text-slate-700 bg-transparent w-28" />
-                </div>
-              </div>
-              <span className="text-slate-300 mt-4">/</span>
-              <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Fim</label>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
-                  <Calendar size={14} className="text-[#155645]" />
-                  <input type="date" value={endDate} onChange={(e) => handleEndDateChange(e.target.value)} className="text-sm outline-none text-slate-700 bg-transparent w-28" />
-                </div>
-              </div>
+            {/* Year Filter */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Ano</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => handleYearChange(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645] text-slate-700"
+              >
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+
+            {/* Month Filter */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Mês</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645] text-slate-700"
+              >
+                {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Lote Filter */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Lote</label>
+              <select
+                value={selectedLote}
+                onChange={(e) => handleLoteChange(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645] text-slate-700 w-32"
+              >
+                <option value="Todos">Todos os Lotes</option>
+                {availableLotes.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+              </select>
             </div>
           </div>
         </div>
@@ -283,14 +324,14 @@ export const Dashboard: React.FC = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#155645]">
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Quantidade de Diárias</h3>
           <p className="text-4xl font-extrabold text-[#155645]">{totalDiarias}</p>
-          <span className="text-xs text-slate-400">Total Solicitado no filtro selecionado</span>
+          <span className="text-xs text-slate-400">Total Solicitado no período selecionado</span>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#F8981C]">
           <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Custo Estimado (c/ Impostos)</h3>
           <p className="text-4xl font-extrabold text-[#F8981C]">
             R$ {Math.round(totalValueWithTax).toLocaleString('pt-BR')}
           </p>
-          <span className="text-xs text-slate-400">Total Financeiro no filtro selecionado</span>
+          <span className="text-xs text-slate-400">Total Financeiro no período selecionado</span>
         </div>
       </div>
 

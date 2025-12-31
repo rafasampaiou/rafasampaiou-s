@@ -4,7 +4,9 @@ import { Save, Calendar, Copy, ArrowDownToLine } from 'lucide-react';
 
 export const IdealTable: React.FC = () => {
   const { sectors, requests, getMonthlyBudget, updateMonthlyBudget, getManualRealStat, updateManualRealStat } = useApp();
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+  const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
 
   // Field mapping for paste functionality order
   const fieldOrder = [
@@ -277,14 +279,24 @@ export const IdealTable: React.FC = () => {
       <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-bold text-slate-800">Quadro Ideal x Realizado</h2>
-          <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
             <Calendar size={16} className="text-[#155645]" />
-            <input
-              type="month"
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="text-sm outline-none text-slate-700 bg-transparent"
+            >
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+            <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-sm outline-none text-slate-700"
-            />
+              className="text-sm outline-none text-slate-700 bg-transparent"
+            >
+              {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex items-center gap-2">

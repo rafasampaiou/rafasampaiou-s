@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
 import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock } from 'lucide-react';
+import { MonthlyBudget, LoteConfig } from '../types';
 
 export const AdminPanel: React.FC = () => {
   const {
