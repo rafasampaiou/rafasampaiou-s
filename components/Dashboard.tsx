@@ -326,7 +326,6 @@ export const Dashboard: React.FC = () => {
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor Total</th>
                 <th className="p-4 text-center">Status</th>
-                <th className="p-4 text-center">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -351,26 +350,11 @@ export const Dashboard: React.FC = () => {
                       {req.status}
                     </span>
                   </td>
-                  <td className="p-4 text-center">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (window.confirm('Tem certeza que deseja excluir esta solicitação permanentemente?')) {
-                          deleteRequest(req.id);
-                        }
-                      }}
-                      className="p-1.5 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-100"
-                      title="Excluir Solicitação"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
                 </tr>
               ))}
               {filteredRequests.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="p-12 text-center text-slate-400 italic">
+                  <td colSpan={10} className="p-12 text-center text-slate-400 italic">
                     Nenhuma solicitação encontrada para os filtros selecionados.
                   </td>
                 </tr>

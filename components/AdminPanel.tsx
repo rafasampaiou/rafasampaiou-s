@@ -10,6 +10,7 @@ export const AdminPanel: React.FC = () => {
     saveOccupancyBatch, occupancyData, requests,
     systemConfig, updateSystemConfig,
     specialRoles, addSpecialRole, removeSpecialRole,
+    bulkDeleteRequests,
   } = useApp();
 
   // Admin Gate handles the PIN check, so we don't need to check user role here.
@@ -27,6 +28,7 @@ export const AdminPanel: React.FC = () => {
   const [newRoleRate, setNewRoleRate] = useState('');
   const [newSectorName, setNewSectorName] = useState('');
   const [newSectorType, setNewSectorType] = useState<'Operacional' | 'Suporte'>('Operacional');
+  const [deletePeriod, setDeletePeriod] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
   // Sync global occupancy data to local grid state when year changes
   useEffect(() => {
@@ -250,8 +252,8 @@ export const AdminPanel: React.FC = () => {
           className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'export' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
         >
-          <Download size={16} />
-          Exportar Base
+          <Database size={16} />
+          Gestão da Base
         </button>
       </div>
 
@@ -472,8 +474,8 @@ export const AdminPanel: React.FC = () => {
                   <button
                     onClick={() => updateSystemConfig({ ...systemConfig, isFormLocked: !systemConfig.isFormLocked })}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all ${systemConfig.isFormLocked
-                        ? 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
-                        : 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+                      ? 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+                      : 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
                       }`}
                   >
                     {systemConfig.isFormLocked ? <Lock size={20} /> : <Unlock size={20} />}
@@ -580,14 +582,63 @@ export const AdminPanel: React.FC = () => {
         )}
 
         {activeTab === 'export' && (
-          <div className="max-w-4xl">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Exportar Base do Sistema</h3>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4 text-sm text-green-800">
-              Faça o download de todas as solicitações registradas no sistema em formato CSV (compatível com Excel).
+          <div className="max-w-4xl space-y-12">
+            {/* Export Section */}
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Exportar Dados</h3>
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4 text-sm text-green-800">
+                Faça o download de todas as solicitações registradas no sistema em formato CSV (compatível com Excel).
+              </div>
+              <button onClick={handleExport} className="bg-[#155645] hover:bg-[#104033] text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
+                <Download size={18} /> Baixar CSV da Base Completa
+              </button>
             </div>
-            <button onClick={handleExport} className="bg-[#155645] hover:bg-[#104033] text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
-              <Download size={20} /> Baixar CSV Completo
-            </button>
+
+            {/* Bulk Delete Section */}
+            <div className="pt-8 border-t border-slate-200">
+              <h3 className="text-lg font-bold text-red-600 mb-2">Limpeza de Base de Dados</h3>
+              <div className="bg-red-50 p-4 rounded-lg border border-red-100 mb-6 text-sm text-red-800">
+                <strong>ATENÇÃO:</strong> Esta ferramenta remove registros permanentemente do banco de dados.
+                Selecione o período abaixo para realizar a limpeza.
+              </div>
+
+              <div className="flex flex-wrap items-end gap-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Selecione o Período</label>
+                  <input
+                    type="month"
+                    value={deletePeriod}
+                    onChange={(e) => setDeletePeriod(e.target.value)}
+                    className="border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Essa opção irá excluir todas as solicitações feitas no período ${deletePeriod}, tem certeza disso?`)) {
+                        bulkDeleteRequests(deletePeriod, 'month');
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors flex items-center gap-2 shadow-sm"
+                  >
+                    <Trash2 size={18} /> Limpar Mês
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const year = deletePeriod.split('-')[0];
+                      if (window.confirm(`Essa opção irá excluir todas as solicitações feitas no ANO de ${year}, tem certeza disso?`)) {
+                        bulkDeleteRequests(year, 'year');
+                      }
+                    }}
+                    className="bg-red-800 hover:bg-red-900 text-white px-6 py-2.5 rounded-lg font-bold transition-colors flex items-center gap-2 shadow-sm"
+                  >
+                    <Trash2 size={18} /> Limpar Ano
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
