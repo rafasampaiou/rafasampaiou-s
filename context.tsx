@@ -15,7 +15,6 @@ interface AppContextType {
   addHistoricalRequests: (text: string) => void;
   updateRequestStatus: (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => void;
   deleteRequest: (id: string) => void;
-  bulkDeleteRequests: (period: string, type: 'month' | 'year') => Promise<void>;
 
   // Sectors
   sectors: SectorConfig[];
@@ -402,35 +401,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const bulkDeleteRequests = async (period: string, type: 'month' | 'year') => {
-    console.log('bulkDeleteRequests chamada com:', period, type);
-    let query = supabase.from('requests').delete();
-
-    if (type === 'month') {
-      // Robust date range for month
-      const [year, month] = period.split('-').map(Number);
-      const startDate = `${period}-01`;
-      const endDate = new Date(year, month, 0).toISOString().slice(0, 10);
-      query = query.gte('date_event', startDate).lte('date_event', endDate);
-    } else {
-      // Robust date range for year
-      query = query.gte('date_event', `${period}-01-01`).lte('date_event', `${period}-12-31`);
-    }
-
-    try {
-      const { error } = await query;
-      if (!error) {
-        setRequests(prev => prev.filter(r => r.dateEvent && !r.dateEvent.startsWith(period)));
-        alert('Base limpa com sucesso para o período selecionado!');
-      } else {
-        throw error;
-      }
-    } catch (err: any) {
-      console.error('Erro ao limpar base:', err);
-      alert('Falha ao limpar base: ' + (err.message || 'Erro desconhecido'));
-    }
-  };
-
   const addSector = async (name: string, type: 'Operacional' | 'Suporte') => {
     const { data, error } = await supabase.from('sectors').insert([{ name, type }]).select();
     if (data && !error) setSectors(prev => [...prev, data[0]]);
@@ -528,7 +498,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       systemConfig, updateSystemConfig,
       specialRoles, addSpecialRole, removeSpecialRole,
       currentDate,
-      bulkDeleteRequests
     }}>
       {children}
     </AppContext.Provider>
