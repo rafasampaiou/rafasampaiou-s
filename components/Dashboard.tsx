@@ -107,8 +107,24 @@ export const Dashboard: React.FC = () => {
     });
   });
 
-  const qtyByLoteData = loteBuckets.map(l => ({ name: l.name, value: l.qty }));
-  const costByLoteData = loteBuckets.map(l => ({ name: l.name, value: Math.round(l.cost) }));
+  // Qty by Lote: Group by name to handle any remaining duplicates in DB
+  const qtyByLoteMap: Record<string, number> = {};
+  loteBuckets.forEach(l => {
+    qtyByLoteMap[l.name] = (qtyByLoteMap[l.name] || 0) + l.qty;
+  });
+  const qtyByLoteData = Object.entries(qtyByLoteMap)
+    .filter(([_, value]) => value > 0)
+    .map(([name, value]) => ({ name, value }));
+
+  // Cost by Lote: Group by name
+  const costByLoteMap: Record<string, number> = {};
+  loteBuckets.forEach(l => {
+    costByLoteMap[l.name] = (costByLoteMap[l.name] || 0) + Math.round(l.cost);
+  });
+  const costByLoteData = Object.entries(costByLoteMap)
+    .filter(([_, value]) => value > 0)
+    .map(([name, value]) => ({ name, value }));
+
   const qtyBySectorData = sectorBuckets.filter(s => s.qty > 0).map(s => ({ name: s.name, value: s.qty })).sort((a, b) => b.value - a.value);
   const costBySectorData = sectorBuckets.filter(s => s.cost > 0).map(s => ({ name: s.name, value: Math.round(s.cost) })).sort((a, b) => b.value - a.value);
 
