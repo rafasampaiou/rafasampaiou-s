@@ -156,14 +156,17 @@ export const Dashboard: React.FC = () => {
 
       {/* 1. Admin Request Management - AT THE TOP */}
       {isAdminUnlocked && (
-        <div className="bg-white rounded-xl shadow-sm border-2 border-[#F8981C] overflow-hidden no-print">
-          <div className="px-6 py-4 border-b border-orange-100 bg-orange-50 flex justify-between items-center">
+        <div className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden no-print ${pendingRequests.length > 0 ? 'border-[#F8981C]' : 'border-[#155645]'
+          }`}>
+          <div className={`px-6 py-4 border-b flex justify-between items-center ${pendingRequests.length > 0 ? 'border-orange-100 bg-orange-50' : 'border-green-100 bg-green-50/50'
+            }`}>
             <h3 className="text-lg font-bold text-[#155645] flex items-center gap-2">
-              <AlertCircle size={20} className="text-[#F8981C]" />
-              Gerenciamento de Solicitações (Admin - Todas as Pendências)
+              <AlertCircle size={20} className={pendingRequests.length > 0 ? 'text-[#F8981C]' : 'text-[#155645]'} />
+              Gerenciamento de Solicitações
             </h3>
-            <div className="bg-orange-200 text-orange-800 text-xs font-bold px-3 py-1 rounded-full">
-              {pendingRequests.length} para analisar
+            <div className={`text-xs font-bold px-3 py-1 rounded-full ${pendingRequests.length > 0 ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
+              }`}>
+              {pendingRequests.length === 0 ? 'Tudo em dia' : `${pendingRequests.length} para analisar`}
             </div>
           </div>
           <div className="overflow-x-auto max-h-[400px]">
