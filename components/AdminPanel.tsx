@@ -44,37 +44,97 @@ export const AdminPanel: React.FC = () => {
     return date.getMonth() === m && date.getDate() === d;
   };
 
-  const handleBudgetChange = (sectorId: string, field: 'budgetQty' | 'budgetValue', value: string) => {
+  const handleBudgetChange = (sectorId: string, field: keyof MonthlyBudget, value: string) => {
     const current = getMonthlyBudget(sectorId, selectedMonth);
-    updateMonthlyBudget({
-      ...current,
-      [field]: parseFloat(value) || 0
+    const numVal = parseFloat(value) || 0;
+    const updated = { ...current, [field]: numVal };
+
+    // Auto-calculate extras
+    if (field === 'budgetValue' || field === 'hourRate' || field === 'workHoursPerDay' || field === 'workingDaysPerMonth') {
+      const v = updated.budgetValue;
+      const r = updated.hourRate;
+      const h = updated.workHoursPerDay || 8;
+      const d = updated.workingDaysPerMonth || 22;
+
+      if (r > 0 && h > 0) {
+        updated.budgetQty = Math.round(v / r / h);
+        if (d > 0) {
+          updated.extraQtyPerDay = Number((v / r / h / d).toFixed(2));
+        }
+      }
+    }
+
+    updateMonthlyBudget(updated);
+  };
+
+  const handleBudgetPaste = (e: React.ClipboardEvent<HTMLInputElement>, startSectorIdx: number) => {
+    e.preventDefault();
+    const clipboardData = e.clipboardData.getData('text');
+    if (!clipboardData) return;
+
+    const rows = clipboardData.split(/\r?\n/).filter(r => r.trim());
+    rows.forEach((rowStr, rowIndex) => {
+      const targetSectorIdx = startSectorIdx + rowIndex;
+      if (targetSectorIdx >= sectors.length) return;
+
+      const sector = sectors[targetSectorIdx];
+      const cols = rowStr.split('\t');
+      const current = getMonthlyBudget(sector.id, selectedMonth);
+      const updated = { ...current };
+
+      // Map columns: Valor Orçado | Valor Hora | Horas Trabalho | Dias Trabalhados
+      if (cols[0]) updated.budgetValue = parseFloat(cols[0].replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      if (cols[1]) updated.hourRate = parseFloat(cols[1].replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      if (cols[2]) updated.workHoursPerDay = parseFloat(cols[2].replace(/[^\d.,]/g, '').replace(',', '.')) || 8;
+      if (cols[3]) updated.workingDaysPerMonth = parseFloat(cols[3].replace(/[^\d.,]/g, '').replace(',', '.')) || 22;
+
+      // Recalculate
+      const v = updated.budgetValue;
+      const r = updated.hourRate;
+      const h = updated.workHoursPerDay;
+      const d = updated.workingDaysPerMonth;
+
+      if (r > 0 && h > 0) {
+        updated.budgetQty = Math.round(v / r / h);
+        if (d > 0) {
+          updated.extraQtyPerDay = Number((v / r / h / d).toFixed(2));
+        }
+      }
+
+      updateMonthlyBudget(updated);
     });
   };
 
+  const [localLotes, setLocalLotes] = useState<LoteConfig[]>([]);
+
+  useEffect(() => {
+    setLocalLotes(getMonthlyLote(selectedMonth));
+  }, [selectedMonth, requests]); // Refresh when month or requests change
+
   const handleLoteChange = (index: number, field: 'name' | 'startDay' | 'endDay', value: string) => {
-    const currentLotes = getMonthlyLote(selectedMonth);
-    const newLotes = [...currentLotes];
+    const newLotes = [...localLotes];
     // @ts-ignore
     newLotes[index] = { ...newLotes[index], [field]: field === 'name' ? value : (parseInt(value) || 0) };
-    updateMonthlyLote(selectedMonth, newLotes);
+    setLocalLotes(newLotes);
   };
 
   const addLote = () => {
-    const currentLotes = getMonthlyLote(selectedMonth);
-    const newId = currentLotes.length > 0 ? Math.max(...currentLotes.map(l => l.id)) + 1 : 1;
-    updateMonthlyLote(selectedMonth, [...currentLotes, {
+    const newId = localLotes.length > 0 ? Math.max(...localLotes.map(l => l.id)) + 1 : Date.now();
+    setLocalLotes([...localLotes, {
       id: newId,
-      name: `${currentLotes.length + 1}º Lote`,
-      startDay: 0,
-      endDay: 0
+      name: `${localLotes.length + 1}º Lote`,
+      startDay: 1,
+      endDay: 10
     }]);
   };
 
   const removeLote = (index: number) => {
-    const currentLotes = getMonthlyLote(selectedMonth);
-    const newLotes = currentLotes.filter((_, i) => i !== index);
-    updateMonthlyLote(selectedMonth, newLotes);
+    setLocalLotes(localLotes.filter((_, i) => i !== index));
+  };
+
+  const handleSaveLotes = () => {
+    updateMonthlyLote(selectedMonth, localLotes);
+    alert('Lotes salvos com sucesso!');
   };
 
   const handleGridChange = (monthIndex: number, day: number, value: string) => {
@@ -253,38 +313,78 @@ export const AdminPanel: React.FC = () => {
 
         {activeTab === 'sectors' && (
           <div>
-            <h3 className="text-lg font-bold text-[#155645] mb-4">Orçamento por Setor ({selectedMonth})</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-[#155645]/5 text-[#155645] uppercase">
-                  <tr>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-[#155645]">Orçamento por Setor ({selectedMonth})</h3>
+              <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                Cole do Excel: Valor Orçado | Valor Hora | Horas Trab. | Dias Trab.
+              </div>
+            </div>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#155645]/5 text-[#155645] uppercase sticky top-0 bg-white">
+                  <tr className="divide-x divide-slate-200">
                     <th className="p-3">Setor</th>
-                    <th className="p-3">Qtd Orçada</th>
-                    <th className="p-3">Valor Orçado (R$)</th>
+                    <th className="p-3 bg-slate-50">Valor Orçado (R$)</th>
+                    <th className="p-3 bg-slate-50">VL. Hora (R$)</th>
+                    <th className="p-3 bg-slate-50">Hrs/Dia</th>
+                    <th className="p-3 text-orange-700">Extras Mês (Calc)</th>
+                    <th className="p-3 bg-slate-50">Dias/Mês</th>
+                    <th className="p-3 text-orange-700">Extras Dia (Calc)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {sectors.map(sector => {
+                  {sectors.map((sector, idx) => {
                     const budget = getMonthlyBudget(sector.id, selectedMonth);
                     return (
-                      <tr key={sector.id} className="hover:bg-slate-50">
+                      <tr key={sector.id} className="hover:bg-slate-50 divide-x divide-slate-100 transition-colors">
                         <td className="p-3 font-medium text-slate-800">{sector.name}</td>
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            className="border border-slate-300 rounded px-2 py-1 w-24 focus:ring-1 focus:ring-[#155645] outline-none"
-                            value={budget.budgetQty || 0}
-                            onChange={(e) => handleBudgetChange(sector.id, 'budgetQty', e.target.value)}
-                          />
-                        </td>
-                        <td className="p-3">
+                        <td className="p-2 bg-slate-50/30">
                           <input
                             type="number"
                             step="0.01"
-                            className="border border-slate-300 rounded px-2 py-1 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
-                            value={budget.budgetValue || 0}
+                            placeholder="0,00"
+                            className="w-28 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-right"
+                            value={budget.budgetValue || ''}
                             onChange={(e) => handleBudgetChange(sector.id, 'budgetValue', e.target.value)}
+                            onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
+                        </td>
+                        <td className="p-2 bg-slate-50/30">
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="0,00"
+                            className="w-24 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-right"
+                            value={budget.hourRate || ''}
+                            onChange={(e) => handleBudgetChange(sector.id, 'hourRate', e.target.value)}
+                            onPaste={(e) => handleBudgetPaste(e, idx)}
+                          />
+                        </td>
+                        <td className="p-2 bg-slate-50/30">
+                          <input
+                            type="number"
+                            placeholder="8"
+                            className="w-16 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                            value={budget.workHoursPerDay || ''}
+                            onChange={(e) => handleBudgetChange(sector.id, 'workHoursPerDay', e.target.value)}
+                            onPaste={(e) => handleBudgetPaste(e, idx)}
+                          />
+                        </td>
+                        <td className="p-3 font-bold text-[#155645] text-center bg-orange-50/30">
+                          {budget.budgetQty}
+                        </td>
+                        <td className="p-2 bg-slate-50/30">
+                          <input
+                            type="number"
+                            placeholder="22"
+                            className="w-16 border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
+                            value={budget.workingDaysPerMonth || ''}
+                            onChange={(e) => handleBudgetChange(sector.id, 'workingDaysPerMonth', e.target.value)}
+                            onPaste={(e) => handleBudgetPaste(e, idx)}
+                          />
+                        </td>
+                        <td className="p-3 font-bold text-[#F8981C] text-center bg-orange-50/30">
+                          {budget.extraQtyPerDay}
                         </td>
                       </tr>
                     );
@@ -299,54 +399,62 @@ export const AdminPanel: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-[#155645]">Configuração de Lotes ({selectedMonth})</h3>
-              <button onClick={addLote} className="flex items-center gap-1 bg-[#155645] text-white px-3 py-1.5 rounded text-sm hover:bg-[#104033]">
-                <Plus size={14} /> Adicionar Lote
-              </button>
+              <div className="flex gap-2">
+                <button onClick={addLote} className="flex items-center gap-1 bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded text-sm hover:bg-slate-50">
+                  <Plus size={14} /> Adicionar Lote
+                </button>
+                <button onClick={handleSaveLotes} className="flex items-center gap-1 bg-[#155645] text-white px-4 py-1.5 rounded text-sm hover:bg-[#104033] shadow-sm">
+                  <Save size={14} /> Salvar Lotes
+                </button>
+              </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
               <table className="w-full text-left text-sm border-collapse">
                 <thead className="bg-[#155645]/5 text-[#155645] uppercase">
-                  <tr>
-                    <th className="p-3 border border-slate-200">Ano / Mês</th>
-                    <th className="p-3 border border-slate-200">Nome do Lote</th>
-                    <th className="p-3 border border-slate-200">Dia Início</th>
-                    <th className="p-3 border border-slate-200">Dia Final</th>
-                    <th className="p-3 border border-slate-200 text-center">Ações</th>
+                  <tr className="divide-x divide-slate-200">
+                    <th className="p-3">Nome do Lote</th>
+                    <th className="p-3">Dia Início</th>
+                    <th className="p-3">Dia Final</th>
+                    <th className="p-3 text-center">Ações</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {getMonthlyLote(selectedMonth).map((lote, idx) => (
-                    <tr key={lote.id}>
-                      <td className="p-3 border border-slate-200 bg-slate-50 font-mono text-xs">{selectedMonth}</td>
-                      <td className="p-3 border border-slate-200">
+                <tbody className="divide-y divide-slate-100">
+                  {localLotes.map((lote, idx) => (
+                    <tr key={lote.id} className="divide-x divide-slate-100">
+                      <td className="p-2">
                         <input
                           type="text"
-                          className="border border-slate-300 rounded px-2 py-1 w-full"
+                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645]"
                           value={lote.name}
                           onChange={(e) => handleLoteChange(idx, 'name', e.target.value)}
                         />
                       </td>
-                      <td className="p-3 border border-slate-200">
+                      <td className="p-2">
                         <input
                           type="number"
-                          className="border border-slate-300 rounded px-2 py-1 w-20"
+                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
                           value={lote.startDay}
                           onChange={(e) => handleLoteChange(idx, 'startDay', e.target.value)}
                         />
                       </td>
-                      <td className="p-3 border border-slate-200">
+                      <td className="p-2">
                         <input
                           type="number"
-                          className="border border-slate-300 rounded px-2 py-1 w-20"
+                          className="w-full border border-slate-200 rounded px-2 py-1 outline-none focus:border-[#155645] text-center"
                           value={lote.endDay}
                           onChange={(e) => handleLoteChange(idx, 'endDay', e.target.value)}
                         />
                       </td>
-                      <td className="p-3 border border-slate-200 text-center">
-                        <button onClick={() => removeLote(idx)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={16} /></button>
+                      <td className="p-2 text-center">
+                        <button onClick={() => removeLote(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={16} /></button>
                       </td>
                     </tr>
                   ))}
+                  {localLotes.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-slate-400 italic">Nenhum lote configurado. Clique em adicionar.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

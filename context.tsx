@@ -140,8 +140,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           budgetMap[`${b.sector_id}_${b.month_key}`] = {
             sectorId: b.sector_id,
             monthKey: b.month_key,
-            budgetQty: b.budget_qty,
-            budgetValue: b.budget_value
+            budgetQty: Number(b.budget_qty) || 0,
+            budgetValue: Number(b.budget_value) || 0,
+            hourRate: Number(b.hour_rate) || 0,
+            workHoursPerDay: Number(b.work_hours_per_day) || 8,
+            workingDaysPerMonth: Number(b.working_days_per_month) || 22,
+            extraQtyPerDay: Number(b.extra_qty_per_day) || 0,
           };
         });
         setMonthlyBudgets(budgetMap);
@@ -413,7 +417,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const getMonthlyBudget = (sectorId: string, monthKey: string): MonthlyBudget => {
     const key = `${sectorId}_${monthKey}`;
-    return monthlyBudgets[key] || { sectorId, monthKey, budgetQty: 0, budgetValue: 0 };
+    return monthlyBudgets[key] || {
+      sectorId,
+      monthKey,
+      budgetQty: 0,
+      budgetValue: 0,
+      hourRate: 0,
+      workHoursPerDay: 8,
+      workingDaysPerMonth: 22,
+      extraQtyPerDay: 0
+    };
   };
 
   const updateMonthlyBudget = async (data: MonthlyBudget) => {
@@ -421,7 +434,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       sector_id: data.sectorId,
       month_key: data.monthKey,
       budget_qty: data.budgetQty,
-      budget_value: data.budgetValue
+      budget_value: data.budgetValue,
+      hour_rate: data.hourRate,
+      work_hours_per_day: data.workHoursPerDay,
+      working_days_per_month: data.workingDaysPerMonth,
+      extra_qty_per_day: data.extraQtyPerDay
     });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;

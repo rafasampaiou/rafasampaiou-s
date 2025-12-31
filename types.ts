@@ -53,8 +53,12 @@ export interface SectorConfig {
 export interface MonthlyBudget {
   sectorId: string;
   monthKey: string; // YYYY-MM
-  budgetQty: number;
-  budgetValue: number;
+  budgetQty: number; // Qtd Extras por mês (Calculado)
+  budgetValue: number; // Valor Total Orçado
+  hourRate: number; // Valor pago por hora
+  workHoursPerDay: number; // Horas de trabalho (default 8)
+  workingDaysPerMonth: number; // Dias trabalhados (default 22)
+  extraQtyPerDay: number; // Qtd Extras por dia (Calculado)
 }
 
 // Stores manual overrides for "Real" values in Ideal Table if user edits them
