@@ -7,7 +7,7 @@ interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginWithMagicLink: (email: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 
   requests: RequestItem[];
@@ -233,16 +233,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => subscription.unsubscribe();
   }, []);
 
-  const loginWithMagicLink = async (email: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        options: { emailRedirectTo: window.location.origin },
+        password,
       });
-      return !error;
-    } catch (err) {
-      return false;
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: 'Erro inesperado ao realizar login.' };
     } finally {
       setIsLoading(false);
     }
@@ -478,7 +483,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{
-      user, isAuthenticated, isLoading, loginWithMagicLink, logout,
+      user, isAuthenticated, isLoading, login, logout,
       requests, addRequest, updateRequestStatus, deleteRequest, addHistoricalRequests,
       sectors, addSector, removeSector,
       getMonthlyBudget, updateMonthlyBudget,

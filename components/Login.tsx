@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context';
-import { User, CheckCircle2 } from 'lucide-react';
+import { User, Lock } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { loginWithMagicLink, isLoading } = useApp();
+  const { login, isLoading } = useApp();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,39 +20,15 @@ export const Login: React.FC = () => {
     setError('');
 
     try {
-      const success = await loginWithMagicLink(email);
+      const result = await login(email, password);
 
-      if (success) {
-        setSent(true);
-      } else {
-        setError('Erro ao enviar link de acesso. Tente novamente.');
+      if (!result.success) {
+        setError(result.error || 'E-mail ou senha incorretos.');
       }
     } catch (err: any) {
       setError('Erro ao realizar login.');
     }
   };
-
-  if (sent) {
-    return (
-      <div className="min-h-screen bg-[#155645] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="text-green-600 w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Verifique seu e-mail</h2>
-          <p className="text-slate-600 mb-6">
-            Enviamos um link de acesso para <strong>{email}</strong>. Clique no link para entrar no sistema.
-          </p>
-          <button
-            onClick={() => setSent(false)}
-            className="text-[#155645] font-medium hover:underline text-sm"
-          >
-            Voltar para o login
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#155645] flex items-center justify-center p-4">
@@ -69,7 +45,7 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">E-mail Corporativo</label>
               <div className="relative">
@@ -85,6 +61,21 @@ export const Login: React.FC = () => {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-slate-400" size={20} />
+                <input
+                  type="password"
+                  required
+                  placeholder="Sua senha"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#155645] focus:border-[#155645] outline-none transition-all"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center justify-center text-center">
                 {error}
@@ -96,7 +87,7 @@ export const Login: React.FC = () => {
               disabled={isLoading}
               className={`w-full bg-[#155645] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#104033] transition-colors shadow-lg border-b-4 border-[#0e3a2f] active:border-b-0 active:translate-y-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Enviando...' : 'Receber Link de Acesso'}
+              {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
             </button>
           </form>
 
