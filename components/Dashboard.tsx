@@ -285,7 +285,7 @@ export const Dashboard: React.FC = () => {
                 onChange={(e) => handleYearChange(e.target.value)}
                 className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645] text-slate-700"
               >
-                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+                {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={String(y)}>{y}</option>)}
               </select>
             </div>
 

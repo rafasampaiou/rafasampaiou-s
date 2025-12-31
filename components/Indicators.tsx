@@ -255,7 +255,7 @@ export const Indicators: React.FC = () => {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
             >
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
             <select
               value={selectedMonth}

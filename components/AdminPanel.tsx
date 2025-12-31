@@ -322,15 +322,15 @@ export const AdminPanel: React.FC = () => {
             </div>
             <div className="overflow-x-auto border border-slate-300 rounded-lg">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-100 text-slate-600 uppercase sticky top-0 z-10 shadow-sm font-bold">
+                <thead className="bg-slate-100 text-slate-600 uppercase sticky top-0 z-10 shadow-sm font-bold text-center">
                   <tr>
-                    <th className="p-2 border border-slate-300">Setor</th>
+                    <th className="p-2 border border-slate-300 text-left">Setor</th>
                     <th className="p-2 border border-slate-300 bg-slate-50">Valor Orçado (R$)</th>
                     <th className="p-2 border border-slate-300 bg-slate-50">VL. Hora (R$)</th>
                     <th className="p-2 border border-slate-300 bg-slate-50">Hrs/Dia</th>
                     <th className="p-2 border border-slate-300 text-orange-700">Extras Mês (Calc)</th>
                     <th className="p-2 border border-slate-300 bg-slate-50">Dias/Mês</th>
-                    <th className="p-2 border border-slate-300 text-orange-700">Extras Dia (Calc)</th>
+                    <th className="p-2 border border-slate-300 text-orange-700">MO / UH ocupada</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

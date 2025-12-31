@@ -286,7 +286,7 @@ export const IdealTable: React.FC = () => {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="text-sm outline-none text-slate-700 bg-transparent"
             >
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
             <select
               value={selectedMonth}

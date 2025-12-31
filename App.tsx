@@ -75,7 +75,7 @@ const MainContent: React.FC = () => {
           </div>
         </header>
 
-        <div className="p-8">
+        <div className={`p-8 ${currentView === 'extract' ? 'print:p-0' : ''}`}>
           {renderView()}
         </div>
       </main>
