@@ -118,6 +118,18 @@ export const Dashboard: React.FC = () => {
     return `${d}/${m}/${y}`;
   };
 
+  const formatDateTime = (isoStr: string) => {
+    if (!isoStr) return '';
+    try {
+      const date = new Date(isoStr);
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${d}/${m} ${h}:${min}`;
+    } catch { return ''; }
+  };
+
   const ChartSection = ({ title, data, color, prefix = '' }: { title: string, data: any[], color: string, prefix?: string }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <h3 className="text-sm font-bold text-[#155645] mb-4 uppercase tracking-wider">{title}</h3>
@@ -158,7 +170,9 @@ export const Dashboard: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-[#155645]/5 text-[#155645] uppercase sticky top-0 bg-white shadow-sm">
                 <tr>
-                  <th className="p-3">Data</th>
+                  <th className="p-3">Início</th>
+                  <th className="p-3">Fim</th>
+                  <th className="p-3">Solicitado em</th>
                   <th className="p-3">Dias</th>
                   <th className="p-3">Setor</th>
                   <th className="p-3">Função</th>
@@ -173,15 +187,17 @@ export const Dashboard: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {pendingRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-orange-50/30 transition-colors">
-                    <td className="p-3 font-medium">{formatDate(req.dateEvent)}</td>
+                    <td className="p-3 font-medium whitespace-nowrap">{formatDate(req.dateEvent)}</td>
+                    <td className="p-3 text-slate-400 whitespace-nowrap">{formatDate(calculateEndDate(req.dateEvent, req.daysQty))}</td>
+                    <td className="p-3 text-slate-400 whitespace-nowrap font-mono">{formatDateTime(req.createdAt || '')}</td>
                     <td className="p-3 font-bold">{req.daysQty}</td>
-                    <td className="p-3">{req.sector}</td>
+                    <td className="p-3 font-medium">{req.sector}</td>
                     <td className="p-3">{req.functionRole}</td>
-                    <td className="p-3">{req.extrasQty}</td>
+                    <td className="p-3 text-center">{req.extrasQty}</td>
                     <td className="p-3 whitespace-nowrap">{req.timeIn} - {req.timeOut}</td>
                     <td className="p-3 truncate max-w-[120px]" title={req.requestorEmail}>{req.requestorEmail}</td>
-                    <td className="p-3 truncate max-w-[200px]" title={req.justification}>{req.justification}</td>
-                    <td className="p-3 text-right font-bold">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
+                    <td className="p-3 truncate max-w-[180px]" title={req.justification}>{req.justification}</td>
+                    <td className="p-3 text-right font-bold text-[#155645]">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => updateRequestStatus(req.id, 'Aprovado')} className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition-all">
@@ -199,7 +215,7 @@ export const Dashboard: React.FC = () => {
                 ))}
                 {pendingRequests.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="p-8 text-center text-slate-400 italic">
+                    <td colSpan={12} className="p-8 text-center text-slate-400 italic">
                       Não há solicitações pendentes no momento.
                     </td>
                   </tr>
