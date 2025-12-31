@@ -472,7 +472,7 @@ export const AdminPanel: React.FC = () => {
             {/* 2. Cargos Especiais */}
             <div className="bg-white p-6 rounded-lg border border-slate-200">
               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                <Briefcase size={20} className="text-[#F8981C]" /> Cargos e Taxas Especiais
+                <Briefcase size={20} className="text-[#F8981C]" /> Cargos e Diárias Especiais
               </h3>
               <div className="flex gap-2 mb-4">
                 <input
@@ -485,7 +485,7 @@ export const AdminPanel: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Valor Hora (R$)"
+                  placeholder="Valor Diária (R$)"
                   className="border border-slate-300 rounded px-3 py-2 w-32 focus:ring-1 focus:ring-[#155645] outline-none"
                   value={newRoleRate}
                   onChange={(e) => setNewRoleRate(e.target.value)}
@@ -502,8 +502,9 @@ export const AdminPanel: React.FC = () => {
                       <span className="font-medium text-slate-700">{role.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-bold text-[#155645]">R$ {role.rate.toFixed(2)} /h</span>
+                      <span className="text-sm font-bold text-[#155645]">R$ {role.rate.toFixed(2)} /dia</span>
                       <button onClick={() => removeSpecialRole(role.id)} className="text-red-400 hover:text-red-600">
+
                         <Trash2 size={16} />
                       </button>
                     </div>

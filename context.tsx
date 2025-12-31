@@ -158,8 +158,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addRequest = (req: RequestItem) => {
-    const rate = req.specialRate || systemConfig.standardHourRate;
-    const baseTotal = req.extrasQty * req.daysQty * 8 * rate;
+    let baseTotal;
+    if (req.specialRate) {
+      baseTotal = req.extrasQty * req.daysQty * req.specialRate;
+    } else {
+      baseTotal = req.extrasQty * req.daysQty * 8 * systemConfig.standardHourRate;
+    }
     setRequests(prev => [{ ...req, totalValue: baseTotal }, ...prev]);
   };
 
@@ -200,8 +204,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const extrasQty = parseInt(cols[5]?.trim()) || 1;
           const rawOccupancy = cols[11]?.trim() || '0';
           const occupancyRate = parseFloat(rawOccupancy.replace('%', '').replace(',', '.')) || 0;
-          const rateToUse = specialRate || 15.00;
-          const totalValue = extrasQty * daysQty * 8 * rateToUse;
+
+          let totalValue;
+          if (specialRate) {
+            totalValue = extrasQty * daysQty * specialRate;
+          } else {
+            totalValue = extrasQty * daysQty * 8 * 15.00;
+          }
 
           newRequests.push({
             id: `hist_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
