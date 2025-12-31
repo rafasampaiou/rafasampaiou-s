@@ -403,23 +403,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const bulkDeleteRequests = async (period: string, type: 'month' | 'year') => {
+    console.log('bulkDeleteRequests chamada com:', period, type);
     let query = supabase.from('requests').delete();
 
     if (type === 'month') {
-      // period is YYYY-MM
-      query = query.gte('date_event', `${period}-01`).lte('date_event', `${period}-31`);
+      // Robust date range for month
+      const [year, month] = period.split('-').map(Number);
+      const startDate = `${period}-01`;
+      const endDate = new Date(year, month, 0).toISOString().slice(0, 10);
+      query = query.gte('date_event', startDate).lte('date_event', endDate);
     } else {
-      // period is YYYY
+      // Robust date range for year
       query = query.gte('date_event', `${period}-01-01`).lte('date_event', `${period}-12-31`);
     }
 
-    const { error } = await query;
-    if (!error) {
-      setRequests(prev => prev.filter(r => !r.dateEvent.startsWith(period)));
-      alert('Base limpa com sucesso para o período selecionado!');
-    } else {
-      console.error('Erro ao limpar base:', error);
-      alert('Falha ao limpar base: ' + error.message);
+    try {
+      const { error } = await query;
+      if (!error) {
+        setRequests(prev => prev.filter(r => r.dateEvent && !r.dateEvent.startsWith(period)));
+        alert('Base limpa com sucesso para o período selecionado!');
+      } else {
+        throw error;
+      }
+    } catch (err: any) {
+      console.error('Erro ao limpar base:', err);
+      alert('Falha ao limpar base: ' + (err.message || 'Erro desconhecido'));
     }
   };
 

@@ -615,9 +615,11 @@ export const AdminPanel: React.FC = () => {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={async () => {
+                      console.log('Botão Limpar Mês clicado, período:', deletePeriod);
                       if (window.confirm(`Essa opção irá excluir todas as solicitações feitas no período ${deletePeriod}, tem certeza disso?`)) {
-                        bulkDeleteRequests(deletePeriod, 'month');
+                        await bulkDeleteRequests(deletePeriod, 'month');
                       }
                     }}
                     className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors flex items-center gap-2 shadow-sm"
@@ -626,10 +628,12 @@ export const AdminPanel: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={async () => {
                       const year = deletePeriod.split('-')[0];
+                      console.log('Botão Limpar Ano clicado, ano:', year);
                       if (window.confirm(`Essa opção irá excluir todas as solicitações feitas no ANO de ${year}, tem certeza disso?`)) {
-                        bulkDeleteRequests(year, 'year');
+                        await bulkDeleteRequests(year, 'year');
                       }
                     }}
                     className="bg-red-800 hover:bg-red-900 text-white px-6 py-2.5 rounded-lg font-bold transition-colors flex items-center gap-2 shadow-sm"
