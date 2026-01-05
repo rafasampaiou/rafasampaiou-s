@@ -19,7 +19,7 @@ export const IdealTable: React.FC = () => {
   ];
 
   const handleBudgetChange = (sectorId: string, field: 'budgetQty' | 'budgetValue', value: string) => {
-    const current = getMonthlyBudget(sectorId, selectedMonth);
+    const current = getMonthlyBudget(sectorId, selectedMonthKey);
     updateMonthlyBudget({
       ...current,
       [field]: parseFloat(value) || 0
@@ -27,7 +27,7 @@ export const IdealTable: React.FC = () => {
   };
 
   const handleRealChange = (sectorId: string, field: 'realQty' | 'realValue' | 'afastadosQty' | 'apprenticesQty', value: string) => {
-    const current = getManualRealStat(sectorId, selectedMonth) || { sectorId, monthKey: selectedMonth, realQty: 0, realValue: 0 };
+    const current = getManualRealStat(sectorId, selectedMonthKey) || { sectorId, monthKey: selectedMonthKey, realQty: 0, realValue: 0 };
     updateManualRealStat({
       ...current,
       [field]: parseFloat(value) || 0
@@ -38,10 +38,12 @@ export const IdealTable: React.FC = () => {
   const handleReplicatePrevious = () => {
     if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior. Deseja continuar?')) return;
 
-    const [y, m] = selectedMonth.split('-').map(Number);
+    const [y, m] = selectedMonthKey.split('-').map(Number);
     // Calculate previous month date
-    const prevDate = new Date(y, m - 2, 1); // Month is 0-indexed in Date constructor (m-1 is current, m-2 is prev)
-    const prevMonthKey = prevDate.toISOString().slice(0, 7);
+    const prevDate = new Date(y, m - 2, 1);
+    const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+    const prevYear = prevDate.getFullYear();
+    const prevMonthKey = `${prevYear}-${prevMonth}`;
 
     let updatedCount = 0;
 
@@ -51,7 +53,7 @@ export const IdealTable: React.FC = () => {
       if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
         updateMonthlyBudget({
           sectorId: s.id,
-          monthKey: selectedMonth,
+          monthKey: selectedMonthKey,
           budgetQty: prevBudget.budgetQty,
           budgetValue: prevBudget.budgetValue
         });
@@ -63,7 +65,7 @@ export const IdealTable: React.FC = () => {
       if (prevReal) {
         updateManualRealStat({
           sectorId: s.id,
-          monthKey: selectedMonth,
+          monthKey: selectedMonthKey,
           realQty: prevReal.realQty,
           realValue: prevReal.realValue,
           afastadosQty: prevReal.afastadosQty,
@@ -173,8 +175,8 @@ export const IdealTable: React.FC = () => {
 
       if (!updatesBySector[sector.id]) {
         updatesBySector[sector.id] = {
-          budget: { ...getMonthlyBudget(sector.id, selectedMonth) },
-          real: { ...getManualRealStat(sector.id, selectedMonth) || { sectorId: sector.id, monthKey: selectedMonth, realQty: 0, realValue: 0 } }
+          budget: { ...getMonthlyBudget(sector.id, selectedMonthKey) },
+          real: { ...getManualRealStat(sector.id, selectedMonthKey) || { sectorId: sector.id, monthKey: selectedMonthKey, realQty: 0, realValue: 0 } }
         };
       }
 
@@ -219,16 +221,16 @@ export const IdealTable: React.FC = () => {
   };
 
   const stats = sectors.map(s => {
-    const budget = getMonthlyBudget(s.id, selectedMonth);
-    const manualReal = getManualRealStat(s.id, selectedMonth);
+    const budget = getMonthlyBudget(s.id, selectedMonthKey);
+    const manualReal = getManualRealStat(s.id, selectedMonthKey);
 
     // Calculate actual real from requests if no manual override exists
     const calculatedRealQty = requests
-      .filter(r => r.sector === s.name && r.dateEvent.startsWith(selectedMonth) && r.status === 'Aprovado')
+      .filter(r => r.sector === s.name && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
       .reduce((sum, r) => sum + r.extrasQty, 0);
 
     const calculatedRealValue = requests
-      .filter(r => r.sector === s.name && r.dateEvent.startsWith(selectedMonth) && r.status === 'Aprovado')
+      .filter(r => r.sector === s.name && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
       .reduce((sum, r) => sum + (r.totalValue || 0), 0);
 
     // Use manual override if available, otherwise calculated
