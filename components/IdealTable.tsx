@@ -45,66 +45,84 @@ export const IdealTable: React.FC = () => {
 
   // Replicate data from Previous Month
   const handleReplicatePrevious = async () => {
-    if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
-
-    const [y, m] = selectedMonthKey.split('-').map(Number);
-    // Calculate previous month date correctly
-    const prevDate = new Date(y, m - 2, 1);
-    const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
-    const prevYear = prevDate.getFullYear();
-    const prevMonthKey = `${prevYear}-${prevMonth}`;
-
-    const newBudgets: any[] = [];
-    const newRealStats: any[] = [];
-
-    sectors.forEach(s => {
-      // 1. Replicate Budget
-      const prevBudget = getMonthlyBudget(s.id, prevMonthKey);
-      if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
-        newBudgets.push({
-          ...prevBudget,
-          monthKey: selectedMonthKey
-        });
-      }
-
-      // 2. Replicate Real Stats (Effective: Manual overrides OR Calculated from requests)
-      const prevManualReal = getManualRealStat(s.id, prevMonthKey);
-
-      const calculatedRealQty = requests
-        .filter(r => r.sector === s.name && r.dateEvent.startsWith(prevMonthKey) && r.status === 'Aprovado')
-        .reduce((sum, r) => sum + r.extrasQty, 0);
-
-      const calculatedRealValue = requests
-        .filter(r => r.sector === s.name && r.dateEvent.startsWith(prevMonthKey) && r.status === 'Aprovado')
-        .reduce((sum, r) => sum + (r.totalValue || 0), 0);
-
-      // Use manual override if available, otherwise use what was calculated
-      const realQty = prevManualReal ? prevManualReal.realQty : calculatedRealQty;
-      const realValue = prevManualReal ? prevManualReal.realValue : calculatedRealValue;
-      const afastadosQty = prevManualReal?.afastadosQty || 0;
-      const apprenticesQty = prevManualReal?.apprenticesQty || 0;
-
-      if (realQty > 0 || realValue > 0 || afastadosQty > 0 || apprenticesQty > 0) {
-        newRealStats.push({
-          sectorId: s.id,
-          monthKey: selectedMonthKey,
-          realQty,
-          realValue,
-          afastadosQty,
-          apprenticesQty
-        });
-      }
-    });
-
     try {
+      if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
+
+      const [y, m] = selectedMonthKey.split('-').map(Number);
+      // Calculate previous month date correctly
+      const prevDate = new Date(y, m - 2, 1);
+      const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+      const prevYear = prevDate.getFullYear();
+      const prevMonthKey = `${prevYear}-${prevMonth}`;
+
+      console.log(`[Replicate] Replicating from ${prevMonthKey} to ${selectedMonthKey}`);
+
+      const newBudgets: any[] = [];
+      const newRealStats: any[] = [];
+
+      if (!sectors || sectors.length === 0) {
+        console.warn('[Replicate] No sectors found to replicate.');
+        return;
+      }
+
+      sectors.forEach(s => {
+        // 1. Replicate Budget
+        const prevBudget = getMonthlyBudget(s.id, prevMonthKey);
+        if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
+          newBudgets.push({
+            ...prevBudget,
+            monthKey: selectedMonthKey
+          });
+        }
+
+        // 2. Replicate Real Stats (Effective: Manual overrides OR Calculated from requests)
+        const prevManualReal = getManualRealStat(s.id, prevMonthKey);
+
+        const calculatedRealQty = requests
+          .filter(r => r.sector === s.name && r.dateEvent?.startsWith(prevMonthKey) && r.status === 'Aprovado')
+          .reduce((sum, r) => sum + r.extrasQty, 0);
+
+        const calculatedRealValue = requests
+          .filter(r => r.sector === s.name && r.dateEvent?.startsWith(prevMonthKey) && r.status === 'Aprovado')
+          .reduce((sum, r) => sum + (r.totalValue || 0), 0);
+
+        // Use manual override if available, otherwise use what was calculated
+        const realQty = prevManualReal ? prevManualReal.realQty : calculatedRealQty;
+        const realValue = prevManualReal ? prevManualReal.realValue : calculatedRealValue;
+        const afastadosQty = prevManualReal?.afastadosQty || 0;
+        const apprenticesQty = prevManualReal?.apprenticesQty || 0;
+
+        if (realQty > 0 || realValue > 0 || afastadosQty > 0 || apprenticesQty > 0) {
+          newRealStats.push({
+            sectorId: s.id,
+            monthKey: selectedMonthKey,
+            realQty,
+            realValue,
+            afastadosQty,
+            apprenticesQty
+          });
+        }
+      });
+
+      console.log(`[Replicate] Prepared ${newBudgets.length} budgets and ${newRealStats.length} real stats.`);
+
+      if (newBudgets.length === 0 && newRealStats.length === 0) {
+        alert('Nenhum dado encontrado no mês anterior para replicar.');
+        return;
+      }
+
       if (newBudgets.length > 0) await bulkUpdateMonthlyBudgets(newBudgets);
       if (newRealStats.length > 0) await bulkUpdateManualRealStats(newRealStats);
 
-      alert(`Dados replicados de ${prevMonthKey} com sucesso! (${newBudgets.length} orçamentos, ${newRealStats.length} estatísticas reais)`);
+      alert(`Dados replicados de ${prevMonthKey} com sucesso!`);
     } catch (error) {
-      console.error('Erro ao replicar:', error);
-      alert('Ocorreu um erro ao replicar os dados. Verifique sua conexão e tente novamente.');
+      console.error('[Replicate] Erro ao replicar:', error);
+      alert('Ocorreu um erro ao replicar os dados. Verifique o console e sua conexão.');
     }
+  };
+
+  const handleSave = () => {
+    alert('Dados salvos com sucesso.');
   };
 
   // Handle Paste from Excel
@@ -119,79 +137,6 @@ export const IdealTable: React.FC = () => {
     if (startFieldIndex === -1) return;
 
     let changesMade = 0;
-
-    rows.forEach((rowStr, rowIndex) => {
-      const targetSectorIndex = startSectorIndex + rowIndex;
-      if (targetSectorIndex >= sectors.length) return; // Out of bounds
-
-      const sector = sectors[targetSectorIndex];
-      const cols = rowStr.split('\t');
-
-      cols.forEach((val, colIndex) => {
-        const targetFieldIndex = startFieldIndex + colIndex;
-        if (targetFieldIndex >= fieldOrder.length) return; // Out of bounds columns
-
-        const targetField = fieldOrder[targetFieldIndex];
-
-        // Clean value (handle currency format R$ 1.000,00 -> 1000.00)
-        let cleanVal = val.trim().replace('R$', '').trim();
-        // If it has comma and dot, assume dot is thousands separator if it comes before comma
-        if (cleanVal.includes('.') && cleanVal.includes(',')) {
-          cleanVal = cleanVal.replace(/\./g, '').replace(',', '.');
-        } else if (cleanVal.includes(',')) {
-          cleanVal = cleanVal.replace(',', '.');
-        }
-
-        const numVal = parseFloat(cleanVal) || 0;
-
-        // Determine if it's Budget or Real update
-        if (targetField === 'budgetQty' || targetField === 'budgetValue') {
-          // It's a budget update, need to fetch current state first or just update partial?
-          // We can't easily fetch current state inside loop without race conditions if we rely on state hooks directly in loop.
-          // However, context updates are usually state setters.
-          // A safer way is to fetch the object, modify it.
-          const currentBudget = getMonthlyBudget(sector.id, selectedMonth);
-          // Since getMonthlyBudget returns a value from state at render time, 
-          // multiple updates in a loop might overwrite each other if we use the same 'currentBudget' object reference 
-          // without merging. But here we are updating different fields or different sectors.
-          // To be safe, we just fire the update. The context implementation should handle object merging or replacement.
-          // Based on context.tsx: setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
-          // So we need to provide the FULL object.
-
-          // Hack: Since we can't see "pending" updates in this loop, we might have issues if pasting 
-          // BudgetQty AND BudgetValue in the same row simultaneously.
-          // We will update individually. Ideally the context setter should use functional update merging.
-          // For now, let's assume the user pastes columns.
-
-          // Re-fetching inside the loop isn't possible, so we use a strategy:
-          // We will fire the update. If React batches, we might lose one field if we don't merge locally.
-          // Let's rely on the fact that usually we paste a block.
-
-          // NOTE: To fix the potential overwrite of `budgetQty` when updating `budgetValue` in the same batch,
-          // we really should use a more robust store. But for this specific app structure:
-          // The context `updateMonthlyBudget` replaces the whole object for that key.
-          // We need to merge with what we *think* is the latest. 
-          // Since we can't, we will do a trick: We trigger the update.
-
-          // For this specific UI, let's assume standard behavior.
-          // If we want to support multi-column paste robustly, we'd need a bulk update method in context.
-          // We'll proceed with individual updates hoping React 18 auto-batching helps, 
-          // OR we accept that updating cols 1 and 2 might race.
-          // *Correction*: In the Context, `setMonthlyBudgets` uses `...prev`. 
-          // BUT it replaces the value for `key`. `[key]: data`.
-          // If I call update twice for same key, the second one overwrites the first one if it doesn't contain the first's changes.
-          // Since `currentBudget` is const from render start, it is stale for the second call.
-
-          // Workaround: We can't solve the state race condition easily without refactoring Context to support patch/merge.
-          // However, for pasting, usually users paste one column or block.
-          // If pasting a block, we can construct the final object for the sector.
-
-          // Let's implement a local merge for the row.
-
-          // Note: This logic assumes we process row by row.
-        }
-      });
-    });
 
     // IMPROVED LOGIC: Process per Sector to avoid state overwrite race conditions
     // We group values by sector first.
@@ -227,10 +172,6 @@ export const IdealTable: React.FC = () => {
           updatesBySector[sector.id].budget[targetField] = numVal;
         } else {
           updatesBySector[sector.id].real[targetField] = numVal;
-          // Also ensure defaults exist for real
-          if (targetField === 'realQty' || targetField === 'realValue') {
-            // handled
-          }
         }
       });
     });
@@ -244,8 +185,8 @@ export const IdealTable: React.FC = () => {
     });
 
     if (changesMade > 0) {
-      // Optional: Toast or simple console log
       console.log('Paste processed');
+      alert('Dados colados com sucesso.');
     }
   };
 
@@ -341,7 +282,10 @@ export const IdealTable: React.FC = () => {
                 <Copy size={16} />
                 Replicar Mês Ant.
               </button>
-              <button className="flex items-center gap-2 bg-[#155645] hover:bg-[#104033] text-white px-4 py-2 rounded-lg text-sm transition-colors">
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 bg-[#155645] hover:bg-[#104033] text-white px-4 py-2 rounded-lg text-sm transition-colors"
+              >
                 <Save size={16} />
                 Salvar Alterações
               </button>
