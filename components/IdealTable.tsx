@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
 import { Save, Calendar, Copy, ArrowDownToLine } from 'lucide-react';
 
@@ -15,7 +15,13 @@ export const IdealTable: React.FC = () => {
   } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+  const isAdminUnlockedOnce = sessionStorage.getItem('admin_unlocked') === 'true';
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
+
+  useEffect(() => {
+    console.log('[IdealTable] mounted with selectedMonthKey:', selectedMonthKey);
+    console.log('[IdealTable] isAdminUnlockedOnce:', isAdminUnlockedOnce);
+  }, [selectedMonthKey, isAdminUnlockedOnce]);
 
   // Field mapping for paste functionality order
   const fieldOrder = [
@@ -45,8 +51,9 @@ export const IdealTable: React.FC = () => {
 
   // Replicate data from Previous Month
   const handleReplicatePrevious = async () => {
+    console.log('[IdealTable] handleReplicatePrevious called');
     try {
-      if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
+      if (!window.confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
 
       const [y, m] = selectedMonthKey.split('-').map(Number);
       // Calculate previous month date correctly
@@ -272,7 +279,7 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdminUnlocked && (
+          {isAdminUnlockedOnce && (
             <>
               <button
                 onClick={handleReplicatePrevious}
