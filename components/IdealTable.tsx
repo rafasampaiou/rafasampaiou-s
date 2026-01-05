@@ -3,7 +3,16 @@ import { useApp } from '../context';
 import { Save, Calendar, Copy, ArrowDownToLine } from 'lucide-react';
 
 export const IdealTable: React.FC = () => {
-  const { sectors, requests, getMonthlyBudget, updateMonthlyBudget, getManualRealStat, updateManualRealStat } = useApp();
+  const {
+    sectors,
+    requests,
+    getMonthlyBudget,
+    updateMonthlyBudget,
+    getManualRealStat,
+    updateManualRealStat,
+    bulkUpdateMonthlyBudgets,
+    bulkUpdateManualRealStats
+  } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
@@ -35,47 +44,67 @@ export const IdealTable: React.FC = () => {
   };
 
   // Replicate data from Previous Month
-  const handleReplicatePrevious = () => {
-    if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior. Deseja continuar?')) return;
+  const handleReplicatePrevious = async () => {
+    if (!confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
 
     const [y, m] = selectedMonthKey.split('-').map(Number);
-    // Calculate previous month date
+    // Calculate previous month date correctly
     const prevDate = new Date(y, m - 2, 1);
     const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
     const prevYear = prevDate.getFullYear();
     const prevMonthKey = `${prevYear}-${prevMonth}`;
 
-    let updatedCount = 0;
+    const newBudgets: any[] = [];
+    const newRealStats: any[] = [];
 
     sectors.forEach(s => {
       // 1. Replicate Budget
       const prevBudget = getMonthlyBudget(s.id, prevMonthKey);
       if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
-        updateMonthlyBudget({
-          sectorId: s.id,
-          monthKey: selectedMonthKey,
-          budgetQty: prevBudget.budgetQty,
-          budgetValue: prevBudget.budgetValue
+        newBudgets.push({
+          ...prevBudget,
+          monthKey: selectedMonthKey
         });
-        updatedCount++;
       }
 
-      // 2. Replicate Real Stats (Manual Overrides)
-      const prevReal = getManualRealStat(s.id, prevMonthKey);
-      if (prevReal) {
-        updateManualRealStat({
+      // 2. Replicate Real Stats (Effective: Manual overrides OR Calculated from requests)
+      const prevManualReal = getManualRealStat(s.id, prevMonthKey);
+
+      const calculatedRealQty = requests
+        .filter(r => r.sector === s.name && r.dateEvent.startsWith(prevMonthKey) && r.status === 'Aprovado')
+        .reduce((sum, r) => sum + r.extrasQty, 0);
+
+      const calculatedRealValue = requests
+        .filter(r => r.sector === s.name && r.dateEvent.startsWith(prevMonthKey) && r.status === 'Aprovado')
+        .reduce((sum, r) => sum + (r.totalValue || 0), 0);
+
+      // Use manual override if available, otherwise use what was calculated
+      const realQty = prevManualReal ? prevManualReal.realQty : calculatedRealQty;
+      const realValue = prevManualReal ? prevManualReal.realValue : calculatedRealValue;
+      const afastadosQty = prevManualReal?.afastadosQty || 0;
+      const apprenticesQty = prevManualReal?.apprenticesQty || 0;
+
+      if (realQty > 0 || realValue > 0 || afastadosQty > 0 || apprenticesQty > 0) {
+        newRealStats.push({
           sectorId: s.id,
           monthKey: selectedMonthKey,
-          realQty: prevReal.realQty,
-          realValue: prevReal.realValue,
-          afastadosQty: prevReal.afastadosQty,
-          apprenticesQty: prevReal.apprenticesQty
+          realQty,
+          realValue,
+          afastadosQty,
+          apprenticesQty
         });
-        updatedCount++;
       }
     });
 
-    alert(`Dados replicados de ${prevMonthKey} com sucesso!`);
+    try {
+      if (newBudgets.length > 0) await bulkUpdateMonthlyBudgets(newBudgets);
+      if (newRealStats.length > 0) await bulkUpdateManualRealStats(newRealStats);
+
+      alert(`Dados replicados de ${prevMonthKey} com sucesso! (${newBudgets.length} orçamentos, ${newRealStats.length} estatísticas reais)`);
+    } catch (error) {
+      console.error('Erro ao replicar:', error);
+      alert('Ocorreu um erro ao replicar os dados. Verifique sua conexão e tente novamente.');
+    }
   };
 
   // Handle Paste from Excel

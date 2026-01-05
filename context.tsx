@@ -30,6 +30,8 @@ interface AppContextType {
 
   getManualRealStat: (sectorId: string, monthKey: string) => ManualRealStat | undefined;
   updateManualRealStat: (data: ManualRealStat) => void;
+  bulkUpdateMonthlyBudgets: (budgets: MonthlyBudget[]) => Promise<void>;
+  bulkUpdateManualRealStats: (stats: ManualRealStat[]) => Promise<void>;
 
   // Occupancy
   occupancyData: Record<string, number>; // Date "YYYY-MM-DD" -> Count
@@ -486,6 +488,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const bulkUpdateMonthlyBudgets = async (budgets: MonthlyBudget[]) => {
+    const { error } = await supabase.from('monthly_budgets').upsert(
+      budgets.map(b => ({
+        sector_id: b.sectorId,
+        month_key: b.monthKey,
+        budget_qty: b.budgetQty,
+        budget_value: b.budgetValue,
+        hour_rate: b.hourRate,
+        work_hours_per_day: b.workHoursPerDay,
+        working_days_per_month: b.workingDaysPerMonth,
+        extra_qty_per_day: b.extraQtyPerDay
+      }))
+    );
+    if (!error) {
+      setMonthlyBudgets(prev => {
+        const newMap = { ...prev };
+        budgets.forEach(b => {
+          newMap[`${b.sectorId}_${b.monthKey}`] = b;
+        });
+        return newMap;
+      });
+    } else {
+      console.error('Error in bulk update budgets:', error);
+      throw error;
+    }
+  };
+
+  const bulkUpdateManualRealStats = async (stats: ManualRealStat[]) => {
+    const { error } = await supabase.from('manual_real_stats').upsert(
+      stats.map(s => ({
+        sector_id: s.sectorId,
+        month_key: s.monthKey,
+        real_qty: s.realQty,
+        real_value: s.realValue,
+        afastados_qty: s.afastadosQty,
+        apprentices_qty: s.apprenticesQty
+      }))
+    );
+    if (!error) {
+      setManualRealStats(prev => {
+        const newMap = { ...prev };
+        stats.forEach(s => {
+          newMap[`${s.sectorId}_${s.monthKey}`] = s;
+        });
+        return newMap;
+      });
+    } else {
+      console.error('Error in bulk update real stats:', error);
+      throw error;
+    }
+  };
+
   const updateSystemConfig = async (config: SystemConfig) => {
     const { error } = await supabase.from('system_config').update({
       standard_hour_rate: config.standardHourRate,
@@ -514,6 +568,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       getMonthlyBudget, updateMonthlyBudget,
       getMonthlyLote, updateMonthlyLote,
       getManualRealStat, updateManualRealStat,
+      bulkUpdateMonthlyBudgets, bulkUpdateManualRealStats,
       occupancyData, saveOccupancyBatch,
       systemConfig, updateSystemConfig,
       specialRoles, addSpecialRole, removeSpecialRole,
