@@ -21,7 +21,8 @@ export const IdealTable: React.FC = () => {
   useEffect(() => {
     console.log('[IdealTable] mounted with selectedMonthKey:', selectedMonthKey);
     console.log('[IdealTable] isAdminUnlockedOnce:', isAdminUnlockedOnce);
-  }, [selectedMonthKey, isAdminUnlockedOnce]);
+    window.alert(`IdealTable montado. Admin unlocked: ${isAdminUnlockedOnce}`);
+  }, [selectedMonthKey]);
 
   // Field mapping for paste functionality order
   const fieldOrder = [
@@ -51,7 +52,8 @@ export const IdealTable: React.FC = () => {
 
   // Replicate data from Previous Month
   const handleReplicatePrevious = async () => {
-    console.log('[IdealTable] handleReplicatePrevious called');
+    console.log('[IdealTable] handleReplicatePrevious starting');
+    window.alert('Função handleReplicatePrevious iniciada!');
     try {
       if (!window.confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
 
@@ -279,7 +281,7 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdminUnlockedOnce && (
+          {true && (
             <>
               <button
                 onClick={handleReplicatePrevious}
