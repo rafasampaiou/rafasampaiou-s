@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Save, Calendar, Copy } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export const IdealTable: React.FC = () => {
   const {
@@ -9,9 +9,7 @@ export const IdealTable: React.FC = () => {
     getMonthlyBudget,
     updateMonthlyBudget,
     getManualRealStat,
-    updateManualRealStat,
-    bulkUpdateMonthlyBudgets,
-    bulkUpdateManualRealStats
+    updateManualRealStat
   } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
@@ -47,51 +45,6 @@ export const IdealTable: React.FC = () => {
     });
   };
 
-  // Replicate data from Previous Month
-  const handleReplicatePrevious = async () => {
-    try {
-      if (!window.confirm('Isso irá copiar os dados do mês anterior para o mês atual. Deseja continuar?')) return;
-
-      const [y, m] = selectedMonthKey.split('-').map(Number);
-      const prevDate = new Date(y, m - 2, 1);
-      const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-
-      const newBudgets: any[] = [];
-      const newRealStats: any[] = [];
-
-      sectors.forEach(s => {
-        const prevBudget = getMonthlyBudget(s.id, prevMonthKey);
-        if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
-          newBudgets.push({ ...prevBudget, monthKey: selectedMonthKey });
-        }
-
-        const prevReal = getManualRealStat(s.id, prevMonthKey);
-        if (prevReal) {
-          newRealStats.push({ ...prevReal, monthKey: selectedMonthKey });
-        }
-      });
-
-      if (newBudgets.length === 0 && newRealStats.length === 0) {
-        alert('Nenhum dado encontrado no mês anterior para replicar.');
-        return;
-      }
-
-      await Promise.all([
-        newBudgets.length > 0 ? bulkUpdateMonthlyBudgets(newBudgets) : Promise.resolve(),
-        newRealStats.length > 0 ? bulkUpdateManualRealStats(newRealStats) : Promise.resolve()
-      ]);
-
-      alert(`Dados de ${prevMonthKey} replicados com sucesso! A página será atualizada.`);
-      window.location.reload();
-    } catch (error) {
-      console.error('[Replicate] Erro:', error);
-      alert('Erro ao replicar dados.');
-    }
-  };
-
-  const handleSave = () => {
-    alert('As alterações foram persistidas com sucesso no banco de dados.');
-  };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, startSectorIndex: number, startField: string) => {
     e.preventDefault();
@@ -229,25 +182,6 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdminUnlocked && (
-            <>
-              <button
-                onClick={handleReplicatePrevious}
-                className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors"
-                title="Copiar dados do mês anterior"
-              >
-                <Copy size={16} />
-                Replicar Mês Ant.
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-2 bg-[#155645] hover:bg-[#104033] text-white px-4 py-2 rounded-lg text-sm transition-colors"
-              >
-                <Save size={16} />
-                Salvar Alterações
-              </button>
-            </>
-          )}
         </div>
       </div>
 
