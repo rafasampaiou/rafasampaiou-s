@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Calendar, Copy } from 'lucide-react';
+import { Calendar, Copy, ClipboardPaste } from 'lucide-react';
 
 export const IdealTable: React.FC = () => {
   const {
@@ -15,10 +15,15 @@ export const IdealTable: React.FC = () => {
   } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
-  const [isReplicating, setIsReplicating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasClipboard, setHasClipboard] = useState(false);
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
 
   useEffect(() => {
+    // Check if there is data in clipboard on mount
+    const clipboardData = localStorage.getItem('ideal_clipboard');
+    if (clipboardData) setHasClipboard(true);
+
     console.log('[IdealTable] mounted with selectedMonthKey:', selectedMonthKey);
   }, [selectedMonthKey]);
 
@@ -48,65 +53,79 @@ export const IdealTable: React.FC = () => {
     });
   };
 
-  // Replicate data from Previous Month
-  const handleReplicatePrevious = async () => {
-    if (isReplicating) return;
-
+  // Copy Data to Local Clipboard
+  const handleCopyData = () => {
     try {
-      console.log('[Replicate] Start triggered for:', selectedMonthKey);
-
-      if (!window.confirm('Isso irá copiar os dados do mês anterior para o mês atual. Deseja continuar?')) return;
-
-      setIsReplicating(true);
-
-      const [y, m] = selectedMonthKey.split('-').map(Number);
-      const prevDate = new Date(y, m - 2, 1);
-      const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-
-      console.log('[Replicate] Target Month Key:', prevMonthKey);
-
-      const newBudgets: any[] = [];
-      const newRealStats: any[] = [];
+      const budgetsToCopy: any[] = [];
+      const statsToCopy: any[] = [];
 
       sectors.forEach(s => {
-        // Replicate Budget (only if not default/empty)
-        const prevBudget = getMonthlyBudget(s.id, prevMonthKey);
-        if (prevBudget.budgetQty > 0 || prevBudget.budgetValue > 0) {
-          newBudgets.push({ ...prevBudget, monthKey: selectedMonthKey });
+        const b = getMonthlyBudget(s.id, selectedMonthKey);
+        if (b.budgetQty > 0 || b.budgetValue > 0) {
+          budgetsToCopy.push(b);
         }
 
-        // Replicate Real Stats
-        const prevReal = getManualRealStat(s.id, prevMonthKey);
-        if (prevReal) {
-          newRealStats.push({ ...prevReal, monthKey: selectedMonthKey });
+        const r = getManualRealStat(s.id, selectedMonthKey);
+        if (r) {
+          statsToCopy.push(r);
         }
       });
 
-      console.log('[Replicate] Preparation complete. Found items to copy:', {
-        budgets: newBudgets.length,
-        realStats: newRealStats.length
-      });
-
-      if (newBudgets.length === 0 && newRealStats.length === 0) {
-        alert(`Nenhum dado encontrado no mês anterior (${prevMonthKey}) para replicar.`);
-        setIsReplicating(false);
+      if (budgetsToCopy.length === 0 && statsToCopy.length === 0) {
+        alert('Não há dados neste mês para copiar.');
         return;
       }
 
+      const clipboardPayload = {
+        sourceMonth: selectedMonthKey,
+        budgets: budgetsToCopy,
+        stats: statsToCopy,
+        timestamp: new Date().toISOString()
+      };
+
+      localStorage.setItem('ideal_clipboard', JSON.stringify(clipboardPayload));
+      setHasClipboard(true);
+      alert(`Dados de ${selectedMonthKey} copiados para a área de transferência! Vá para outro mês e clique em "Colar Dados".`);
+    } catch (error) {
+      console.error('Error copying data:', error);
+      alert('Erro ao copiar dados.');
+    }
+  };
+
+  // Paste Data from Local Clipboard
+  const handlePasteData = async () => {
+    if (isProcessing) return;
+
+    try {
+      const rawData = localStorage.getItem('ideal_clipboard');
+      if (!rawData) {
+        alert('Área de transferência vazia.');
+        return;
+      }
+
+      const clipboardData = JSON.parse(rawData);
+      const { sourceMonth, budgets, stats } = clipboardData;
+
+      if (!window.confirm(`Isso irá COLAR os dados copiados de ${sourceMonth} em ${selectedMonthKey}. Isso sobrescreverá os dados atuais. Deseja continuar?`)) return;
+
+      setIsProcessing(true);
+
+      // Prepare data for the current month
+      const newBudgets = budgets.map((b: any) => ({ ...b, monthKey: selectedMonthKey }));
+      const newStats = stats.map((s: any) => ({ ...s, monthKey: selectedMonthKey }));
+
       await Promise.all([
         newBudgets.length > 0 ? bulkUpdateMonthlyBudgets(newBudgets) : Promise.resolve(),
-        newRealStats.length > 0 ? bulkUpdateManualRealStats(newRealStats) : Promise.resolve()
+        newStats.length > 0 ? bulkUpdateManualRealStats(newStats) : Promise.resolve()
       ]);
 
-      console.log('[Replicate] Bulk update completed successfully.');
-      alert(`Replicação concluída! Copiados ${newBudgets.length} orçamentos e ${newRealStats.length} registros reais de ${prevMonthKey}.\n\nA página será atualizada.`);
-
+      alert(`Dados de ${sourceMonth} colados com sucesso em ${selectedMonthKey}!`);
       window.location.reload();
-    } catch (error: any) {
-      console.error('[Replicate] Erro crítico durante a replicação:', error);
-      alert('Erro ao replicar dados: ' + (error.message || 'Erro desconhecido.'));
+    } catch (error) {
+      console.error('Error pasting data:', error);
+      alert('Erro ao colar dados.');
     } finally {
-      setIsReplicating(false);
+      setIsProcessing(false);
     }
   };
 
@@ -248,16 +267,29 @@ export const IdealTable: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {isAdminUnlocked && (
-            <button
-              onClick={handleReplicatePrevious}
-              disabled={isReplicating}
-              className={`flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors ${isReplicating ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              title="Copiar dados do mês anterior"
-            >
-              <Copy size={16} className={isReplicating ? 'animate-spin' : ''} />
-              {isReplicating ? 'Replicando...' : 'Replicar Mês Ant.'}
-            </button>
+            <>
+              <button
+                onClick={handleCopyData}
+                className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors"
+                title="Copiar dados deste mês"
+              >
+                <Copy size={16} />
+                Copiar Dados
+              </button>
+
+              {hasClipboard && (
+                <button
+                  onClick={handlePasteData}
+                  disabled={isProcessing}
+                  className={`flex items-center gap-2 bg-[#155645] hover:bg-[#104033] text-white px-4 py-2 rounded-lg text-sm transition-colors ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  title="Colar dados copiados"
+                >
+                  <ClipboardPaste size={16} className={isProcessing ? 'animate-spin' : ''} />
+                  {isProcessing ? 'Colando...' : 'Colar Dados'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
