@@ -98,7 +98,8 @@ export const Indicators: React.FC = () => {
       extrasCount,
       netCltCount,
       totalHeadcount,
-      displayValue: Number(displayValue.toFixed(3))
+      totalHeadcount,
+      displayValue: Number((displayValue || 0).toFixed(3))
     };
   });
 
@@ -238,7 +239,7 @@ export const Indicators: React.FC = () => {
   const renderMatrixCell = (val: number, type: 'value' | 'qty' | 'index') => {
     if (type === 'value') return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
     if (type === 'qty') return Math.round(val); // Force Integer
-    if (type === 'index') return val.toFixed(3);
+    if (type === 'index') return (val || 0).toFixed(3);
     return val;
   };
 
@@ -340,7 +341,7 @@ export const Indicators: React.FC = () => {
               <Tooltip
                 labelFormatter={(day) => `${day}/${month}/${year}`}
                 formatter={(value: number, name: string) => [
-                  name === 'displayValue' ? value.toFixed(3) : value,
+                  name === 'displayValue' ? (value || 0).toFixed(3) : value,
                   name === 'displayValue' ? 'Índice' :
                     name === 'occupiedUH' ? 'UH Ocupada' :
                       name === 'extrasCount' ? 'Extras' :
@@ -380,7 +381,7 @@ export const Indicators: React.FC = () => {
                   <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
                   <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
                   <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
-                  <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
+                  <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{(stat.avgIndex || 0).toFixed(3)}</td>
                 </tr>
               ))}
               {loteStats.length === 0 && (
