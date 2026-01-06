@@ -176,7 +176,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             realQty: s.real_qty,
             realValue: s.real_value,
             afastadosQty: s.afastados_qty,
-            apprenticesQty: s.apprentices_qty
+            apprenticesQty: s.apprentices_qty,
+            wfoQty: s.wfo_qty
           };
         });
         setManualRealStats(statsMap);
@@ -461,13 +462,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await supabase.from('monthly_lotes').delete().eq('month_key', monthKey);
 
     const { error } = await supabase.from('monthly_lotes').insert(
-      lotes.map(l => ({
-        month_key: monthKey,
-        name: l.name,
-        start_day: l.startDay,
-        end_day: l.endDay,
-        wfo_qty: l.wfo
-      }))
+      lotes.map(l => ({ month_key: monthKey, name: l.name, start_day: l.startDay, end_day: l.endDay }))
     );
     if (!error) {
       setMonthlyLotes(prev => ({ ...prev, [monthKey]: lotes }));
@@ -486,7 +481,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       real_qty: data.realQty,
       real_value: data.realValue,
       afastados_qty: data.afastadosQty,
-      apprentices_qty: data.apprenticesQty
+      apprentices_qty: data.apprenticesQty,
+      wfo_qty: data.wfoQty
     });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
@@ -529,7 +525,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         real_qty: s.realQty,
         real_value: s.realValue,
         afastados_qty: s.afastadosQty,
-        apprentices_qty: s.apprenticesQty
+        apprentices_qty: s.apprenticesQty,
+        wfo_qty: s.wfoQty
       }))
     );
     if (!error) {

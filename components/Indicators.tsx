@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 export const Indicators: React.FC = () => {
-  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, systemConfig } = useApp();
+  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
@@ -371,48 +371,18 @@ export const Indicators: React.FC = () => {
                 <th className="p-3 border-r border-slate-200">UH Total (Acum.)</th>
                 <th className="p-3 border-r border-slate-200">{getMetricLabel()} (Acum.)</th>
                 <th className="p-3 border-r border-slate-200 text-[#155645]">MO / UH Ocupada</th>
-                <th className="p-3 border-r border-slate-200">Workforce</th>
-                <th className="p-3 border-r border-slate-200">WFO</th>
-                <th className="p-3">Diferença</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loteStats.map((stat, idx) => {
-                const currentLote = lotes.find(l => l.id === stat.id);
-                const workforceValue = netCltCount; // System's workforce
-                const wfoValue = currentLote?.wfo || 0;
-                const difference = workforceValue - wfoValue;
-                const isDifferent = workforceValue !== wfoValue;
-
-                return (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
-                    <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
-                    <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
-                    <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
-                    <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
-                    <td className="p-3 border-r border-slate-200 font-medium">{workforceValue}</td>
-                    <td className="p-3 border-r border-slate-200">
-                      <input
-                        type="number"
-                        className="w-20 border border-slate-300 rounded px-2 py-1 text-center focus:ring-1 focus:ring-[#155645] outline-none"
-                        value={wfoValue === 0 ? '' : wfoValue}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const newVal = parseInt(e.target.value) || 0;
-                          const updatedLotes = lotes.map(l =>
-                            l.id === stat.id ? { ...l, wfo: newVal } : l
-                          );
-                          updateMonthlyLote(monthKey, updatedLotes);
-                        }}
-                      />
-                    </td>
-                    <td className={`p-3 font-bold ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                      {difference > 0 ? `+${difference}` : difference}
-                    </td>
-                  </tr>
-                );
-              })}
+              {loteStats.map((stat, idx) => (
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
+                  <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
+                  <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
+                  <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
+                  <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
+                </tr>
+              ))}
               {loteStats.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-4 text-slate-400">Nenhum lote configurado para este mês.</td>
@@ -467,7 +437,10 @@ export const Indicators: React.FC = () => {
                     <div className="text-[9px] text-slate-400 font-normal mt-1">Dia {lote.startDay}-{lote.endDay}</div>
                   </th>
                 ))}
-                <th className="p-3 bg-slate-200 border-l border-slate-300">Total</th>
+                <th className="p-3 border-r border-slate-200">Total</th>
+                <th className="p-3 border-r border-slate-200">Workforce</th>
+                <th className="p-3 border-r border-slate-200">WFO</th>
+                <th className="p-3">Diferença</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -483,13 +456,52 @@ export const Indicators: React.FC = () => {
                       )}
                     </td>
                   ))}
-                  <td className="p-3 font-bold bg-slate-50 border-l border-slate-200">
+                  <td className="p-3 font-bold bg-slate-50 border-r border-slate-200">
                     {renderMatrixCell(
                       matrixView === 'value' ? row.totalSectorValue :
                         matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
                       matrixView
                     )}
                   </td>
+                  {/* Workforce, WFO, Diff */}
+                  {(() => {
+                    const sectorObj = sectors.find(s => s.name === row.sectorName);
+                    const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
+                    const workforce = stats ? Math.max(0, stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0)) : 0;
+                    const wfo = stats?.wfoQty || 0;
+                    const diff = workforce - wfo;
+                    const isDifferent = workforce !== wfo;
+
+                    return (
+                      <>
+                        <td className="p-3 border-r border-slate-200 text-center font-medium">{workforce}</td>
+                        <td className="p-3 border-r border-slate-200 text-center">
+                          <input
+                            type="number"
+                            className="w-16 border border-slate-300 rounded px-1 py-1 text-center text-xs focus:ring-1 focus:ring-[#155645] outline-none"
+                            value={wfo === 0 ? '' : wfo}
+                            placeholder="0"
+                            onChange={(e) => {
+                              if (!sectorObj) return;
+                              const newVal = parseInt(e.target.value) || 0;
+                              const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+                                sectorId: sectorObj.id,
+                                monthKey: monthKey,
+                                realQty: 0,
+                                realValue: 0,
+                                afastadosQty: 0,
+                                apprenticesQty: 0
+                              };
+                              updateManualRealStat({ ...currentStats, wfoQty: newVal });
+                            }}
+                          />
+                        </td>
+                        <td className={`p-3 text-center font-bold ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                          {diff > 0 ? `+${diff}` : diff}
+                        </td>
+                      </>
+                    );
+                  })()}
                 </tr>
               ))}
               {financialMatrix.length === 0 && (
@@ -510,13 +522,14 @@ export const Indicators: React.FC = () => {
                     )}
                   </td>
                 ))}
-                <td className="p-3 bg-slate-200 border-l border-slate-300">
+                <td className="p-3 bg-slate-200 border-r border-slate-300">
                   {renderMatrixCell(
                     matrixView === 'value' ? grandTotalValue :
                       matrixView === 'qty' ? grandTotalQty : grandTotalIndex,
                     matrixView
                   )}
                 </td>
+                <td colSpan={3} className="bg-slate-50"></td>
               </tr>
             </tfoot>
           </table>
