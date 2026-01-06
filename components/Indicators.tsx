@@ -98,7 +98,6 @@ export const Indicators: React.FC = () => {
       extrasCount,
       netCltCount,
       totalHeadcount,
-      totalHeadcount,
       displayValue: Number((displayValue || 0).toFixed(3))
     };
   });
@@ -431,97 +430,147 @@ export const Indicators: React.FC = () => {
           <table className="w-full text-sm text-right">
             <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
               <tr>
-                <th className="p-3 border-r border-slate-200 text-left">Setor</th>
+                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle">Setor</th>
+                <th rowSpan={2} className="p-3 border-r border-slate-200 text-center align-middle">Workforce</th>
                 {lotes.map(lote => (
-                  <th key={lote.id} className="p-3 border-r border-slate-200 min-w-[100px]">
+                  <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center">
                     {lote.name}
-                    <div className="text-[9px] text-slate-400 font-normal mt-1">Dia {lote.startDay}-{lote.endDay}</div>
+                    <div className="text-[9px] text-slate-400 font-normal">Dia {lote.startDay}-{lote.endDay}</div>
                   </th>
                 ))}
-                <th className="p-3 border-r border-slate-200">Total</th>
-                <th className="p-3 border-r border-slate-200">Workforce</th>
-                <th className="p-3 border-r border-slate-200">WFO</th>
-                <th className="p-3">Diferença</th>
+                <th colSpan={3} className="p-2 border-b border-slate-200 text-center bg-slate-100">Total Mensal</th>
+              </tr>
+              <tr className="border-b border-slate-200">
+                {lotes.map(lote => (
+                  <React.Fragment key={lote.id}>
+                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">Extra</th>
+                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">WFO</th>
+                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">Diff</th>
+                  </React.Fragment>
+                ))}
+                <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px] bg-slate-100">Extra</th>
+                <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px] bg-slate-100">WFO</th>
+                <th className="p-1.5 font-normal lowercase text-[10px] bg-slate-100">Diff</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {financialMatrix.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50">
-                  <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
-                  {row.loteValues.map((cell, cIdx) => (
-                    <td key={cIdx} className="p-3 border-r border-slate-200">
-                      {renderMatrixCell(
-                        matrixView === 'value' ? cell.value :
-                          matrixView === 'qty' ? cell.qty : cell.index,
-                        matrixView
-                      )}
-                    </td>
-                  ))}
-                  <td className="p-3 font-bold bg-slate-50 border-r border-slate-200">
-                    {renderMatrixCell(
-                      matrixView === 'value' ? row.totalSectorValue :
-                        matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
-                      matrixView
-                    )}
-                  </td>
-                  {/* Workforce, WFO, Diff */}
-                  {(() => {
-                    const sectorObj = sectors.find(s => s.name === row.sectorName);
-                    const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
-                    const workforce = stats ? Math.max(0, stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0)) : 0;
-                    const wfo = stats?.wfoQty || 0;
-                    const diff = workforce - wfo;
-                    const isDifferent = workforce !== wfo;
+              {financialMatrix.map((row, idx) => {
+                const sectorObj = sectors.find(s => s.name === row.sectorName);
+                const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
+                const workforce = stats ? Math.max(0, stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0)) : 0;
 
-                    return (
-                      <>
-                        <td className="p-3 border-r border-slate-200 text-center font-medium">{workforce}</td>
-                        <td className="p-3 border-r border-slate-200 text-center">
-                          <input
-                            type="number"
-                            className="w-16 border border-slate-300 rounded px-1 py-1 text-center text-xs focus:ring-1 focus:ring-[#155645] outline-none"
-                            value={wfo === 0 ? '' : wfo}
-                            placeholder="0"
-                            onChange={(e) => {
-                              if (!sectorObj) return;
-                              const newVal = parseInt(e.target.value) || 0;
-                              const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
-                                sectorId: sectorObj.id,
-                                monthKey: monthKey,
-                                realQty: 0,
-                                realValue: 0,
-                                afastadosQty: 0,
-                                apprenticesQty: 0
-                              };
-                              updateManualRealStat({ ...currentStats, wfoQty: newVal });
-                            }}
-                          />
-                        </td>
-                        <td className={`p-3 text-center font-bold ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                          {diff > 0 ? `+${diff}` : diff}
-                        </td>
-                      </>
-                    );
-                  })()}
-                </tr>
-              ))}
+                return (
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
+                    <td className="p-3 border-r border-slate-200 text-center font-bold text-[#155645]">{workforce}</td>
+
+                    {row.loteValues.map((cell, cIdx) => {
+                      const lote = lotes[cIdx];
+                      const wfo = stats?.loteWfo?.[lote.id] || 0;
+                      const diff = workforce - wfo;
+                      const isDifferent = workforce !== wfo;
+
+                      return (
+                        <React.Fragment key={cIdx}>
+                          <td className="p-3 border-r border-slate-100 bg-slate-50/30">
+                            {renderMatrixCell(
+                              matrixView === 'value' ? cell.value :
+                                matrixView === 'qty' ? cell.qty : cell.index,
+                              matrixView
+                            )}
+                          </td>
+                          <td className="p-2 border-r border-slate-100">
+                            <input
+                              type="number"
+                              className="w-12 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
+                              value={wfo === 0 ? '' : wfo}
+                              placeholder="0"
+                              onChange={(e) => {
+                                if (!sectorObj) return;
+                                const newVal = parseInt(e.target.value) || 0;
+                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+                                  sectorId: sectorObj.id,
+                                  monthKey: monthKey,
+                                  realQty: 0,
+                                  realValue: 0,
+                                  afastadosQty: 0,
+                                  apprenticesQty: 0
+                                };
+                                const updatedLoteWfo = { ...(currentStats.loteWfo || {}), [lote.id]: newVal };
+                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+                              }}
+                            />
+                          </td>
+                          <td className={`p-2 border-r border-slate-200 text-center font-bold text-[11px] ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                            {diff > 0 ? `+${diff}` : diff}
+                          </td>
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {/* Total Mensal Cols */}
+                    {(() => {
+                      const monthlyWfo = stats?.wfoQty || 0;
+                      const monthlyDiff = workforce - monthlyWfo;
+                      return (
+                        <>
+                          <td className="p-3 font-bold bg-slate-100 border-r border-slate-200">
+                            {renderMatrixCell(
+                              matrixView === 'value' ? row.totalSectorValue :
+                                matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
+                              matrixView
+                            )}
+                          </td>
+                          <td className="p-2 bg-slate-100 border-r border-slate-200">
+                            <input
+                              type="number"
+                              className="w-12 border border-slate-300 rounded px-1 py-0.5 text-center text-[10px] bg-white focus:ring-1 focus:ring-[#155645] outline-none"
+                              value={monthlyWfo === 0 ? '' : monthlyWfo}
+                              placeholder="0"
+                              onChange={(e) => {
+                                if (!sectorObj) return;
+                                const newVal = parseInt(e.target.value) || 0;
+                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+                                  sectorId: sectorObj.id,
+                                  monthKey: monthKey,
+                                  realQty: 0,
+                                  realValue: 0,
+                                  afastadosQty: 0,
+                                  apprenticesQty: 0
+                                };
+                                updateManualRealStat({ ...currentStats, wfoQty: newVal });
+                              }}
+                            />
+                          </td>
+                          <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] ${workforce !== monthlyWfo ? 'text-red-500' : 'text-green-600'}`}>
+                            {monthlyDiff > 0 ? `+${monthlyDiff}` : monthlyDiff}
+                          </td>
+                        </>
+                      );
+                    })()}
+                  </tr>
+                );
+              })}
               {financialMatrix.length === 0 && (
                 <tr>
-                  <td colSpan={lotes.length + 2} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
+                  <td colSpan={(lotes.length * 3) + 5} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
                 </tr>
               )}
             </tbody>
             <tfoot className="bg-slate-100 font-bold border-t border-slate-300">
               <tr>
-                <td className="p-3 text-left">TOTAL GERAL</td>
+                <td colSpan={2} className="p-3 text-left">TOTAL GERAL</td>
                 {loteTotalsWithIndex.map((total, idx) => (
-                  <td key={idx} className="p-3 border-r border-slate-300">
-                    {renderMatrixCell(
-                      matrixView === 'value' ? total.value :
-                        matrixView === 'qty' ? total.qty : total.index,
-                      matrixView
-                    )}
-                  </td>
+                  <React.Fragment key={idx}>
+                    <td className="p-3 border-r border-slate-300">
+                      {renderMatrixCell(
+                        matrixView === 'value' ? total.value :
+                          matrixView === 'qty' ? total.qty : total.index,
+                        matrixView
+                      )}
+                    </td>
+                    <td colSpan={2} className="border-r border-slate-300"></td>
+                  </React.Fragment>
                 ))}
                 <td className="p-3 bg-slate-200 border-r border-slate-300">
                   {renderMatrixCell(
@@ -530,7 +579,7 @@ export const Indicators: React.FC = () => {
                     matrixView
                   )}
                 </td>
-                <td colSpan={3} className="bg-slate-50"></td>
+                <td colSpan={2} className="bg-slate-200"></td>
               </tr>
             </tfoot>
           </table>

@@ -69,7 +69,8 @@ export interface ManualRealStat {
   realValue: number;
   afastadosQty?: number; // New: Absent/Leave
   apprenticesQty?: number; // New: Young Apprentices
-  wfoQty?: number; // New: WFO Target
+  wfoQty?: number; // New: WFO Target (Monthly)
+  loteWfo?: Record<number, number>; // New: WFO Target (per Lote ID)
 }
 
 export interface LoteConfig {

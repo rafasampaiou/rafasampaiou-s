@@ -177,7 +177,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             realValue: s.real_value,
             afastadosQty: s.afastados_qty,
             apprenticesQty: s.apprentices_qty,
-            wfoQty: s.wfo_qty
+            wfoQty: s.wfo_qty,
+            loteWfo: s.wfo_lotes_json ? JSON.parse(s.wfo_lotes_json) : undefined
           };
         });
         setManualRealStats(statsMap);
@@ -482,7 +483,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       real_value: data.realValue,
       afastados_qty: data.afastadosQty,
       apprentices_qty: data.apprenticesQty,
-      wfo_qty: data.wfoQty
+      wfo_qty: data.wfoQty,
+      wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
     });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
@@ -526,7 +528,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         real_value: s.realValue,
         afastados_qty: s.afastadosQty,
         apprentices_qty: s.apprenticesQty,
-        wfo_qty: s.wfoQty
+        wfo_qty: s.wfoQty,
+        wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
       }))
     );
     if (!error) {
