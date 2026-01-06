@@ -464,43 +464,76 @@ export const Indicators: React.FC = () => {
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
-                      const wfo = stats?.loteWfo?.[lote.id] || 0;
-                      const diff = workforce - wfo;
-                      const isDifferent = workforce !== wfo;
+                      const wfoData = stats?.loteWfo?.[lote.id];
+
+                      // Determine WFO and workforce metric based on matrixView
+                      let workforceMetric = 0;
+                      let wfoMetric = 0;
+                      let isNumericInput = true;
+
+                      if (matrixView === 'value') {
+                        workforceMetric = cell.value;
+                        wfoMetric = wfoData?.value || 0;
+                      } else if (matrixView === 'qty') {
+                        workforceMetric = cell.qty;
+                        wfoMetric = wfoData?.qty || 0;
+                      } else if (matrixView === 'index') {
+                        workforceMetric = cell.index;
+                        // Index is calculated: WFO Qty / Lote Occupancy
+                        const statsLote = loteStats.find(ls => ls.id === lote.id);
+                        const occ = statsLote ? statsLote.totalOccupancy : 0;
+                        wfoMetric = occ > 0 ? (wfoData?.qty || 0) / occ : 0;
+                        isNumericInput = false;
+                      }
+
+                      const diff = workforceMetric - wfoMetric;
+                      // Precision check for background color
+                      const isDifferent = Math.abs(diff) > 0.0001;
 
                       return (
                         <React.Fragment key={cIdx}>
                           <td className="p-3 border-r border-slate-100 bg-slate-50/30 text-center w-20 min-w-[80px]">
-                            {renderMatrixCell(
-                              matrixView === 'value' ? cell.value :
-                                matrixView === 'qty' ? cell.qty : cell.index,
-                              matrixView
-                            )}
+                            {renderMatrixCell(workforceMetric, matrixView)}
                           </td>
                           <td className="p-2 border-r border-slate-100 text-center w-20 min-w-[80px]">
-                            <input
-                              type="number"
-                              className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
-                              value={wfo === 0 ? '' : wfo}
-                              placeholder="0"
-                              onChange={(e) => {
-                                if (!sectorObj) return;
-                                const newVal = parseInt(e.target.value) || 0;
-                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
-                                  sectorId: sectorObj.id,
-                                  monthKey: monthKey,
-                                  realQty: 0,
-                                  realValue: 0,
-                                  afastadosQty: 0,
-                                  apprenticesQty: 0
-                                };
-                                const updatedLoteWfo = { ...(currentStats.loteWfo || {}), [lote.id]: newVal };
-                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
-                              }}
-                            />
+                            {isNumericInput ? (
+                              <input
+                                type="number"
+                                className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
+                                value={wfoMetric === 0 ? '' : wfoMetric}
+                                placeholder="0"
+                                onChange={(e) => {
+                                  if (!sectorObj) return;
+                                  const newVal = parseFloat(e.target.value) || 0;
+                                  const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+                                    sectorId: sectorObj.id,
+                                    monthKey: monthKey,
+                                    realQty: 0,
+                                    realValue: 0,
+                                    afastadosQty: 0,
+                                    apprenticesQty: 0
+                                  };
+
+                                  const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
+                                  const currentLoteData = updatedLoteWfo[lote.id] || {};
+
+                                  if (matrixView === 'value') {
+                                    updatedLoteWfo[lote.id] = { ...currentLoteData, value: newVal };
+                                  } else {
+                                    updatedLoteWfo[lote.id] = { ...currentLoteData, qty: newVal };
+                                  }
+
+                                  updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+                                }}
+                              />
+                            ) : (
+                              <span className="text-[10px] font-medium text-slate-500">
+                                {renderMatrixCell(wfoMetric, 'index')}
+                              </span>
+                            )}
                           </td>
                           <td className={`p-2 border-r border-slate-200 text-center font-bold text-[11px] w-16 ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                            {diff > 0 ? `+${diff}` : diff}
+                            {diff > 0 ? `+${renderMatrixCell(diff, matrixView)}` : renderMatrixCell(diff, matrixView)}
                           </td>
                         </React.Fragment>
                       );
@@ -508,22 +541,36 @@ export const Indicators: React.FC = () => {
 
                     {/* Total Mensal Cols */}
                     {(() => {
-                      const monthlyWfo = (Object.values(stats?.loteWfo || {}) as number[]).reduce((a, b) => a + (Number(b) || 0), 0);
-                      const monthlyDiff = workforce - monthlyWfo;
+                      let workforceTotal = 0;
+                      let wfoTotal = 0;
+
+                      if (matrixView === 'value') {
+                        workforceTotal = row.totalSectorValue;
+                        wfoTotal = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                      } else if (matrixView === 'qty') {
+                        workforceTotal = row.totalSectorQty;
+                        wfoTotal = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                      } else {
+                        workforceTotal = row.totalSectorIndex;
+                        // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
+                        const totalWfoQty = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
+                        wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
+                      }
+
+                      const monthlyDiff = workforceTotal - wfoTotal;
+                      const isMonthlyDiff = Math.abs(monthlyDiff) > 0.0001;
+
                       return (
                         <>
                           <td className="p-3 font-bold bg-slate-100 border-r border-slate-200 text-center w-20 min-w-[80px]">
-                            {renderMatrixCell(
-                              matrixView === 'value' ? row.totalSectorValue :
-                                matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
-                              matrixView
-                            )}
+                            {renderMatrixCell(workforceTotal, matrixView)}
                           </td>
                           <td className="p-3 bg-slate-100 border-r border-slate-200 text-center font-bold text-[#155645] w-20 min-w-[80px]">
-                            {monthlyWfo || 0}
+                            {renderMatrixCell(wfoTotal, matrixView)}
                           </td>
-                          <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] w-16 ${workforce !== monthlyWfo ? 'text-red-500' : 'text-green-600'}`}>
-                            {monthlyDiff > 0 ? `+${monthlyDiff}` : monthlyDiff}
+                          <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] w-16 ${isMonthlyDiff ? 'text-red-500' : 'text-green-600'}`}>
+                            {monthlyDiff > 0 ? `+${renderMatrixCell(monthlyDiff, matrixView)}` : renderMatrixCell(monthlyDiff, matrixView)}
                           </td>
                         </>
                       );
