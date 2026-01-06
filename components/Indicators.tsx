@@ -371,18 +371,48 @@ export const Indicators: React.FC = () => {
                 <th className="p-3 border-r border-slate-200">UH Total (Acum.)</th>
                 <th className="p-3 border-r border-slate-200">{getMetricLabel()} (Acum.)</th>
                 <th className="p-3 border-r border-slate-200 text-[#155645]">MO / UH Ocupada</th>
+                <th className="p-3 border-r border-slate-200">Workforce</th>
+                <th className="p-3 border-r border-slate-200">WFO</th>
+                <th className="p-3">Diferença</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loteStats.map((stat, idx) => (
-                <tr key={idx} className="hover:bg-slate-50">
-                  <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
-                  <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
-                  <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
-                  <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
-                  <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
-                </tr>
-              ))}
+              {loteStats.map((stat, idx) => {
+                const currentLote = lotes.find(l => l.id === stat.id);
+                const workforceValue = netCltCount; // System's workforce
+                const wfoValue = currentLote?.wfo || 0;
+                const difference = workforceValue - wfoValue;
+                const isDifferent = workforceValue !== wfoValue;
+
+                return (
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
+                    <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
+                    <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
+                    <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount}</td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{stat.avgIndex.toFixed(3)}</td>
+                    <td className="p-3 border-r border-slate-200 font-medium">{workforceValue}</td>
+                    <td className="p-3 border-r border-slate-200">
+                      <input
+                        type="number"
+                        className="w-20 border border-slate-300 rounded px-2 py-1 text-center focus:ring-1 focus:ring-[#155645] outline-none"
+                        value={wfoValue === 0 ? '' : wfoValue}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const newVal = parseInt(e.target.value) || 0;
+                          const updatedLotes = lotes.map(l =>
+                            l.id === stat.id ? { ...l, wfo: newVal } : l
+                          );
+                          updateMonthlyLote(monthKey, updatedLotes);
+                        }}
+                      />
+                    </td>
+                    <td className={`p-3 font-bold ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                      {difference > 0 ? `+${difference}` : difference}
+                    </td>
+                  </tr>
+                );
+              })}
               {loteStats.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-4 text-slate-400">Nenhum lote configurado para este mês.</td>

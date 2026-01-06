@@ -461,7 +461,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await supabase.from('monthly_lotes').delete().eq('month_key', monthKey);
 
     const { error } = await supabase.from('monthly_lotes').insert(
-      lotes.map(l => ({ month_key: monthKey, name: l.name, start_day: l.startDay, end_day: l.endDay }))
+      lotes.map(l => ({
+        month_key: monthKey,
+        name: l.name,
+        start_day: l.startDay,
+        end_day: l.endDay,
+        wfo_qty: l.wfo
+      }))
     );
     if (!error) {
       setMonthlyLotes(prev => ({ ...prev, [monthKey]: lotes }));

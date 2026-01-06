@@ -76,6 +76,7 @@ export interface LoteConfig {
   name: string;
   startDay: number;
   endDay: number;
+  wfo?: number;
 }
 
 export interface MonthlyLoteConfig {

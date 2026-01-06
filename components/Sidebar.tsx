@@ -25,7 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: 'indicators', label: 'Indicadores', icon: LineChart },
     { id: 'request', label: 'Solicitar Extra', icon: FilePlus2 },
     { id: 'extract', label: 'Impressão', icon: Printer },
-    { id: 'ideal', label: 'Quadro Ideal', icon: Table2 },
+    { id: 'ideal', label: 'Quadro Orçado (CLT)', icon: Table2 },
     { id: 'admin', label: 'Administração', icon: Settings }
   ];
 

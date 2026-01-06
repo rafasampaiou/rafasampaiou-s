@@ -63,7 +63,7 @@ const MainContent: React.FC = () => {
           <div className="flex flex-col">
             <h2 className="text-xl font-bold text-slate-800 capitalize">
               {currentView === 'request' ? 'Nova Solicitação' :
-                currentView === 'ideal' ? 'Quadro Ideal' :
+                currentView === 'ideal' ? 'Quadro Orçado (CLT)' :
                   currentView === 'extract' ? 'Impressão' :
                     currentView === 'admin' ? 'Administração' :
                       currentView === 'indicators' ? 'Indicadores' : 'Dashboard'}
