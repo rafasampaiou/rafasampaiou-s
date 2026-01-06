@@ -264,7 +264,7 @@ export const IdealTable: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-bold text-slate-800">Quadro Ideal x Realizado</h2>
+              <h2 className="text-lg font-bold text-slate-800">Quadro Orçado x Realizado</h2>
               <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
                 <Calendar size={16} className="text-[#155645]" />
                 <select
