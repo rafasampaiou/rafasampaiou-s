@@ -476,6 +476,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateManualRealStat = async (data: ManualRealStat) => {
+    const key = `${data.sectorId}_${data.monthKey}`;
+    // Optimistic update
+    setManualRealStats(prev => ({ ...prev, [key]: data }));
+
     const { error } = await supabase.from('manual_real_stats').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
@@ -486,9 +490,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       wfo_qty: data.wfoQty,
       wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
     });
-    if (!error) {
-      const key = `${data.sectorId}_${data.monthKey}`;
-      setManualRealStats(prev => ({ ...prev, [key]: data }));
+
+    if (error) {
+      console.error('Error updating manual real stat:', error);
     }
   };
 
