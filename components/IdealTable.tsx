@@ -52,27 +52,17 @@ export const IdealTable: React.FC = () => {
 
   // Replicate data from Previous Month
   const handleReplicatePrevious = async () => {
-    console.log('[IdealTable] handleReplicatePrevious starting');
-    window.alert('Função handleReplicatePrevious iniciada!');
     try {
-      if (!window.confirm('Isso irá sobrescrever os dados atuais com os do mês anterior (inclusive quadro real, afastados e salário). Deseja continuar?')) return;
+      if (!window.confirm('Isso irá sobrescrever os dados atuais com os orçados e reais do mês anterior. Deseja continuar?')) return;
 
       const [y, m] = selectedMonthKey.split('-').map(Number);
-      // Calculate previous month date correctly
       const prevDate = new Date(y, m - 2, 1);
       const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
       const prevYear = prevDate.getFullYear();
       const prevMonthKey = `${prevYear}-${prevMonth}`;
 
-      console.log(`[Replicate] Replicating from ${prevMonthKey} to ${selectedMonthKey}`);
-
       const newBudgets: any[] = [];
       const newRealStats: any[] = [];
-
-      if (!sectors || sectors.length === 0) {
-        console.warn('[Replicate] No sectors found to replicate.');
-        return;
-      }
 
       sectors.forEach(s => {
         // 1. Replicate Budget
@@ -84,36 +74,15 @@ export const IdealTable: React.FC = () => {
           });
         }
 
-        // 2. Replicate Real Stats (Effective: Manual overrides OR Calculated from requests)
-        const prevManualReal = getManualRealStat(s.id, prevMonthKey);
-
-        const calculatedRealQty = requests
-          .filter(r => r.sector === s.name && r.dateEvent?.startsWith(prevMonthKey) && r.status === 'Aprovado')
-          .reduce((sum, r) => sum + r.extrasQty, 0);
-
-        const calculatedRealValue = requests
-          .filter(r => r.sector === s.name && r.dateEvent?.startsWith(prevMonthKey) && r.status === 'Aprovado')
-          .reduce((sum, r) => sum + (r.totalValue || 0), 0);
-
-        // Use manual override if available, otherwise use what was calculated
-        const realQty = prevManualReal ? prevManualReal.realQty : calculatedRealQty;
-        const realValue = prevManualReal ? prevManualReal.realValue : calculatedRealValue;
-        const afastadosQty = prevManualReal?.afastadosQty || 0;
-        const apprenticesQty = prevManualReal?.apprenticesQty || 0;
-
-        if (realQty > 0 || realValue > 0 || afastadosQty > 0 || apprenticesQty > 0) {
+        // 2. Replicate Real Stats (Manual overrides / CLT data)
+        const prevReal = getManualRealStat(s.id, prevMonthKey);
+        if (prevReal) {
           newRealStats.push({
-            sectorId: s.id,
-            monthKey: selectedMonthKey,
-            realQty,
-            realValue,
-            afastadosQty,
-            apprenticesQty
+            ...prevReal,
+            monthKey: selectedMonthKey
           });
         }
       });
-
-      console.log(`[Replicate] Prepared ${newBudgets.length} budgets and ${newRealStats.length} real stats.`);
 
       if (newBudgets.length === 0 && newRealStats.length === 0) {
         alert('Nenhum dado encontrado no mês anterior para replicar.');
@@ -126,12 +95,27 @@ export const IdealTable: React.FC = () => {
       alert(`Dados replicados de ${prevMonthKey} com sucesso!`);
     } catch (error) {
       console.error('[Replicate] Erro ao replicar:', error);
-      alert('Ocorreu um erro ao replicar os dados. Verifique o console e sua conexão.');
+      alert('Ocorreu um erro ao replicar os dados.');
     }
   };
 
-  const handleSave = () => {
-    alert('Dados salvos com sucesso.');
+  const handleSave = async () => {
+    try {
+      const budgetsToSave = sectors.map(s => getMonthlyBudget(s.id, selectedMonthKey));
+      const statsToSave = sectors
+        .map(s => getManualRealStat(s.id, selectedMonthKey))
+        .filter((s): s is any => !!s);
+
+      await Promise.all([
+        bulkUpdateMonthlyBudgets(budgetsToSave),
+        bulkUpdateManualRealStats(statsToSave)
+      ]);
+
+      alert('Dados consolidados e salvos com sucesso.');
+    } catch (error) {
+      console.error('[IdealTable] Erro ao salvar:', error);
+      alert('Erro ao persistir alterações. Verifique sua conexão.');
+    }
   };
 
   // Handle Paste from Excel
