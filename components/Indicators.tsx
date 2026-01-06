@@ -430,7 +430,7 @@ export const Indicators: React.FC = () => {
           <table className="w-full text-sm text-right">
             <thead className="bg-[#155645]/5 text-[#155645] text-xs">
               <tr>
-                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase">Setor</th>
+                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase w-48 min-w-[180px]">Setor</th>
                 {lotes.map(lote => (
                   <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center uppercase">
                     {lote.name}
