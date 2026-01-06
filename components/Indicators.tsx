@@ -428,29 +428,28 @@ export const Indicators: React.FC = () => {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
-            <thead className="bg-[#155645]/5 text-[#155645] uppercase text-xs">
+            <thead className="bg-[#155645]/5 text-[#155645] text-xs">
               <tr>
-                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle">Setor</th>
-                <th rowSpan={2} className="p-3 border-r border-slate-200 text-center align-middle">Workforce</th>
+                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase">Setor</th>
                 {lotes.map(lote => (
-                  <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center">
+                  <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center uppercase">
                     {lote.name}
-                    <div className="text-[9px] text-slate-400 font-normal">Dia {lote.startDay}-{lote.endDay}</div>
+                    <div className="text-[9px] text-slate-400 font-normal normal-case">Dia {lote.startDay}-{lote.endDay}</div>
                   </th>
                 ))}
-                <th colSpan={3} className="p-2 border-b border-slate-200 text-center bg-slate-100">Total Mensal</th>
+                <th colSpan={3} className="p-2 border-b border-slate-200 text-center bg-slate-100 uppercase">Total Mensal</th>
               </tr>
               <tr className="border-b border-slate-200">
                 {lotes.map(lote => (
                   <React.Fragment key={lote.id}>
-                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">Extra</th>
-                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">WFO</th>
-                    <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px]">Diff</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Workforce</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Wfo</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-16">Diff</th>
                   </React.Fragment>
                 ))}
-                <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px] bg-slate-100">Extra</th>
-                <th className="p-1.5 border-r border-slate-200 font-normal lowercase text-[10px] bg-slate-100">WFO</th>
-                <th className="p-1.5 font-normal lowercase text-[10px] bg-slate-100">Diff</th>
+                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Workforce</th>
+                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Wfo</th>
+                <th className="p-1.5 font-bold text-center text-[10px] uppercase bg-slate-100 w-16">Diff</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -462,7 +461,6 @@ export const Indicators: React.FC = () => {
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
                     <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
-                    <td className="p-3 border-r border-slate-200 text-center font-bold text-[#155645]">{workforce}</td>
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
@@ -472,17 +470,17 @@ export const Indicators: React.FC = () => {
 
                       return (
                         <React.Fragment key={cIdx}>
-                          <td className="p-3 border-r border-slate-100 bg-slate-50/30">
+                          <td className="p-3 border-r border-slate-100 bg-slate-50/30 text-center w-20 min-w-[80px]">
                             {renderMatrixCell(
                               matrixView === 'value' ? cell.value :
                                 matrixView === 'qty' ? cell.qty : cell.index,
                               matrixView
                             )}
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2 border-r border-slate-100 text-center w-20 min-w-[80px]">
                             <input
                               type="number"
-                              className="w-12 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
+                              className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
                               value={wfo === 0 ? '' : wfo}
                               placeholder="0"
                               onChange={(e) => {
@@ -501,7 +499,7 @@ export const Indicators: React.FC = () => {
                               }}
                             />
                           </td>
-                          <td className={`p-2 border-r border-slate-200 text-center font-bold text-[11px] ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                          <td className={`p-2 border-r border-slate-200 text-center font-bold text-[11px] w-16 ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
                             {diff > 0 ? `+${diff}` : diff}
                           </td>
                         </React.Fragment>
@@ -510,39 +508,21 @@ export const Indicators: React.FC = () => {
 
                     {/* Total Mensal Cols */}
                     {(() => {
-                      const monthlyWfo = stats?.wfoQty || 0;
+                      const monthlyWfo = (Object.values(stats?.loteWfo || {}) as number[]).reduce((a, b) => a + (Number(b) || 0), 0);
                       const monthlyDiff = workforce - monthlyWfo;
                       return (
                         <>
-                          <td className="p-3 font-bold bg-slate-100 border-r border-slate-200">
+                          <td className="p-3 font-bold bg-slate-100 border-r border-slate-200 text-center w-20 min-w-[80px]">
                             {renderMatrixCell(
                               matrixView === 'value' ? row.totalSectorValue :
                                 matrixView === 'qty' ? row.totalSectorQty : row.totalSectorIndex,
                               matrixView
                             )}
                           </td>
-                          <td className="p-2 bg-slate-100 border-r border-slate-200">
-                            <input
-                              type="number"
-                              className="w-12 border border-slate-300 rounded px-1 py-0.5 text-center text-[10px] bg-white focus:ring-1 focus:ring-[#155645] outline-none"
-                              value={monthlyWfo === 0 ? '' : monthlyWfo}
-                              placeholder="0"
-                              onChange={(e) => {
-                                if (!sectorObj) return;
-                                const newVal = parseInt(e.target.value) || 0;
-                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
-                                  sectorId: sectorObj.id,
-                                  monthKey: monthKey,
-                                  realQty: 0,
-                                  realValue: 0,
-                                  afastadosQty: 0,
-                                  apprenticesQty: 0
-                                };
-                                updateManualRealStat({ ...currentStats, wfoQty: newVal });
-                              }}
-                            />
+                          <td className="p-3 bg-slate-100 border-r border-slate-200 text-center font-bold text-[#155645] w-20 min-w-[80px]">
+                            {monthlyWfo || 0}
                           </td>
-                          <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] ${workforce !== monthlyWfo ? 'text-red-500' : 'text-green-600'}`}>
+                          <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] w-16 ${workforce !== monthlyWfo ? 'text-red-500' : 'text-green-600'}`}>
                             {monthlyDiff > 0 ? `+${monthlyDiff}` : monthlyDiff}
                           </td>
                         </>
@@ -553,16 +533,16 @@ export const Indicators: React.FC = () => {
               })}
               {financialMatrix.length === 0 && (
                 <tr>
-                  <td colSpan={(lotes.length * 3) + 5} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
+                  <td colSpan={(lotes.length * 3) + 4} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
                 </tr>
               )}
             </tbody>
             <tfoot className="bg-slate-100 font-bold border-t border-slate-300">
               <tr>
-                <td colSpan={2} className="p-3 text-left">TOTAL GERAL</td>
+                <td className="p-3 text-left uppercase">Total Geral</td>
                 {loteTotalsWithIndex.map((total, idx) => (
                   <React.Fragment key={idx}>
-                    <td className="p-3 border-r border-slate-300">
+                    <td className="p-3 border-r border-slate-300 text-center w-20 min-w-[80px]">
                       {renderMatrixCell(
                         matrixView === 'value' ? total.value :
                           matrixView === 'qty' ? total.qty : total.index,
@@ -572,7 +552,7 @@ export const Indicators: React.FC = () => {
                     <td colSpan={2} className="border-r border-slate-300"></td>
                   </React.Fragment>
                 ))}
-                <td className="p-3 bg-slate-200 border-r border-slate-300">
+                <td className="p-3 bg-slate-200 border-r border-slate-300 text-center w-20 min-w-[80px]">
                   {renderMatrixCell(
                     matrixView === 'value' ? grandTotalValue :
                       matrixView === 'qty' ? grandTotalQty : grandTotalIndex,
