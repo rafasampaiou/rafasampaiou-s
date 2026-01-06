@@ -15,6 +15,7 @@ export const IdealTable: React.FC = () => {
   } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+  const [isReplicating, setIsReplicating] = useState(false);
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
 
   useEffect(() => {
@@ -49,12 +50,20 @@ export const IdealTable: React.FC = () => {
 
   // Replicate data from Previous Month
   const handleReplicatePrevious = async () => {
+    if (isReplicating) return;
+
     try {
+      console.log('[Replicate] Start triggered for:', selectedMonthKey);
+
       if (!window.confirm('Isso irá copiar os dados do mês anterior para o mês atual. Deseja continuar?')) return;
+
+      setIsReplicating(true);
 
       const [y, m] = selectedMonthKey.split('-').map(Number);
       const prevDate = new Date(y, m - 2, 1);
       const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+      console.log('[Replicate] Target Month Key:', prevMonthKey);
 
       const newBudgets: any[] = [];
       const newRealStats: any[] = [];
@@ -73,8 +82,14 @@ export const IdealTable: React.FC = () => {
         }
       });
 
+      console.log('[Replicate] Preparation complete. Found items to copy:', {
+        budgets: newBudgets.length,
+        realStats: newRealStats.length
+      });
+
       if (newBudgets.length === 0 && newRealStats.length === 0) {
-        alert('Nenhum dado encontrado no mês anterior para replicar.');
+        alert(`Nenhum dado encontrado no mês anterior (${prevMonthKey}) para replicar.`);
+        setIsReplicating(false);
         return;
       }
 
@@ -83,11 +98,15 @@ export const IdealTable: React.FC = () => {
         newRealStats.length > 0 ? bulkUpdateManualRealStats(newRealStats) : Promise.resolve()
       ]);
 
-      alert(`Dados de ${prevMonthKey} replicados com sucesso! A página será atualizada.`);
+      console.log('[Replicate] Bulk update completed successfully.');
+      alert(`Replicação concluída! Copiados ${newBudgets.length} orçamentos e ${newRealStats.length} registros reais de ${prevMonthKey}.\n\nA página será atualizada.`);
+
       window.location.reload();
-    } catch (error) {
-      console.error('[Replicate] Erro:', error);
-      alert('Erro ao replicar dados.');
+    } catch (error: any) {
+      console.error('[Replicate] Erro crítico durante a replicação:', error);
+      alert('Erro ao replicar dados: ' + (error.message || 'Erro desconhecido.'));
+    } finally {
+      setIsReplicating(false);
     }
   };
 
@@ -231,11 +250,13 @@ export const IdealTable: React.FC = () => {
           {isAdminUnlocked && (
             <button
               onClick={handleReplicatePrevious}
-              className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors"
+              disabled={isReplicating}
+              className={`flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors ${isReplicating ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               title="Copiar dados do mês anterior"
             >
-              <Copy size={16} />
-              Replicar Mês Ant.
+              <Copy size={16} className={isReplicating ? 'animate-spin' : ''} />
+              {isReplicating ? 'Replicando...' : 'Replicar Mês Ant.'}
             </button>
           )}
         </div>
