@@ -443,7 +443,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       work_hours_per_day: data.workHoursPerDay,
       working_days_per_month: data.workingDaysPerMonth,
       extra_qty_per_day: data.extraQtyPerDay
-    });
+    }, { onConflict: 'sector_id, month_key' });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
       setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
@@ -489,7 +489,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       apprentices_qty: data.apprenticesQty,
       wfo_qty: data.wfoQty,
       wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
-    });
+    }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
       console.error('Error updating manual real stat:', error);
@@ -507,7 +507,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         work_hours_per_day: b.workHoursPerDay,
         working_days_per_month: b.workingDaysPerMonth,
         extra_qty_per_day: b.extraQtyPerDay
-      }))
+      })), { onConflict: 'sector_id, month_key' }
     );
     if (!error) {
       setMonthlyBudgets(prev => {
@@ -534,7 +534,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         apprentices_qty: s.apprenticesQty,
         wfo_qty: s.wfoQty,
         wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
-      }))
+      })), { onConflict: 'sector_id, month_key' }
     );
     if (!error) {
       setManualRealStats(prev => {
