@@ -234,9 +234,9 @@ export const PrintableExtract: React.FC = () => {
                 <td className="border border-slate-300 p-1 text-center">{req.timeIn}</td>
                 <td className="border border-slate-300 p-1 text-center">{req.timeOut}</td>
                 <td className="border border-slate-300 p-1 text-center font-medium">{getDuration(req.timeIn, req.timeOut)}</td>
-                <td className="border border-slate-300 p-1 text-right">R$ {(req.specialRate || 15.00).toFixed(2)}</td>
-                <td className="border border-slate-300 p-1 text-right">R$ {(req.totalValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                <td className="border border-slate-300 p-1 text-center">{req.occupancyRate.toFixed(0)}%</td>
+                <td className="border border-slate-300 p-1 text-right">R$ {(req.specialRate ?? 15.00).toFixed(2)}</td>
+                <td className="border border-slate-300 p-1 text-right">R$ {(req.totalValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                <td className="border border-slate-300 p-1 text-center">{(req.occupancyRate ?? 0).toFixed(0)}%</td>
               </tr>
             ))}
             {filteredRequests.length === 0 && (
