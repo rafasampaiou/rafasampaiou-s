@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Calendar, Copy, ClipboardPaste } from 'lucide-react';
+import { Calendar, Copy, ClipboardPaste, X, Check, AlertTriangle } from 'lucide-react';
 
 export const IdealTable: React.FC = () => {
   const {
@@ -18,6 +18,11 @@ export const IdealTable: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasClipboard, setHasClipboard] = useState(false);
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
+
+  // Confirmation Modal State (to replace native confirm)
+  const [showConfirmPaste, setShowConfirmPaste] = useState(false);
+  const [pasteSourceMonth, setPasteSourceMonth] = useState('');
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
 
   useEffect(() => {
     const checkClipboard = () => {
@@ -69,6 +74,7 @@ export const IdealTable: React.FC = () => {
 
   // Copy Data to Local Clipboard
   const handleCopyData = () => {
+    setStatusMessage(null);
     try {
       const budgetsToCopy: any[] = [];
       const statsToCopy: any[] = [];
@@ -86,7 +92,7 @@ export const IdealTable: React.FC = () => {
       });
 
       if (budgetsToCopy.length === 0 && statsToCopy.length === 0) {
-        alert('Não há dados neste mês para copiar.');
+        setStatusMessage({ type: 'info', text: 'Não há dados neste mês para copiar.' });
         return;
       }
 
@@ -102,65 +108,59 @@ export const IdealTable: React.FC = () => {
       console.log('Dados copiados para localStorage:', jsonStr.length, 'bytes');
 
       setHasClipboard(true);
-      alert(`Dados de ${selectedMonthKey} copiados para a área de transferência! Vá para outro mês e clique em "Colar Dados".`);
+      setStatusMessage({ type: 'success', text: `Dados de ${selectedMonthKey} copiados! Vá para o mês de destino e selecione Colar.` });
     } catch (error) {
       console.error('Error copying data:', error);
-      alert('Erro ao copiar dados: ' + (error as any).message);
+      setStatusMessage({ type: 'error', text: 'Erro ao copiar dados: ' + (error as any).message });
     }
   };
 
-  // Paste Data from Local Clipboard
-  const handlePasteData = async () => {
-    console.log('Iniciando colar dados...');
-    if (isProcessing) {
-      console.warn('Já existe um processo em andamento.');
-      return;
+  // Paste Data - Step 1: Check and Confirm
+  const handlePasteDataClick = () => {
+    setStatusMessage(null);
+    try {
+      const rawData = localStorage.getItem('ideal_clipboard');
+      if (!rawData) {
+        setStatusMessage({ type: 'error', text: 'Área de transferência vazia.' });
+        return;
+      }
+      const clipboardData = JSON.parse(rawData);
+      setPasteSourceMonth(clipboardData.sourceMonth);
+      setShowConfirmPaste(true);
+    } catch (e) {
+      console.error('Error parsing clipboard:', e);
+      setStatusMessage({ type: 'error', text: 'Dados da área de transferência inválidos.' });
     }
+  };
+
+  // Paste Data - Step 2: Execute
+  const executePasteData = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowConfirmPaste(false);
+    setStatusMessage({ type: 'info', text: 'Colando dados, aguarde...' });
 
     try {
       const rawData = localStorage.getItem('ideal_clipboard');
-      console.log('Dados da área de transferência:', rawData ? rawData.substring(0, 50) + '...' : 'null');
+      if (!rawData) throw new Error('Clipboard empty during execution');
 
-      if (!rawData) {
-        alert('Área de transferência vazia.');
-        setHasClipboard(false);
-        return;
-      }
-
-      let clipboardData;
-      try {
-        clipboardData = JSON.parse(rawData);
-      } catch (e) {
-        console.error('Erro ao fazer parse do JSON:', e);
-        alert('Dados da área de transferência corrompidos.');
-        return;
-      }
-
-      const { sourceMonth, budgets, stats } = clipboardData;
-
-      if (!window.confirm(`Isso irá COLAR os dados copiados de ${sourceMonth} em ${selectedMonthKey}. Isso sobrescreverá os dados atuais. Deseja continuar?`)) {
-        console.log('Operação cancelada pelo usuário.');
-        return;
-      }
-
-      setIsProcessing(true);
+      const clipboardData = JSON.parse(rawData);
+      const { budgets, stats } = clipboardData;
 
       // Prepare data for the current month
       const newBudgets = budgets.map((b: any) => ({ ...b, monthKey: selectedMonthKey }));
       const newStats = stats.map((s: any) => ({ ...s, monthKey: selectedMonthKey }));
-
-      console.log(`Aplicando ${newBudgets.length} orçamentos e ${newStats.length} stats para ${selectedMonthKey}`);
 
       await Promise.all([
         newBudgets.length > 0 ? bulkUpdateMonthlyBudgets(newBudgets) : Promise.resolve(),
         newStats.length > 0 ? bulkUpdateManualRealStats(newStats) : Promise.resolve()
       ]);
 
-      alert(`Dados de ${sourceMonth} colados com sucesso em ${selectedMonthKey}!`);
-      window.location.reload();
+      setStatusMessage({ type: 'success', text: `Dados de ${clipboardData.sourceMonth} colados com sucesso em ${selectedMonthKey}!` });
+      // Reload removed to prevent state loss - rely on context updates
     } catch (error) {
       console.error('Error pasting data:', error);
-      alert('Erro ao colar dados: ' + (error as any).message);
+      setStatusMessage({ type: 'error', text: 'Erro ao colar dados: ' + (error as any).message });
     } finally {
       setIsProcessing(false);
     }
@@ -218,7 +218,7 @@ export const IdealTable: React.FC = () => {
       updateManualRealStat(updateData.real);
     });
 
-    alert('Dados colados com sucesso.');
+    setStatusMessage({ type: 'success', text: 'Dados colados via Excel.' });
   };
 
   const stats = sectors.map(s => {
@@ -278,30 +278,72 @@ export const IdealTable: React.FC = () => {
   const isAdminUnlocked = sessionStorage.getItem('admin_unlocked') === 'true';
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-800">Quadro Orçado x Realizado</h2>
-          <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
-            <Calendar size={16} className="text-[#155645]" />
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="text-sm outline-none text-slate-700 bg-transparent"
-            >
-              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={String(y)}>{y}</option>)}
-            </select>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-sm outline-none text-slate-700 bg-transparent"
-            >
-              {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
+      {/* Custom Confirmation Modal */}
+      {showConfirmPaste && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full border-t-4 border-[#155645] animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <AlertTriangle className="text-orange-500" size={24} />
+              Confirmar Colagem
+            </h3>
+            <p className="text-slate-600 mb-6 text-sm">
+              Você está prestes a colar dados de <strong>{pasteSourceMonth}</strong> em <strong>{selectedMonthKey}</strong>.
+              <br /><br />
+              Isso substituirá os dados atuais deste mês. Deseja continuar?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowConfirmPaste(false)}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executePasteData}
+                className="px-4 py-2 bg-[#155645] hover:bg-[#104033] text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                Sim, Colar Dados
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-slate-800">Quadro Orçado x Realizado</h2>
+            <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#155645]">
+              <Calendar size={16} className="text-[#155645]" />
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="text-sm outline-none text-slate-700 bg-transparent"
+              >
+                {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="text-sm outline-none text-slate-700 bg-transparent"
+              >
+                {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {statusMessage && (
+            <div className={`text-xs ml-1 flex items-center gap-1.5 ${statusMessage.type === 'success' ? 'text-green-600' :
+              statusMessage.type === 'error' ? 'text-red-500' : 'text-blue-500'
+              }`}>
+              {statusMessage.type === 'success' && <Check size={12} />}
+              {statusMessage.text}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           {isAdminUnlocked && (
             <>
@@ -316,7 +358,7 @@ export const IdealTable: React.FC = () => {
 
               {hasClipboard && (
                 <button
-                  onClick={handlePasteData}
+                  onClick={handlePasteDataClick}
                   disabled={isProcessing}
                   className={`flex items-center gap-2 bg-[#155645] hover:bg-[#104033] text-white px-4 py-2 rounded-lg text-sm transition-colors ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
