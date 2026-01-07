@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from './supabaseClient';
-import { RequestItem, SectorConfig, UserRole, LoteConfig, User, MonthlyBudget, MonthlyLoteConfig, ManualRealStat, Shift, RequestType, OccupancyRecord, SystemConfig, SpecialRole } from './types';
+import { createClient } from '@supabase/supabase-js';
+import { RequestItem, SectorConfig, UserRole, LoteConfig, User, UserProfile, MonthlyBudget, MonthlyLoteConfig, ManualRealStat, Shift, RequestType, OccupancyRecord, SystemConfig, SpecialRole } from './types';
 import { MOCK_REQUESTS, INITIAL_SECTORS } from './constants';
 
 interface AppContextType {
@@ -44,6 +45,13 @@ interface AppContextType {
   addSpecialRole: (name: string, rate: number) => void;
   removeSpecialRole: (id: string) => void;
 
+  // User Management
+  profiles: UserProfile[];
+  fetchProfiles: () => Promise<void>;
+  createSystemUser: (data: { email: string, password: string, name: string, role: string }) => Promise<{ success: boolean; error?: string }>;
+  updateSystemUser: (id: string, data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
+  deleteSystemUser: (id: string) => Promise<{ success: boolean; error?: string }>;
+
   currentDate: Date;
 }
 
@@ -66,6 +74,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // System Configs
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0, isFormLocked: false });
   const [specialRoles, setSpecialRoles] = useState<SpecialRole[]>([]);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
 
   const [currentDate] = useState(new Date());
 
@@ -581,6 +590,85 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) setSpecialRoles(prev => prev.filter(r => r.id !== id));
   };
 
+  // --- User Management Logic ---
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').order('name');
+    if (data && !error) {
+      // @ts-ignore
+      setProfiles(data);
+    } else {
+      console.error('Error fetching profiles:', error);
+    }
+  };
+
+  const createSystemUser = async (data: { email: string, password: string, name: string, role: string }) => {
+    try {
+      // 1. Create Ghost Client (In-Memory)
+      // @ts-ignore
+      const tempSupabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        { auth: { persistSession: false } }
+      );
+
+      // 2. Sign Up User
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            role: data.role
+          }
+        }
+      });
+
+      if (authError) return { success: false, error: authError.message };
+      if (!authData.user) return { success: false, error: 'User creation failed (no user returned)' };
+
+      // 3. Create or Update Profile (using Admin client)
+      // Even if trigger exists, upsert ensures we set the right values
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: authData.user.id,
+        email: data.email,
+        name: data.name,
+        role: data.role
+      });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+      }
+
+      await fetchProfiles();
+      return { success: true };
+
+    } catch (e: any) {
+      console.error('Create user exception:', e);
+      return { success: false, error: e.message };
+    }
+  };
+
+  const updateSystemUser = async (id: string, updates: Partial<UserProfile>) => {
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+    if (error) return { success: false, error: error.message };
+    await fetchProfiles();
+    return { success: true };
+  };
+
+  const deleteSystemUser = async (id: string) => {
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) return { success: false, error: error.message };
+    setProfiles(prev => prev.filter(p => p.id !== id));
+    return { success: true };
+  };
+
+  // Initial Fetch of Profiles when admin logs in (or simplistic effect)
+  useEffect(() => {
+    if (isAuthenticated && user?.role === UserRole.ADMIN) {
+      fetchProfiles();
+    }
+  }, [isAuthenticated, user]);
+
 
   return (
     <AppContext.Provider value={{
@@ -594,6 +682,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       occupancyData, saveOccupancyBatch,
       systemConfig, updateSystemConfig,
       specialRoles, addSpecialRole, removeSpecialRole,
+
+      // User Management
+      profiles, fetchProfiles, createSystemUser, updateSystemUser, deleteSystemUser,
+
       currentDate,
     }}>
       {children}

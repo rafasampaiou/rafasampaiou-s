@@ -10,6 +10,11 @@ export interface User {
   role: UserRole;
 }
 
+export interface UserProfile extends User {
+  createdAt?: string;
+  // potentially other profile fields
+}
+
 export enum RequestType {
   DIARIA = 'Diária',
   PACOTE = 'Pacote'

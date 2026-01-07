@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock } from 'lucide-react';
-import { MonthlyBudget, LoteConfig } from '../types';
+import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock, Users, Key } from 'lucide-react';
+import { MonthlyBudget, LoteConfig, UserRole } from '../types';
 
 export const AdminPanel: React.FC = () => {
   const {
@@ -11,6 +11,7 @@ export const AdminPanel: React.FC = () => {
     saveOccupancyBatch, occupancyData, requests,
     systemConfig, updateSystemConfig,
     specialRoles, addSpecialRole, removeSpecialRole,
+    profiles, createSystemUser, updateSystemUser, deleteSystemUser
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('sectors');
@@ -25,6 +26,14 @@ export const AdminPanel: React.FC = () => {
   const [newRoleRate, setNewRoleRate] = useState('');
   const [newSectorName, setNewSectorName] = useState('');
   const [newSectorType, setNewSectorType] = useState<'Operacional' | 'Suporte'>('Operacional');
+
+  // User Management State
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserRole, setNewUserRole] = useState<UserRole>(UserRole.USER);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userMsg, setUserMsg] = useState('');
 
   useEffect(() => {
     const newGridData: Record<string, string> = {};
@@ -254,6 +263,34 @@ export const AdminPanel: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const handleCreateUser = async () => {
+    if (!newUserEmail || !newUserPassword || !newUserName) return;
+    setIsCreatingUser(true);
+    setUserMsg('');
+    const res = await createSystemUser({
+      email: newUserEmail,
+      password: newUserPassword,
+      name: newUserName,
+      role: newUserRole
+    });
+    setIsCreatingUser(false);
+    if (res.success) {
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserName('');
+      setUserMsg('Usuário criado com sucesso! Envie as credenciais para ele.');
+    } else {
+      setUserMsg('Erro ao criar: ' + res.error);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (window.confirm('Tem certeza? O usuário não conseguirá mais logar.')) {
+      const res = await deleteSystemUser(id);
+      if (!res.success) alert('Erro ao deletar: ' + res.error);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] flex flex-col">
       <div className="flex border-b border-slate-200 flex-wrap shrink-0">
@@ -288,6 +325,14 @@ export const AdminPanel: React.FC = () => {
         >
           <Sliders size={16} />
           Config. Geral
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'users' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+        >
+          <Users size={16} />
+          Usuários
         </button>
         <button
           onClick={() => setActiveTab('export')}
@@ -656,6 +701,88 @@ export const AdminPanel: React.FC = () => {
             <button onClick={handleExport} className="bg-[#155645] hover:bg-[#104033] text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
               <Download size={20} /> Baixar CSV Completo
             </button>
+          </div>
+        )}
+        {activeTab === 'users' && (
+          <div className="max-w-4xl space-y-6">
+            {/* Create User Form */}
+            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+              <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
+                <Plus size={20} className="text-[#F8981C]" /> Cadastrar Novo Usuário
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text" placeholder="Nome Completo"
+                  className="border border-slate-300 rounded px-3 py-2 outline-none focus:ring-1 focus:ring-[#155645]"
+                  value={newUserName} onChange={e => setNewUserName(e.target.value)}
+                />
+                <input
+                  type="email" placeholder="Email de Login"
+                  className="border border-slate-300 rounded px-3 py-2 outline-none focus:ring-1 focus:ring-[#155645]"
+                  value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)}
+                />
+                <div className="relative">
+                  <Key size={16} className="absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text" placeholder="Senha Inicial"
+                    className="border border-slate-300 rounded px-3 py-2 pl-9 w-full outline-none focus:ring-1 focus:ring-[#155645]"
+                    value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="border border-slate-300 rounded px-3 py-2 outline-none"
+                  value={newUserRole} onChange={e => setNewUserRole(e.target.value as UserRole)}
+                >
+                  <option value="USER">Usuário Comum</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <p className={`text-sm font-medium ${userMsg.includes('Erro') ? 'text-red-500' : 'text-green-600'}`}>{userMsg}</p>
+                <button
+                  onClick={handleCreateUser}
+                  disabled={isCreatingUser || !newUserEmail || !newUserPassword}
+                  className={`px-6 py-2 bg-[#155645] text-white rounded-lg font-bold hover:bg-[#104033] transition-colors ${isCreatingUser ? 'opacity-50' : ''}`}
+                >
+                  {isCreatingUser ? 'Criando...' : 'Criar Usuário'}
+                </button>
+              </div>
+            </div>
+
+            {/* User List */}
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-100 text-slate-600 uppercase font-bold">
+                  <tr>
+                    <th className="p-3 border-b">Nome</th>
+                    <th className="p-3 border-b">Email</th>
+                    <th className="p-3 border-b">Função</th>
+                    <th className="p-3 border-b text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {profiles.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50">
+                      <td className="p-3 font-medium text-slate-700">{p.name}</td>
+                      <td className="p-3 text-slate-500">{p.email}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.role === 'ADMIN' ? 'bg-[#155645]/10 text-[#155645]' : 'bg-blue-50 text-blue-600'}`}>
+                          {p.role}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button onClick={() => handleDeleteUser(p.id)} className="text-red-400 hover:text-red-600 p-1" title="Excluir Usuário">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {profiles.length === 0 && (
+                    <tr><td colSpan={4} className="p-6 text-center text-slate-400">Nenhum usuário encontrado.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
