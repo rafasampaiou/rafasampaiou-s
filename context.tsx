@@ -447,6 +447,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
       setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
+    } else {
+      console.error('[updateMonthlyBudget] Error:', error);
+      alert('Erro ao salvar orçamento: ' + error.message);
     }
   };
 
@@ -492,12 +495,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
-      console.error('Error updating manual real stat:', error);
+      console.error('[updateManualRealStats] Error:', error);
+      alert('Erro ao salvar dados reais: ' + error.message);
     }
   };
 
   const bulkUpdateMonthlyBudgets = async (budgets: MonthlyBudget[]) => {
-    const { error } = await supabase.from('monthly_budgets').upsert(
+    console.log(`[bulkUpdateMonthlyBudgets] Attempting to upsert ${budgets.length} records...`);
+    const { data, error } = await supabase.from('monthly_budgets').upsert(
       budgets.map(b => ({
         sector_id: b.sectorId,
         month_key: b.monthKey,
@@ -508,8 +513,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         working_days_per_month: b.workingDaysPerMonth,
         extra_qty_per_day: b.extraQtyPerDay
       })), { onConflict: 'sector_id, month_key' }
-    );
+    ).select();
+
     if (!error) {
+      console.log('[bulkUpdateMonthlyBudgets] Success!', data);
       setMonthlyBudgets(prev => {
         const newMap = { ...prev };
         budgets.forEach(b => {
@@ -518,13 +525,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return newMap;
       });
     } else {
-      console.error('Error in bulk update budgets:', error);
+      console.error('[bulkUpdateMonthlyBudgets] Error:', error);
+      alert(`Erro ao sincronizar orçamentos: ${error.message} (${error.code})`);
       throw error;
     }
   };
 
   const bulkUpdateManualRealStats = async (stats: ManualRealStat[]) => {
-    const { error } = await supabase.from('manual_real_stats').upsert(
+    console.log(`[bulkUpdateManualRealStats] Attempting to upsert ${stats.length} records...`);
+    const { data, error } = await supabase.from('manual_real_stats').upsert(
       stats.map(s => ({
         sector_id: s.sectorId,
         month_key: s.monthKey,
@@ -535,8 +544,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         wfo_qty: s.wfoQty,
         wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
       })), { onConflict: 'sector_id, month_key' }
-    );
+    ).select();
+
     if (!error) {
+      console.log('[bulkUpdateManualRealStats] Success!', data);
       setManualRealStats(prev => {
         const newMap = { ...prev };
         stats.forEach(s => {
@@ -545,7 +556,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return newMap;
       });
     } else {
-      console.error('Error in bulk update real stats:', error);
+      console.error('[bulkUpdateManualRealStats] Error:', error);
+      alert(`Erro ao sincronizar stats REAIS: ${error.message} (${error.code})`);
       throw error;
     }
   };
