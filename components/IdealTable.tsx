@@ -20,11 +20,25 @@ export const IdealTable: React.FC = () => {
   const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
 
   useEffect(() => {
-    // Check if there is data in clipboard on mount
-    const clipboardData = localStorage.getItem('ideal_clipboard');
-    if (clipboardData) setHasClipboard(true);
+    const checkClipboard = () => {
+      try {
+        const clipboardData = localStorage.getItem('ideal_clipboard');
+        // Basic validation that it's a JSON string
+        if (clipboardData && clipboardData.startsWith('{')) {
+          setHasClipboard(true);
+        } else {
+          setHasClipboard(false);
+        }
+      } catch (e) {
+        console.error('Error checking clipboard:', e);
+        setHasClipboard(false);
+      }
+    };
 
-    console.log('[IdealTable] mounted with selectedMonthKey:', selectedMonthKey);
+    checkClipboard();
+    // Also check when window gains focus (in case user copied in another tab)
+    window.addEventListener('focus', checkClipboard);
+    return () => window.removeEventListener('focus', checkClipboard);
   }, [selectedMonthKey]);
 
   // Field mapping for paste functionality order
@@ -83,36 +97,59 @@ export const IdealTable: React.FC = () => {
         timestamp: new Date().toISOString()
       };
 
-      localStorage.setItem('ideal_clipboard', JSON.stringify(clipboardPayload));
+      const jsonStr = JSON.stringify(clipboardPayload);
+      localStorage.setItem('ideal_clipboard', jsonStr);
+      console.log('Dados copiados para localStorage:', jsonStr.length, 'bytes');
+
       setHasClipboard(true);
       alert(`Dados de ${selectedMonthKey} copiados para a área de transferência! Vá para outro mês e clique em "Colar Dados".`);
     } catch (error) {
       console.error('Error copying data:', error);
-      alert('Erro ao copiar dados.');
+      alert('Erro ao copiar dados: ' + (error as any).message);
     }
   };
 
   // Paste Data from Local Clipboard
   const handlePasteData = async () => {
-    if (isProcessing) return;
+    console.log('Iniciando colar dados...');
+    if (isProcessing) {
+      console.warn('Já existe um processo em andamento.');
+      return;
+    }
 
     try {
       const rawData = localStorage.getItem('ideal_clipboard');
+      console.log('Dados da área de transferência:', rawData ? rawData.substring(0, 50) + '...' : 'null');
+
       if (!rawData) {
         alert('Área de transferência vazia.');
+        setHasClipboard(false);
         return;
       }
 
-      const clipboardData = JSON.parse(rawData);
+      let clipboardData;
+      try {
+        clipboardData = JSON.parse(rawData);
+      } catch (e) {
+        console.error('Erro ao fazer parse do JSON:', e);
+        alert('Dados da área de transferência corrompidos.');
+        return;
+      }
+
       const { sourceMonth, budgets, stats } = clipboardData;
 
-      if (!window.confirm(`Isso irá COLAR os dados copiados de ${sourceMonth} em ${selectedMonthKey}. Isso sobrescreverá os dados atuais. Deseja continuar?`)) return;
+      if (!window.confirm(`Isso irá COLAR os dados copiados de ${sourceMonth} em ${selectedMonthKey}. Isso sobrescreverá os dados atuais. Deseja continuar?`)) {
+        console.log('Operação cancelada pelo usuário.');
+        return;
+      }
 
       setIsProcessing(true);
 
       // Prepare data for the current month
       const newBudgets = budgets.map((b: any) => ({ ...b, monthKey: selectedMonthKey }));
       const newStats = stats.map((s: any) => ({ ...s, monthKey: selectedMonthKey }));
+
+      console.log(`Aplicando ${newBudgets.length} orçamentos e ${newStats.length} stats para ${selectedMonthKey}`);
 
       await Promise.all([
         newBudgets.length > 0 ? bulkUpdateMonthlyBudgets(newBudgets) : Promise.resolve(),
@@ -123,7 +160,7 @@ export const IdealTable: React.FC = () => {
       window.location.reload();
     } catch (error) {
       console.error('Error pasting data:', error);
-      alert('Erro ao colar dados.');
+      alert('Erro ao colar dados: ' + (error as any).message);
     } finally {
       setIsProcessing(false);
     }
