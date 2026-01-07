@@ -11,7 +11,7 @@ export const AdminPanel: React.FC = () => {
     saveOccupancyBatch, occupancyData, requests,
     systemConfig, updateSystemConfig,
     specialRoles, addSpecialRole, removeSpecialRole,
-    profiles, createSystemUser, updateSystemUser, deleteSystemUser
+    profiles, fetchProfiles, createSystemUser, updateSystemUser, deleteSystemUser
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('sectors');
@@ -37,11 +37,8 @@ export const AdminPanel: React.FC = () => {
 
   // Fetch profiles when tab is active
   useEffect(() => {
-    if (activeTab === 'users') {
-      // @ts-ignore
-      if (typeof useApp().fetchProfiles === 'function') {
-        useApp().fetchProfiles();
-      }
+    if (activeTab === 'users' && fetchProfiles) {
+      fetchProfiles();
     }
   }, [activeTab]);
 
