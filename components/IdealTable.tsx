@@ -462,16 +462,18 @@ export const IdealTable: React.FC = () => {
                     // disabled={!isAdminUnlocked} // Allowing edit in top table too, why not
                     />
                   </td>
-                  <td className="p-0 border border-slate-300 bg-slate-50/50">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors font-medium"
-                      value={row.budgetValue}
-                      onChange={(e) => handleBudgetChange(row.sectorId, 'budgetValue', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'budgetValue')}
-                    // disabled={!isAdminUnlocked}
-                    />
+                  <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
+                    <div className="flex items-center h-full px-2">
+                      <span className="text-slate-400 text-xs mr-1 pointer-events-none select-none">R$</span>
+                      <input
+                        type="number"
+                        className="w-full h-full text-right outline-none bg-transparent focus:bg-blue-50 transition-colors font-medium"
+                        step="0.01"
+                        value={row.budgetValue}
+                        onChange={(e) => handleBudgetChange(row.sectorId, 'budgetValue', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'budgetValue')}
+                      />
+                    </div>
                   </td>
 
                   {/* Real & Adjustments */}
