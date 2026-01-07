@@ -35,6 +35,16 @@ export const AdminPanel: React.FC = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [userMsg, setUserMsg] = useState('');
 
+  // Fetch profiles when tab is active
+  useEffect(() => {
+    if (activeTab === 'users') {
+      // @ts-ignore
+      if (typeof useApp().fetchProfiles === 'function') {
+        useApp().fetchProfiles();
+      }
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     const newGridData: Record<string, string> = {};
     Object.entries(occupancyData).forEach(([dateStr, val]) => {
