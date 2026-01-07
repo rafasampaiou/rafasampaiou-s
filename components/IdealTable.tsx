@@ -2,6 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
 import { Calendar, Copy, ClipboardPaste, Check, AlertTriangle } from 'lucide-react';
 
+interface CurrencyInputProps {
+  value: number;
+  onChange: (value: string) => void;
+  onPaste?: (e: React.ClipboardEvent) => void;
+}
+
+const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        step="0.01"
+        className="w-full h-full p-2 text-right outline-none bg-blue-50 font-medium"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setIsEditing(false)}
+        onPaste={onPaste}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="w-full h-full p-2 text-right cursor-text hover:bg-slate-100 transition-colors font-medium flex items-center justify-end text-slate-700"
+      onClick={() => setIsEditing(true)}
+    >
+      {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+    </div>
+  );
+};
+
 export const IdealTable: React.FC = () => {
   const {
     sectors,
@@ -463,17 +504,11 @@ export const IdealTable: React.FC = () => {
                     />
                   </td>
                   <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
-                    <div className="flex items-center h-full px-2">
-                      <span className="text-slate-400 text-xs mr-1 pointer-events-none select-none">R$</span>
-                      <input
-                        type="number"
-                        className="w-full h-full text-right outline-none bg-transparent focus:bg-blue-50 transition-colors font-medium"
-                        step="0.01"
-                        value={row.budgetValue}
-                        onChange={(e) => handleBudgetChange(row.sectorId, 'budgetValue', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'budgetValue')}
-                      />
-                    </div>
+                    <CurrencyInput
+                      value={row.budgetValue}
+                      onChange={(val) => handleBudgetChange(row.sectorId, 'budgetValue', val)}
+                      onPaste={(e) => handlePaste(e, index, 'budgetValue')}
+                    />
                   </td>
 
                   {/* Real & Adjustments */}
