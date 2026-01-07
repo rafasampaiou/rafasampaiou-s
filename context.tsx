@@ -490,8 +490,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       real_value: data.realValue,
       afastados_qty: data.afastadosQty,
       apprentices_qty: data.apprenticesQty,
-      wfo_qty: data.wfoQty,
-      wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
+      wfo_qty: data.wfoQty
+      // wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
     }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
@@ -541,8 +541,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         real_value: s.realValue,
         afastados_qty: s.afastadosQty,
         apprentices_qty: s.apprenticesQty,
-        wfo_qty: s.wfoQty,
-        wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
+        wfo_qty: s.wfoQty
+        // wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
       })), { onConflict: 'sector_id, month_key' }
     ).select();
 
