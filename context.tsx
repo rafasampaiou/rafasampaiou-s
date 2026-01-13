@@ -104,14 +104,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         { data: budgets },
         { data: lotes },
         { data: stats },
-        { data: occupancy }
+        { data: occupancy },
+        { data: mAppConfigs }
       ] = await Promise.all([
         supabase.from('requests').select('*').order('created_at', { ascending: false }),
         supabase.from('special_roles').select('*').order('name'),
         supabase.from('system_config').select('*').single(),
         supabase.from('monthly_budgets').select('*'),
         supabase.from('monthly_lotes').select('*'),
-        supabase.from('manual_real_stats').select('*'),
         supabase.from('manual_real_stats').select('*'),
         supabase.from('occupancy_data').select('*'),
         supabase.from('monthly_app_configs').select('*')
@@ -208,11 +208,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setOccupancyData(occMap);
       }
 
-      // @ts-ignore
-      const monthlyConfigsData = arguments[0]?.[7]?.data || (await supabase.from('monthly_app_configs').select('*')).data;
-      if (monthlyConfigsData) {
+      if (mAppConfigs) {
         const configMap: Record<string, MonthlyAppConfig> = {};
-        monthlyConfigsData.forEach((c: any) => {
+        mAppConfigs.forEach((c: any) => {
           configMap[c.month_key] = {
             monthKey: c.month_key,
             standardHourRate: Number(c.standard_hour_rate),
@@ -426,9 +424,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteRequest = async (id: string) => {
-    console.log('[deleteRequest] Attempting to delete request:', id);
+    console.log('[deleteRequest] Attempting to delete request ID:', id, 'Type:', typeof id);
     try {
-      const { data, error } = await supabase.from('requests').delete().eq('id', id).select();
+      const { data, error, status } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', id)
+        .select();
 
       if (error) {
         console.error('[deleteRequest] Supabase error:', error);
@@ -436,9 +438,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
-      console.log('[deleteRequest] Success:', data);
-      setRequests(prev => prev.filter(req => req.id !== id));
-      alert('Solicitação excluída com sucesso!');
+      console.log('[deleteRequest] Response Status:', status, 'Deleted Data:', data);
+
+      if (data && data.length > 0) {
+        setRequests(prev => prev.filter(req => req.id !== id));
+        alert('Solicitação excluída com sucesso!');
+      } else {
+        console.warn('[deleteRequest] No rows were deleted. Checking if ID exists...');
+        // Fallback: update local state anyway if user is sure, but better to alert
+        alert('Aviso: O registro não foi encontrado no banco de dados, mas será removido da sua tela.');
+        setRequests(prev => prev.filter(req => req.id !== id));
+      }
 
     } catch (err: any) {
       console.error('[deleteRequest] Exception:', err);
