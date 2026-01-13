@@ -244,7 +244,7 @@ export const Indicators: React.FC = () => {
   };
 
   const renderMatrixCell = (val: number, type: 'value' | 'qty' | 'index') => {
-    if (type === 'value') return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (type === 'value') return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     if (type === 'qty') return Math.round(val); // Force Integer
     if (type === 'index') return (val || 0).toFixed(3);
     return val;
@@ -438,7 +438,7 @@ export const Indicators: React.FC = () => {
           <table className="w-full text-sm text-right">
             <thead className="bg-[#155645]/5 text-[#155645] text-xs">
               <tr>
-                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase w-48 min-w-[180px]">Setor</th>
+                <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase w-32 min-w-[140px]">Setor</th>
                 {lotes.map(lote => (
                   <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center uppercase">
                     {lote.name}
