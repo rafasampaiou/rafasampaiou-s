@@ -14,6 +14,7 @@ export const PrintableExtract: React.FC = () => {
 
   const [startDate, setStartDate] = useState(startOfMonth);
   const [endDate, setEndDate] = useState(endOfMonth);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Column Widths State (px) - Fixed configuration
   const [colWidths] = useState({
@@ -57,7 +58,16 @@ export const PrintableExtract: React.FC = () => {
   const filteredRequests = requests.filter(req => {
     const matchesSector = selectedSector === 'Todos' || req.sector === selectedSector;
     const matchesDate = req.dateEvent >= startDate && req.dateEvent <= endDate;
-    return matchesSector && matchesDate;
+    // status check: ignore variants of 'Rejeitado'
+    const statusLower = (req.status || '').toLowerCase();
+    const isActive = statusLower !== 'rejeitado' && statusLower !== 'rejected';
+
+    return matchesSector && matchesDate && isActive;
+  }).sort((a, b) => {
+    // Sort by Date Event (Entrada)
+    if (a.dateEvent < b.dateEvent) return sortDirection === 'asc' ? -1 : 1;
+    if (a.dateEvent > b.dateEvent) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   // Calculate Totals for Real
@@ -206,8 +216,14 @@ export const PrintableExtract: React.FC = () => {
         <table className="w-full text-[10px] text-left border-collapse border border-slate-300 table-fixed">
           <thead>
             <tr className="bg-slate-100 font-bold text-center text-[#155645]">
-              <th className="border border-slate-300 p-1" style={{ width: `65px` }}>ENTRADA</th>
-              <th className="border border-slate-300 p-1" style={{ width: `65px` }}>SAÍDA</th>
+              <th
+                className="border border-slate-300 p-1 cursor-pointer hover:bg-slate-200"
+                style={{ width: `85px` }}
+                onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+              >
+                ENTRADA {sortDirection === 'asc' ? '↑' : '↓'}
+              </th>
+              {/* Column Removed: Data de Saída */}
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.days}px` }}>DIAS</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.qty}px` }}>QTD.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.role}px` }}>FUNÇÃO</th>
@@ -225,7 +241,7 @@ export const PrintableExtract: React.FC = () => {
             {filteredRequests.map((req) => (
               <tr key={req.id}>
                 <td className="border border-slate-300 p-1 text-center">{formatDate(req.dateEvent)}</td>
-                <td className="border border-slate-300 p-1 text-center">{formatDate(calculateEndDate(req.dateEvent, req.daysQty))}</td>
+                {/* Column Removed: Data de Saída */}
                 <td className="border border-slate-300 p-1 text-center">{req.daysQty}</td>
                 <td className="border border-slate-300 p-1 text-center">{req.extrasQty}</td>
                 <td className="border border-slate-300 p-1 truncate">{req.functionRole}</td>
@@ -249,11 +265,11 @@ export const PrintableExtract: React.FC = () => {
           </tbody>
           <tfoot className="bg-slate-100 font-bold">
             <tr>
-              <td colSpan={11} className="border border-slate-300 p-2 text-right">SUBTOTAL</td>
+              <td colSpan={10} className="border border-slate-300 p-2 text-right">SUBTOTAL</td>
               <td colSpan={2} className="border border-slate-300 p-2 text-right">R$ {totalRealValue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
             </tr>
             <tr>
-              <td colSpan={11} className="border border-slate-300 p-2 text-right">
+              <td colSpan={10} className="border border-slate-300 p-2 text-right">
                 IMPOSTOS E ENCARGOS ({systemConfig.taxRate}%)
               </td>
               <td colSpan={2} className="border border-slate-300 p-2 text-right text-red-600">
@@ -261,7 +277,7 @@ export const PrintableExtract: React.FC = () => {
               </td>
             </tr>
             <tr className="bg-slate-200 text-slate-900 border-t-2 border-slate-400">
-              <td colSpan={11} className="border border-slate-300 p-2 text-right text-sm">TOTAL GERAL DO PERÍODO</td>
+              <td colSpan={10} className="border border-slate-300 p-2 text-right text-sm">TOTAL GERAL DO PERÍODO</td>
               <td colSpan={2} className="border border-slate-300 p-2 text-right text-sm">
                 R$ {totalWithTax.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </td>

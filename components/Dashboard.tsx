@@ -37,6 +37,8 @@ export const Dashboard: React.FC = () => {
   };
 
   // Filter logic for Charts and Summary Table
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'dateEvent', direction: 'asc' });
+
   // Filter logic
   const filteredRequests = requests.filter(r => {
     if (selectedSector !== 'Todos' && r.sector !== selectedSector) return false;
@@ -50,12 +52,25 @@ export const Dashboard: React.FC = () => {
       }
     }
     return true;
+  }).sort((a, b) => {
+    if (a.dateEvent < b.dateEvent) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (a.dateEvent > b.dateEvent) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const approvedRequests = filteredRequests.filter(r => r.status === 'Aprovado');
 
   // Requests that need attention (Independent of filters)
-  const pendingRequests = requests.filter(r => r.status === 'Pendente');
+  // Requests that need attention (Independent of filters)
+  const pendingRequests = useMemo(() => {
+    let list = requests.filter(r => r.status === 'Pendente');
+    list.sort((a, b) => {
+      if (a.dateEvent < b.dateEvent) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (a.dateEvent > b.dateEvent) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return list;
+  }, [requests, sortConfig]);
 
   // --- KPI Calculations ---
   const totalDiarias = approvedRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
@@ -210,7 +225,15 @@ export const Dashboard: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-[#155645]/5 text-[#155645] uppercase sticky top-0 bg-white shadow-sm">
                 <tr>
-                  <th className="p-3">Início</th>
+                  <th
+                    className="p-3 cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => setSortConfig(prev => ({
+                      key: 'dateEvent',
+                      direction: prev.direction === 'asc' ? 'desc' : 'asc'
+                    }))}
+                  >
+                    Início {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </th>
                   <th className="p-3">Fim</th>
                   <th className="p-3">Solicitado em</th>
                   <th className="p-3">Dias</th>
@@ -247,9 +270,9 @@ export const Dashboard: React.FC = () => {
                           <X size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (window.confirm('Excluir esta solicitação?')) {
-                              deleteRequest(req.id);
+                              await deleteRequest(req.id);
                             }
                           }}
                           className="p-1 bg-slate-100 text-slate-500 rounded hover:bg-red-500 hover:text-white transition-all"
@@ -375,7 +398,15 @@ export const Dashboard: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
               <tr>
-                <th className="p-4">Início</th>
+                <th
+                  className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => setSortConfig(prev => ({
+                    key: 'dateEvent',
+                    direction: prev.direction === 'asc' ? 'desc' : 'asc'
+                  }))}
+                >
+                  Início {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                </th>
                 <th className="p-4">Fim</th>
                 <th className="p-4">Setor</th>
                 <th className="p-4">Função</th>

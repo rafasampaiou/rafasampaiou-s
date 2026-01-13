@@ -409,12 +409,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteRequest = async (id: string) => {
-    const { error } = await supabase.from('requests').delete().eq('id', id);
-    if (!error) {
+    console.log('[deleteRequest] Attempting to delete request:', id);
+    try {
+      const { data, error } = await supabase.from('requests').delete().eq('id', id).select();
+
+      if (error) {
+        console.error('[deleteRequest] Supabase error:', error);
+        alert('Falha ao excluir a solicitação: ' + error.message);
+        return;
+      }
+
+      console.log('[deleteRequest] Success:', data);
       setRequests(prev => prev.filter(req => req.id !== id));
-    } else {
-      console.error('Erro ao excluir:', error);
-      alert('Falha ao excluir a solicitação: ' + error.message);
+      alert('Solicitação excluída com sucesso!');
+
+    } catch (err: any) {
+      console.error('[deleteRequest] Exception:', err);
+      alert('Erro inesperado ao excluir: ' + err.message);
     }
   };
 
