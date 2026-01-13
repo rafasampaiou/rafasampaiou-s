@@ -153,12 +153,7 @@ export const Indicators: React.FC = () => {
         // Calculate daily cost base
         const reportMonth = r.dateEvent.substring(0, 7);
         const config = getMonthlyAppConfig(reportMonth);
-        let dailyCost;
-        if (r.specialRate) {
-          dailyCost = r.specialRate;
-        } else {
-          dailyCost = 8 * config.standardHourRate;
-        }
+        const dailyCost = calculateRequestTotal({ ...r, daysQty: 1 });
         const dailyQty = r.extrasQty;
 
         // Iterate through each day of the request
