@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 export const Indicators: React.FC = () => {
-  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig } = useApp();
+  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig, calculateRequestTotal } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
