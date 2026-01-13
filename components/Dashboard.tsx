@@ -7,7 +7,7 @@ import {
 import { Check, X, Trash2, AlertCircle, Calendar, Clock } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig } = useApp();
+  const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig, calculateRequestTotal } = useApp();
 
   // Filters State
   const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
@@ -74,15 +74,15 @@ export const Dashboard: React.FC = () => {
 
   // --- KPI Calculations ---
   const totalDiarias = approvedRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
-  const totalValue = approvedRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0);
-  // KPI Calculation for tax needs to respect the specific month of each request or use the filter context:
-  // Using filter context (selectedMonth) for simplicity in KPI card, or summing up individually?
-  // Ideally sum up individual tax, but for now let's use the selected month config if available, or average?
-  // Better: Iterate and sum.
+
+  // Calculate dynamic total value based on current monthly settings
+  const totalValue = approvedRequests.reduce((acc, curr) => acc + calculateRequestTotal(curr), 0);
+
+  // KPI Calculation for tax needs to respect the specific month of each request
   const totalValueWithTax = approvedRequests.reduce((acc, curr) => {
     const reqMonth = curr.dateEvent.substring(0, 7);
     const config = getMonthlyAppConfig(reqMonth);
-    return acc + (curr.totalValue || 0) * (1 + (config.taxRate / 100));
+    return acc + calculateRequestTotal(curr) * (1 + (config.taxRate / 100));
   }, 0);
 
   // --- Data Processing (By Lote and Sector) ---
@@ -270,7 +270,7 @@ export const Dashboard: React.FC = () => {
                     <td className="p-3 whitespace-nowrap">{req.timeIn} - {req.timeOut}</td>
                     <td className="p-3 truncate max-w-[120px]" title={req.requestorEmail}>{req.requestorEmail}</td>
                     <td className="p-3 truncate max-w-[180px]" title={req.justification}>{req.justification}</td>
-                    <td className="p-3 text-right font-bold text-[#155645]">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
+                    <td className="p-3 text-right font-bold text-[#155645]">R$ {calculateRequestTotal(req).toLocaleString('pt-BR')}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => updateRequestStatus(req.id, 'Aprovado')} className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition-all">
@@ -441,7 +441,7 @@ export const Dashboard: React.FC = () => {
                   <td className="p-4 text-center">{req.daysQty}</td>
                   <td className="p-4 truncate max-w-[150px]" title={req.requestorEmail}>{req.requestorEmail}</td>
                   <td className="p-4">{req.reason}</td>
-                  <td className="p-4 text-right font-bold text-[#155645]">R$ {(req.totalValue || 0).toLocaleString('pt-BR')}</td>
+                  <td className="p-4 text-right font-bold text-[#155645]">R$ {calculateRequestTotal(req).toLocaleString('pt-BR')}</td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${req.status === 'Aprovado' ? 'bg-green-100 text-green-700' :
                       req.status === 'Rejeitado' ? 'bg-red-100 text-red-700' :

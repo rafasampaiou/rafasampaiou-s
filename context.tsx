@@ -44,6 +44,7 @@ interface AppContextType {
   // Monthly Configs
   getMonthlyAppConfig: (monthKey: string) => MonthlyAppConfig;
   updateMonthlyAppConfig: (config: MonthlyAppConfig) => void;
+  calculateRequestTotal: (req: Partial<RequestItem>) => number;
   specialRoles: SpecialRole[];
   addSpecialRole: (name: string, rate: number) => void;
   removeSpecialRole: (id: string) => void;
@@ -297,12 +298,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addRequest = async (req: RequestItem) => {
-    let baseTotal;
-    if (req.specialRate) {
-      baseTotal = req.extrasQty * req.daysQty * req.specialRate;
-    } else {
-      baseTotal = req.extrasQty * req.daysQty * 8 * systemConfig.standardHourRate;
-    }
+    const baseTotal = calculateRequestTotal(req);
 
     const { data, error } = await supabase.from('requests').insert([{
       sector: req.sector,
@@ -373,10 +369,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const occupancyRate = parseFloat(rawOccupancy.replace('%', '').replace(',', '.')) || 0;
 
           let totalValue;
+          const config = getMonthlyAppConfig(dateEvent.substring(0, 7));
           if (specialRate) {
             totalValue = extrasQty * daysQty * specialRate;
           } else {
-            totalValue = extrasQty * daysQty * 8 * 15.00;
+            totalValue = extrasQty * daysQty * 8 * config.standardHourRate;
           }
 
           newRequests.push({
@@ -619,6 +616,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const calculateRequestTotal = (req: Partial<RequestItem>) => {
+    if (!req.dateEvent) return 0;
+    const reqMonth = req.dateEvent.substring(0, 7);
+    const config = getMonthlyAppConfig(reqMonth);
+    const extrasQty = req.extrasQty || 0;
+    const daysQty = req.daysQty || 0;
+
+    if (req.specialRate) {
+      return extrasQty * daysQty * req.specialRate;
+    } else {
+      return extrasQty * daysQty * 8 * config.standardHourRate;
+    }
+  };
+
+
+
   const updateMonthlyAppConfig = async (config: MonthlyAppConfig) => {
     const { error } = await supabase.from('monthly_app_configs').upsert({
       month_key: config.monthKey,
@@ -735,6 +748,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       bulkUpdateMonthlyBudgets, bulkUpdateManualRealStats,
       occupancyData, saveOccupancyBatch,
       systemConfig, updateSystemConfig, getMonthlyAppConfig, updateMonthlyAppConfig,
+      calculateRequestTotal,
       specialRoles, addSpecialRole, removeSpecialRole,
 
       // User Management

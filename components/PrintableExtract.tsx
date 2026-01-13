@@ -3,7 +3,7 @@ import { useApp } from '../context';
 import { Printer, Filter, Calendar } from 'lucide-react';
 
 export const PrintableExtract: React.FC = () => {
-  const { requests, sectors, getMonthlyBudget, systemConfig, user, getMonthlyAppConfig } = useApp();
+  const { requests, sectors, getMonthlyBudget, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, user, getMonthlyAppConfig, calculateRequestTotal } = useApp();
   const componentRef = useRef<HTMLDivElement>(null);
   const [selectedSector, setSelectedSector] = useState('Todos');
 
@@ -75,9 +75,8 @@ export const PrintableExtract: React.FC = () => {
     ? filteredRequests.reduce((acc, curr) => acc + curr.extrasQty, 0)
     : 0;
 
-  const totalRealValue = filteredRequests.length > 0
-    ? filteredRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0)
-    : 0;
+  // Calculate Totals for Real - Dynamic Calculation to ensure consistency with current settings
+  const totalRealValue = filteredRequests.reduce((acc, curr) => acc + calculateRequestTotal(curr), 0);
 
   // Tax Calculation
   // Tax Calculation using current report month config
@@ -253,8 +252,20 @@ export const PrintableExtract: React.FC = () => {
                 <td className="border border-slate-300 p-1 text-center">{req.timeIn}</td>
                 <td className="border border-slate-300 p-1 text-center">{req.timeOut}</td>
                 <td className="border border-slate-300 p-1 text-center font-medium">{getDuration(req.timeIn, req.timeOut)}</td>
-                <td className="border border-slate-300 p-1 text-right">R$ {(req.specialRate ?? 15.00).toFixed(2)}</td>
-                <td className="border border-slate-300 p-1 text-right">R$ {(req.totalValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                {(() => {
+                  const reqMonth = req.dateEvent.substring(0, 7);
+                  const config = getMonthlyAppConfig(reqMonth);
+                  let displayRate = req.specialRate ?? config.standardHourRate;
+                  // Calculate daily cost base
+                  const dailyCost = calculateRequestTotal({ ...req, daysQty: 1, extrasQty: 1 });
+                  const dailyQty = req.extrasQty;
+                  return (
+                    <>
+                      <td className="border border-slate-300 p-1 text-right">R$ {displayRate.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-1 text-right">R$ {calculateRequestTotal(req).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    </>
+                  );
+                })()}
                 <td className="border border-slate-300 p-1 text-center">{(req.occupancyRate ?? 0).toFixed(0)}%</td>
               </tr>
             ))}
