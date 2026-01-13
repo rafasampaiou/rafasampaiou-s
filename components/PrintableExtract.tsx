@@ -60,7 +60,7 @@ export const PrintableExtract: React.FC = () => {
     const matchesDate = req.dateEvent >= startDate && req.dateEvent <= endDate;
     // status check: ignore variants of 'Rejeitado'
     const statusLower = (req.status || '').toLowerCase();
-    const isActive = statusLower !== 'rejeitado' && statusLower !== 'rejected';
+    const isActive = statusLower === 'aprovado';
 
     return matchesSector && matchesDate && isActive;
   }).sort((a, b) => {
