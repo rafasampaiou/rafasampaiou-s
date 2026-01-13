@@ -4,7 +4,7 @@ import { UserRole } from '../types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell
 } from 'recharts';
-import { Check, X, Trash2, AlertCircle, Calendar, Clock } from 'lucide-react';
+import { Check, X, AlertCircle, Calendar, Clock } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig, calculateRequestTotal } = useApp();
@@ -14,6 +14,7 @@ export const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(() => sessionStorage.getItem('dashboard_year') || String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedLote, setSelectedLote] = useState(() => sessionStorage.getItem('dashboard_lote') || 'Todos');
+  const [selectedStatus, setSelectedStatus] = useState(() => sessionStorage.getItem('dashboard_status') || 'Todos');
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const availableLotes = getMonthlyLote(monthKey);
@@ -35,6 +36,10 @@ export const Dashboard: React.FC = () => {
     setSelectedLote(val);
     sessionStorage.setItem('dashboard_lote', val);
   };
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    sessionStorage.setItem('dashboard_status', val);
+  };
 
   // Filter logic for Charts and Summary Table
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'dateEvent', direction: 'asc' });
@@ -42,6 +47,7 @@ export const Dashboard: React.FC = () => {
   // Filter logic
   const filteredRequests = requests.filter(r => {
     if (selectedSector !== 'Todos' && r.sector !== selectedSector) return false;
+    if (selectedStatus !== 'Todos' && r.status !== selectedStatus) return false;
     if (!r.dateEvent.startsWith(monthKey)) return false;
 
     if (selectedLote !== 'Todos') {
@@ -279,17 +285,6 @@ export const Dashboard: React.FC = () => {
                         <button onClick={() => updateRequestStatus(req.id, 'Rejeitado')} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all">
                           <X size={14} />
                         </button>
-                        <button
-                          onClick={async () => {
-                            if (window.confirm('Excluir esta solicitação?')) {
-                              await deleteRequest(req.id);
-                            }
-                          }}
-                          className="p-1 bg-slate-100 text-slate-500 rounded hover:bg-red-500 hover:text-white transition-all"
-                          title="Excluir"
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -400,9 +395,24 @@ export const Dashboard: React.FC = () => {
 
       {/* 5. Bottom Detailed Summary Table (Reacts to filters) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-lg font-bold text-[#155645]">Resumo das Solicitações Feitas</h3>
-          <p className="text-xs text-slate-500 mt-1">Exibindo dados filtrados por Setor e Período</p>
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-bold text-[#155645]">Resumo das Solicitações Feitas</h3>
+            <p className="text-xs text-slate-500 mt-1">Exibindo dados filtrados por Setor e Período</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase">Status</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="bg-white border border-slate-300 rounded-lg px-3 py-1 text-xs outline-none focus:ring-2 focus:ring-[#155645] text-slate-700"
+            >
+              <option value="Todos">Todos</option>
+              <option value="Aprovado">Aprovado</option>
+              <option value="Rejeitado">Rejeitado</option>
+              <option value="Pendente">Pendente</option>
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
