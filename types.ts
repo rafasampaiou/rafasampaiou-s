@@ -115,3 +115,9 @@ export interface SystemConfig {
   taxRate: number; // Percentage
   isFormLocked?: boolean;
 }
+
+export interface MonthlyAppConfig {
+  monthKey: string;
+  standardHourRate: number;
+  taxRate: number;
+}

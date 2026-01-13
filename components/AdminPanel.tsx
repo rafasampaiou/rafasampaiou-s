@@ -9,7 +9,7 @@ export const AdminPanel: React.FC = () => {
     getMonthlyBudget, updateMonthlyBudget,
     getMonthlyLote, updateMonthlyLote,
     saveOccupancyBatch, occupancyData, requests,
-    systemConfig, updateSystemConfig,
+    systemConfig, updateSystemConfig, getMonthlyAppConfig, updateMonthlyAppConfig,
     specialRoles, addSpecialRole, removeSpecialRole,
     profiles, fetchProfiles, createSystemUser, updateSystemUser, deleteSystemUser
   } = useApp();
@@ -352,7 +352,7 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <div className="p-6 flex-1 flex flex-col">
-        {(activeTab === 'sectors' || activeTab === 'config') && (
+        {(activeTab === 'sectors' || activeTab === 'config' || activeTab === 'general') && (
           <div className="mb-6 flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 w-fit">
             <span className="text-sm font-bold text-slate-700">Mês de Referência:</span>
             <input
@@ -584,7 +584,7 @@ export const AdminPanel: React.FC = () => {
           <div className="max-w-4xl space-y-8">
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
               <h3 className="text-lg font-bold text-[#155645] mb-4 flex items-center gap-2">
-                <Settings size={20} className="text-[#F8981C]" /> Taxas Gerais e Impostos
+                <Settings size={20} className="text-[#F8981C]" /> Taxas Gerais e Impostos ({selectedMonth})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -593,8 +593,8 @@ export const AdminPanel: React.FC = () => {
                     type="number"
                     step="0.01"
                     className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={systemConfig.standardHourRate}
-                    onChange={(e) => updateSystemConfig({ ...systemConfig, standardHourRate: parseFloat(e.target.value) || 0 })}
+                    value={getMonthlyAppConfig(selectedMonth).standardHourRate}
+                    onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), standardHourRate: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div>
@@ -603,12 +603,12 @@ export const AdminPanel: React.FC = () => {
                     type="number"
                     step="0.01"
                     className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={systemConfig.taxRate}
-                    onChange={(e) => updateSystemConfig({ ...systemConfig, taxRate: parseFloat(e.target.value) || 0 })}
+                    value={getMonthlyAppConfig(selectedMonth).taxRate}
+                    onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), taxRate: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação (Global)</label>
                   <button
                     onClick={() => updateSystemConfig({ ...systemConfig, isFormLocked: !systemConfig.isFormLocked })}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all ${systemConfig.isFormLocked

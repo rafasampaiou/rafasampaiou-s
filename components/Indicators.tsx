@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 export const Indicators: React.FC = () => {
-  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig } = useApp();
+  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
@@ -173,7 +173,8 @@ export const Indicators: React.FC = () => {
       });
 
       // Apply Tax Rate to the accumulated base value for this lote
-      const valueWithTax = loteTotalBaseValue * (1 + (systemConfig.taxRate / 100));
+      const taxRate = getMonthlyAppConfig(monthKey).taxRate;
+      const valueWithTax = loteTotalBaseValue * (1 + (taxRate / 100));
 
       // Calculate Index: Total Extras Days / Total Occupied Room Nights in Lote
       const sectorIndex = loteOccupancy > 0 ? (loteTotalQty / loteOccupancy) : 0;
@@ -398,7 +399,7 @@ export const Indicators: React.FC = () => {
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col">
             <h3 className="text-sm font-bold text-slate-800">Extraordinários por Setor</h3>
-            <span className="text-xs text-slate-500">Taxa Configurada: {systemConfig.taxRate}%</span>
+            <span className="text-xs text-slate-500">Taxa Configurada: {getMonthlyAppConfig(monthKey).taxRate}%</span>
           </div>
 
           {/* Matrix View Filter */}
@@ -546,14 +547,14 @@ export const Indicators: React.FC = () => {
 
                       if (matrixView === 'value') {
                         workforceTotal = row.totalSectorValue;
-                        wfoTotal = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                        wfoTotal = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
                       } else if (matrixView === 'qty') {
                         workforceTotal = row.totalSectorQty;
-                        wfoTotal = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        wfoTotal = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                       } else {
                         workforceTotal = row.totalSectorIndex;
                         // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
-                        const totalWfoQty = Object.values(stats?.loteWfo || {}).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalWfoQty = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                         const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
                         wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
                       }

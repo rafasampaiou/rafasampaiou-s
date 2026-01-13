@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from './supabaseClient';
 import { createClient } from '@supabase/supabase-js';
-import { RequestItem, SectorConfig, UserRole, LoteConfig, User, UserProfile, MonthlyBudget, MonthlyLoteConfig, ManualRealStat, Shift, RequestType, OccupancyRecord, SystemConfig, SpecialRole } from './types';
+import { RequestItem, SectorConfig, UserRole, LoteConfig, User, UserProfile, MonthlyBudget, MonthlyLoteConfig, ManualRealStat, Shift, RequestType, OccupancyRecord, SystemConfig, SpecialRole, MonthlyAppConfig } from './types';
 import { MOCK_REQUESTS, INITIAL_SECTORS } from './constants';
 
 interface AppContextType {
@@ -41,6 +41,9 @@ interface AppContextType {
   // Configs
   systemConfig: SystemConfig;
   updateSystemConfig: (config: SystemConfig) => void;
+  // Monthly Configs
+  getMonthlyAppConfig: (monthKey: string) => MonthlyAppConfig;
+  updateMonthlyAppConfig: (config: MonthlyAppConfig) => void;
   specialRoles: SpecialRole[];
   addSpecialRole: (name: string, rate: number) => void;
   removeSpecialRole: (id: string) => void;
@@ -73,6 +76,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // System Configs
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0, isFormLocked: false });
+  const [monthlyAppConfigs, setMonthlyAppConfigs] = useState<Record<string, MonthlyAppConfig>>({});
   const [specialRoles, setSpecialRoles] = useState<SpecialRole[]>([]);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
 
@@ -107,7 +111,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         supabase.from('monthly_budgets').select('*'),
         supabase.from('monthly_lotes').select('*'),
         supabase.from('manual_real_stats').select('*'),
-        supabase.from('occupancy_data').select('*')
+        supabase.from('manual_real_stats').select('*'),
+        supabase.from('occupancy_data').select('*'),
+        supabase.from('monthly_app_configs').select('*')
       ]);
 
       if (reqs) {
@@ -199,6 +205,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           occMap[o.date_key] = Number(o.count);
         });
         setOccupancyData(occMap);
+      }
+
+      // @ts-ignore
+      const monthlyConfigsData = arguments[0]?.[7]?.data || (await supabase.from('monthly_app_configs').select('*')).data;
+      if (monthlyConfigsData) {
+        const configMap: Record<string, MonthlyAppConfig> = {};
+        monthlyConfigsData.forEach((c: any) => {
+          configMap[c.month_key] = {
+            monthKey: c.month_key,
+            standardHourRate: Number(c.standard_hour_rate),
+            taxRate: Number(c.tax_rate)
+          };
+        });
+        setMonthlyAppConfigs(configMap);
       }
 
     } catch (err) {
@@ -591,6 +611,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) setSystemConfig(config);
   };
 
+  const getMonthlyAppConfig = (monthKey: string): MonthlyAppConfig => {
+    return monthlyAppConfigs[monthKey] || {
+      monthKey,
+      standardHourRate: systemConfig.standardHourRate, // Fallback to global
+      taxRate: systemConfig.taxRate // Fallback to global
+    };
+  };
+
+  const updateMonthlyAppConfig = async (config: MonthlyAppConfig) => {
+    const { error } = await supabase.from('monthly_app_configs').upsert({
+      month_key: config.monthKey,
+      standard_hour_rate: config.standardHourRate,
+      tax_rate: config.taxRate
+    });
+
+    if (!error) {
+      setMonthlyAppConfigs(prev => ({ ...prev, [config.monthKey]: config }));
+    } else {
+      console.error('Error updating monthly config:', error);
+      alert('Erro ao salvar configuração mensal: ' + error.message);
+    }
+  };
+
   const addSpecialRole = async (name: string, rate: number) => {
     const { data, error } = await supabase.from('special_roles').insert([{ name, rate }]).select();
     if (data && !error) setSpecialRoles(prev => [...prev, data[0]]);
@@ -691,7 +734,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       getManualRealStat, updateManualRealStat,
       bulkUpdateMonthlyBudgets, bulkUpdateManualRealStats,
       occupancyData, saveOccupancyBatch,
-      systemConfig, updateSystemConfig,
+      systemConfig, updateSystemConfig, getMonthlyAppConfig, updateMonthlyAppConfig,
       specialRoles, addSpecialRole, removeSpecialRole,
 
       // User Management

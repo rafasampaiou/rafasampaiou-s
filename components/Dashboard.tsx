@@ -7,7 +7,7 @@ import {
 import { Check, X, Trash2, AlertCircle, Calendar, Clock } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote } = useApp();
+  const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig } = useApp();
 
   // Filters State
   const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
@@ -75,7 +75,15 @@ export const Dashboard: React.FC = () => {
   // --- KPI Calculations ---
   const totalDiarias = approvedRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
   const totalValue = approvedRequests.reduce((acc, curr) => acc + (curr.totalValue || 0), 0);
-  const totalValueWithTax = totalValue * (1 + (systemConfig.taxRate / 100));
+  // KPI Calculation for tax needs to respect the specific month of each request or use the filter context:
+  // Using filter context (selectedMonth) for simplicity in KPI card, or summing up individually?
+  // Ideally sum up individual tax, but for now let's use the selected month config if available, or average?
+  // Better: Iterate and sum.
+  const totalValueWithTax = approvedRequests.reduce((acc, curr) => {
+    const reqMonth = curr.dateEvent.substring(0, 7);
+    const config = getMonthlyAppConfig(reqMonth);
+    return acc + (curr.totalValue || 0) * (1 + (config.taxRate / 100));
+  }, 0);
 
   // --- Data Processing (By Lote and Sector) ---
   // --- Data Processing (By Lote and Sector) ---
@@ -101,8 +109,10 @@ export const Dashboard: React.FC = () => {
       reqEnd.setDate(reqStart.getDate() + (req.daysQty - 1));
 
       if (currentLoopDate >= reqStart && currentLoopDate <= reqEnd) {
+        const reportMonth = dateStr.substring(0, 7);
+        const config = getMonthlyAppConfig(reportMonth);
         const dailyCost = (req.totalValue || 0) / (req.daysQty || 1);
-        const dailyCostWithTax = dailyCost * (1 + (systemConfig.taxRate / 100));
+        const dailyCostWithTax = dailyCost * (1 + (config.taxRate / 100));
         const dailyQty = req.extrasQty;
 
         if (dateStr.startsWith(reportMonthContext)) {

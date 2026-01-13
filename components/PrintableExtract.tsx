@@ -3,7 +3,7 @@ import { useApp } from '../context';
 import { Printer, Filter, Calendar } from 'lucide-react';
 
 export const PrintableExtract: React.FC = () => {
-  const { requests, sectors, getMonthlyBudget, systemConfig, user } = useApp();
+  const { requests, sectors, getMonthlyBudget, systemConfig, user, getMonthlyAppConfig } = useApp();
   const componentRef = useRef<HTMLDivElement>(null);
   const [selectedSector, setSelectedSector] = useState('Todos');
 
@@ -80,11 +80,14 @@ export const PrintableExtract: React.FC = () => {
     : 0;
 
   // Tax Calculation
-  const taxAmount = totalRealValue * (systemConfig.taxRate / 100);
+  // Tax Calculation using current report month config
+  const reportMonthKey = startDate.slice(0, 7); // YYYY-MM
+  const currentConfig = getMonthlyAppConfig(reportMonthKey);
+  const taxAmount = totalRealValue * (currentConfig.taxRate / 100);
   const totalWithTax = totalRealValue + taxAmount;
 
   // Calculate Totals for Orçado (Budget)
-  const reportMonthKey = startDate.slice(0, 7); // YYYY-MM
+  // reportMonthKey is already defined above
 
   let totalBudgetQty = 0;
   let totalBudgetValue = 0;
@@ -270,7 +273,7 @@ export const PrintableExtract: React.FC = () => {
             </tr>
             <tr>
               <td colSpan={10} className="border border-slate-300 p-2 text-right">
-                IMPOSTOS E ENCARGOS ({systemConfig.taxRate}%)
+                IMPOSTOS E ENCARGOS ({currentConfig.taxRate}%)
               </td>
               <td colSpan={2} className="border border-slate-300 p-2 text-right text-red-600">
                 + R$ {taxAmount.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
