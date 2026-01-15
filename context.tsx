@@ -15,6 +15,7 @@ interface AppContextType {
   addRequest: (req: RequestItem) => void;
   addHistoricalRequests: (text: string) => void;
   updateRequestStatus: (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => void;
+  updateRequest: (id: string, updates: Partial<RequestItem>) => Promise<void>;
   deleteRequest: (id: string) => void;
 
   // Sectors
@@ -423,6 +424,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
   };
 
+  const updateRequest = async (id: string, updates: Partial<RequestItem>) => {
+    // Map camelCase to snake_case for Supabase
+    const payload: any = {};
+    if (updates.sector !== undefined) payload.sector = updates.sector;
+    if (updates.reason !== undefined) payload.reason = updates.reason;
+    if (updates.type !== undefined) payload.type = updates.type;
+    if (updates.dateEvent !== undefined) payload.date_event = updates.dateEvent;
+    if (updates.daysQty !== undefined) payload.days_qty = updates.daysQty;
+    if (updates.specialRate !== undefined) payload.special_rate = updates.specialRate;
+    if (updates.extrasQty !== undefined) payload.extras_qty = updates.extrasQty;
+    if (updates.functionRole !== undefined) payload.function_role = updates.functionRole;
+    if (updates.shift !== undefined) payload.shift = updates.shift;
+    if (updates.timeIn !== undefined) payload.time_in = updates.timeIn;
+    if (updates.timeOut !== undefined) payload.time_out = updates.timeOut;
+    if (updates.justification !== undefined) payload.justification = updates.justification;
+    if (updates.occupancyRate !== undefined) payload.occupancy_rate = updates.occupancyRate;
+    if (updates.status !== undefined) payload.status = updates.status;
+
+    // Recalculate total value if relevant fields changed
+    if (updates.dateEvent || updates.extrasQty || updates.daysQty || updates.specialRate !== undefined) {
+      const fullReq = requests.find(r => r.id === id);
+      if (fullReq) {
+        payload.total_value = calculateRequestTotal({ ...fullReq, ...updates });
+      }
+    }
+
+    const { error } = await supabase.from('requests').update(payload).eq('id', id);
+    if (!error) {
+      setRequests(prev => prev.map(req => req.id === id ? { ...req, ...updates, totalValue: payload.total_value ?? req.totalValue } : req));
+    } else {
+      console.error('[updateRequest] Error:', error);
+      alert('Erro ao atualizar solicitação: ' + error.message);
+    }
+  };
+
   const deleteRequest = async (id: string) => {
     console.log('[deleteRequest] Attempting to delete request ID:', id, 'Type:', typeof id);
     try {
@@ -534,11 +570,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       sector_id: data.sectorId,
       month_key: data.monthKey,
       real_qty: data.realQty,
-      real_value: data.realValue
-      // afastados_qty: data.afastadosQty,
-      // apprentices_qty: data.apprenticesQty,
-      // wfo_qty: data.wfoQty
-      // wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
+      real_value: data.realValue,
+      afastados_qty: data.afastadosQty,
+      apprentices_qty: data.apprenticesQty,
+      wfo_qty: data.wfoQty,
+      wfo_lotes_json: data.loteWfo ? JSON.stringify(data.loteWfo) : null
     }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
@@ -585,11 +621,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         sector_id: s.sectorId,
         month_key: s.monthKey,
         real_qty: s.realQty,
-        real_value: s.realValue
-        // afastados_qty: s.afastadosQty,
-        // apprentices_qty: s.apprenticesQty,
-        // wfo_qty: s.wfoQty
-        // wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
+        real_value: s.realValue,
+        afastados_qty: s.afastadosQty,
+        apprentices_qty: s.apprenticesQty,
+        wfo_qty: s.wfoQty,
+        wfo_lotes_json: s.loteWfo ? JSON.stringify(s.loteWfo) : null
       })), { onConflict: 'sector_id, month_key' }
     ).select();
 
@@ -750,7 +786,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{
       user, isAuthenticated, isLoading, login, logout,
-      requests, addRequest, updateRequestStatus, deleteRequest, addHistoricalRequests,
+      requests, addRequest, updateRequestStatus, updateRequest, deleteRequest, addHistoricalRequests,
       sectors, addSector, removeSector,
       getMonthlyBudget, updateMonthlyBudget,
       getMonthlyLote, updateMonthlyLote,

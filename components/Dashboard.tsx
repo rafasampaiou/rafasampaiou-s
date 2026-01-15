@@ -4,17 +4,21 @@ import { UserRole } from '../types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell
 } from 'recharts';
-import { Check, X, AlertCircle, Calendar, Clock } from 'lucide-react';
+import { Check, X, AlertCircle, Calendar, Clock, Edit2, Save } from 'lucide-react';
+import { RequestItem, Shift, RequestType } from '../types';
 
 export const Dashboard: React.FC = () => {
-  const { requests, sectors, user, updateRequestStatus, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig, calculateRequestTotal } = useApp();
+  const { requests, sectors, user, updateRequestStatus, updateRequest, deleteRequest, systemConfig, getMonthlyLote, getMonthlyAppConfig, calculateRequestTotal } = useApp();
 
   // Filters State
   const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
   const [selectedYear, setSelectedYear] = useState(() => sessionStorage.getItem('dashboard_year') || String(new Date().getFullYear()));
-  const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().getMonth() + 1).padStart(2, '0'));
+  const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().padStart ? (new Date().getMonth() + 1).toString().padStart(2, '0') : String(new Date().getMonth() + 1)));
   const [selectedLote, setSelectedLote] = useState(() => sessionStorage.getItem('dashboard_lote') || 'Todos');
   const [selectedStatus, setSelectedStatus] = useState(() => sessionStorage.getItem('dashboard_status') || 'Todos');
+
+  // Edit State
+  const [editingRequest, setEditingRequest] = useState<RequestItem | null>(null);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const availableLotes = getMonthlyLote(monthKey);
@@ -185,6 +189,108 @@ export const Dashboard: React.FC = () => {
     } catch { return ''; }
   };
 
+  const EditRequestModal = ({ request, onClose }: { request: RequestItem, onClose: () => void }) => {
+    const [editData, setEditData] = useState({ ...request });
+
+    const handleSave = async () => {
+      await updateRequest(request.id, editData);
+      onClose();
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-[#155645]">Editar Solicitação</h3>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+          </div>
+          <div className="p-6 grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Setor</label>
+              <select
+                value={editData.sector}
+                onChange={(e) => setEditData({ ...editData, sector: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              >
+                {sectors.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd Extras</label>
+              <input
+                type="number"
+                value={editData.extrasQty}
+                onChange={(e) => setEditData({ ...editData, extrasQty: parseInt(e.target.value) || 0 })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd Dias</label>
+              <input
+                type="number"
+                value={editData.daysQty}
+                onChange={(e) => setEditData({ ...editData, daysQty: parseInt(e.target.value) || 0 })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Turno</label>
+              <select
+                value={editData.shift}
+                onChange={(e) => setEditData({ ...editData, shift: e.target.value as Shift })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              >
+                {Object.values(Shift).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Função</label>
+              <input
+                type="text"
+                value={editData.functionRole}
+                onChange={(e) => setEditData({ ...editData, functionRole: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Entrada</label>
+              <input
+                type="time"
+                value={editData.timeIn}
+                onChange={(e) => setEditData({ ...editData, timeIn: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Saída</label>
+              <input
+                type="time"
+                value={editData.timeOut}
+                onChange={(e) => setEditData({ ...editData, timeOut: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Justificativa</label>
+              <textarea
+                value={editData.justification}
+                onChange={(e) => setEditData({ ...editData, justification: e.target.value })}
+                rows={2}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancelar</button>
+            <button onClick={handleSave} className="px-4 py-2 text-sm font-bold bg-[#155645] text-white rounded-lg hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
+              <Save size={16} /> Salvar Alterações
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const ChartSection = ({ title, data, color, prefix = '' }: { title: string, data: any[], color: string, prefix?: string }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <h3 className="text-sm font-bold text-[#155645] mb-4 uppercase tracking-wider">{title}</h3>
@@ -279,10 +385,13 @@ export const Dashboard: React.FC = () => {
                     <td className="p-3 text-right font-bold text-[#155645]">R$ {calculateRequestTotal(req).toLocaleString('pt-BR')}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => updateRequestStatus(req.id, 'Aprovado')} className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition-all">
+                        <button onClick={() => setEditingRequest(req)} className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-600 hover:text-white transition-all" title="Editar">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => updateRequestStatus(req.id, 'Aprovado')} className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition-all" title="Aprovar">
                           <Check size={14} />
                         </button>
-                        <button onClick={() => updateRequestStatus(req.id, 'Rejeitado')} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all">
+                        <button onClick={() => updateRequestStatus(req.id, 'Rejeitado')} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition-all" title="Recusar">
                           <X size={14} />
                         </button>
                       </div>
@@ -299,6 +408,13 @@ export const Dashboard: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {editingRequest && (
+            <EditRequestModal
+              request={editingRequest}
+              onClose={() => setEditingRequest(null)}
+            />
+          )}
         </div>
       )}
 
