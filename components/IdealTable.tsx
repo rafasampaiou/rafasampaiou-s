@@ -43,6 +43,92 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste 
   );
 };
 
+interface MatrixCellProps {
+  value: number;
+  onChange: (val: number) => void;
+  onPaste: (e: React.ClipboardEvent) => void;
+  disabled?: boolean;
+  type: 'qty' | 'value';
+}
+
+const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disabled, type }) => {
+  // Local state to allow smooth typing (handling "1,5", empty string, etc.)
+  const [localValue, setLocalValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync local state with prop value when NOT focused (e.g. initial load, external update like paste)
+  useEffect(() => {
+    if (!isFocused) {
+      if (value === 0 && !localValue) {
+        setLocalValue(''); // Keep empty if 0 and already empty (cleaner UI)
+      } else {
+        // Format for display: 1234.56 -> "1.234,56" (VALUE) or "1235" (QTY)
+        if (type === 'value') {
+          setLocalValue(value ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '');
+        } else {
+          setLocalValue(value ? String(value) : '');
+        }
+      }
+    }
+  }, [value, isFocused, type]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+
+    // Parse whatever is in localValue to number and commit
+    let cleanVal = localValue.trim();
+    if (cleanVal === '') {
+      onChange(0);
+      return;
+    }
+
+    // Handle Brazilian format manually if it looks like one
+    // Remove "R$"
+    cleanVal = cleanVal.replace('R$', '').trim();
+
+    // If we have commas and dots, assume pt-BR
+    if (cleanVal.includes('.') && cleanVal.includes(',')) {
+      cleanVal = cleanVal.replace(/\./g, '').replace(',', '.');
+    } else if (cleanVal.includes(',')) {
+      // Only comma -> replace with dot
+      cleanVal = cleanVal.replace(',', '.');
+    } else if (cleanVal.includes('.')) {
+      // Only dot. In pt-BR typing "1.500" usually means 1500. 
+      // But "1.5" could be 1.5. 
+      // Given this is a Brazilian app, let's assume dot is thousands separator IF it looks like a big number?
+      // Actually, safer to treat dot as nothing (remove it) for integers/currency logic if user intends pt-BR.
+      // But browser behavior for "1.5" is 1.5.
+      // Let's stick to: remove dots.
+      cleanVal = cleanVal.replace(/\./g, '');
+    }
+
+    const num = parseFloat(cleanVal) || 0;
+    onChange(num);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Just update text, allow anything while typing (to support "10," then "10,5")
+    // But maybe filter non-numeric chars to avoid mess?
+    // Allow numbers, commas, dots, R$
+    const valid = e.target.value.replace(/[^0-9,.\sR$]/g, '');
+    setLocalValue(valid);
+  };
+
+  return (
+    <input
+      type="text"
+      className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
+      value={localValue}
+      onChange={handleChange}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+      onPaste={onPaste}
+      disabled={disabled}
+      placeholder={type === 'value' ? "0,00" : "0"}
+    />
+  );
+};
+
 export const IdealTable: React.FC = () => {
   const {
     sectors,
@@ -647,18 +733,12 @@ export const IdealTable: React.FC = () => {
                       const budget = getMonthlyBudget(s.id, `${selectedYear}-${m}`);
                       return (
                         <td key={m} className="p-0 border border-slate-300">
-                          <input
-                            type="text"
-                            className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            value={budget.cltBudgetQty || ''}
-                            onChange={(e) => {
-                              // Allow only numbers
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              updateMonthlyBudget({ ...budget, cltBudgetQty: parseFloat(val) || 0 })
-                            }}
+                          <MatrixCell
+                            value={budget.cltBudgetQty || 0}
+                            onChange={(val) => updateMonthlyBudget({ ...budget, cltBudgetQty: val })}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'qty')}
                             disabled={!isAdminUnlocked}
-                            placeholder="0"
+                            type="qty"
                           />
                         </td>
                       );
@@ -694,23 +774,12 @@ export const IdealTable: React.FC = () => {
                       const budget = getMonthlyBudget(s.id, `${selectedYear}-${m}`);
                       return (
                         <td key={m} className="p-0 border border-slate-300">
-                          <input
-                            type="text"
-                            className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            // Format on display: 1234.56 -> 1.234,56
-                            value={budget.cltBudgetValue ? budget.cltBudgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
-                            onChange={(e) => {
-                              // Handle manual typing (accept comma as decimal)
-                              let val = e.target.value;
-                              // Keep only numbers and comma
-                              val = val.replace(/[^0-9,]/g, '');
-                              // Replace comma with dot for storage
-                              const numVal = parseFloat(val.replace(',', '.')) || 0;
-                              updateMonthlyBudget({ ...budget, cltBudgetValue: numVal })
-                            }}
+                          <MatrixCell
+                            value={budget.cltBudgetValue || 0}
+                            onChange={(val) => updateMonthlyBudget({ ...budget, cltBudgetValue: val })}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'value')}
                             disabled={!isAdminUnlocked}
-                            placeholder="0,00"
+                            type="value"
                           />
                         </td>
                       );
