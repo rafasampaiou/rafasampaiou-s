@@ -356,13 +356,30 @@ export const IdealTable: React.FC = () => {
 
   const handleMatrixPaste = (e: React.ClipboardEvent, startSectorIndex: number, startMonthIndex: number, type: 'qty' | 'value') => {
     e.preventDefault();
+
+    if (!isAdminUnlocked) {
+      alert('Modo Admin bloqueado. Clique no cadeado para desbloquear.');
+      return;
+    }
+
+    // Try to get data
     const clipboardData = e.clipboardData.getData('text');
-    if (!clipboardData) return;
+    if (!clipboardData) {
+      console.warn('Clipboard text is empty');
+      alert('Não foi possível ler dados da área de transferência.');
+      return;
+    }
 
-    if (!isAdminUnlocked) return;
-
+    // Clean data
     const rows = clipboardData.replace(/"/g, '').split(/\r?\n/).filter(line => line.trim() !== '');
+    if (rows.length === 0) {
+      alert('Nenhum dado encontrado para colar.');
+      return;
+    }
+
+    setStatusMessage({ type: 'info', text: 'Processando colagem...' });
     const updates: any[] = [];
+    let cellCount = 0;
 
     rows.forEach((rowStr, rowIndex) => {
       const currentSectorIndex = startSectorIndex + rowIndex;
@@ -387,35 +404,38 @@ export const IdealTable: React.FC = () => {
           // Format: 1234,56 -> Replace comma with dot
           cleanVal = cleanVal.replace(',', '.');
         } else if (cleanVal.includes('.')) {
-          // Format: 1.234 (Thousand separator, no decimal part implied if no comma)
-          // Assumption: In pt-BR context, dot is commonly thousand separator.
-          // However, we must be careful. If the user copies "1.5" meaning one-and-a-half?
-          // In pt-BR, one-and-a-half is written "1,5". So "1.5" usually means 1500 (incomplete format) or is US format.
-          // Given the explicit "R$" trimming, we assume pt-BR source.
-          // We'll strip dots to treat them as thousand separators.
+          // Safest bet for pt-BR user: Remove dots (thousands).
           cleanVal = cleanVal.replace(/\./g, '');
         }
 
         const numVal = parseFloat(cleanVal) || 0;
-
         const currentBudget = getMonthlyBudget(sector.id, monthKey);
 
         updates.push({
           ...currentBudget,
           [type === 'qty' ? 'cltBudgetQty' : 'cltBudgetValue']: numVal,
-          monthKey // ensure update format is correct for bulk update
+          monthKey
         });
+        cellCount++;
       });
     });
 
-    // De-duplicate updates (last one wins)
-    const uniqueUpdates: Record<string, any> = {};
-    updates.forEach(u => {
-      uniqueUpdates[`${u.sectorId}_${u.monthKey}`] = u;
-    });
+    if (updates.length > 0) {
+      // De-duplicate updates (last one wins)
+      const uniqueUpdates: Record<string, any> = {};
+      updates.forEach(u => {
+        uniqueUpdates[`${u.sectorId}_${u.monthKey}`] = u;
+      });
 
-    bulkUpdateMonthlyBudgets(Object.values(uniqueUpdates));
-    setStatusMessage({ type: 'success', text: `Orçamentos (${type === 'qty' ? 'Qtd' : 'R$'}) atualizados em massa!` });
+      bulkUpdateMonthlyBudgets(Object.values(uniqueUpdates))
+        .then(() => {
+          setStatusMessage({ type: 'success', text: `${cellCount} valores colados com sucesso!` });
+        })
+        .catch(err => {
+          console.error(err);
+          setStatusMessage({ type: 'error', text: 'Erro ao salvar colagem.' });
+        });
+    }
   };
 
   const stats = sectors.map(s => {
