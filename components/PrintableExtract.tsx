@@ -168,7 +168,6 @@ export const PrintableExtract: React.FC = () => {
             </div>
           </div>
         </div>
-        极
       </div>
 
       <div ref={componentRef} className="bg-white p-8 shadow-sm print:shadow-none print:p-0 print:w-full print:max-w-none w-full">

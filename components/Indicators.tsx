@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context';
 import { Calendar, Filter, BarChart3, DollarSign, Users, Activity } from 'lucide-react';
 import {
@@ -6,10 +6,13 @@ import {
   LineChart,
   Line,
   XAxis,
+  YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  LabelList
+  LabelList,
+  ReferenceLine,
+  Label
 } from 'recharts';
 
 export const Indicators: React.FC = () => {
@@ -20,10 +23,50 @@ export const Indicators: React.FC = () => {
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
+  const [editingWfo, setEditingWfo] = useState<{ sectorId: string, loteId: number, value: string } | null>(null);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
   const moTarget = config.moTarget || 0;
+
+  // Debounced WFO saving
+  useEffect(() => {
+    if (!editingWfo) return;
+
+    const timer = setTimeout(() => {
+      const sectorObj = sectors.find(s => s.id === editingWfo.sectorId);
+      if (!sectorObj) return;
+
+      const newVal = parseFloat(editingWfo.value) || 0;
+      const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+        sectorId: sectorObj.id,
+        monthKey: monthKey,
+        realQty: 0,
+        realValue: 0,
+        afastadosQty: 0,
+        apprenticesQty: 0
+      };
+
+      const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
+      const loteIdStr = String(editingWfo.loteId);
+      const currentLoteData = updatedLoteWfo[loteIdStr] || updatedLoteWfo[editingWfo.loteId] || {};
+
+      // Determine view to update correct field
+      if (matrixView === 'value') {
+        updatedLoteWfo[loteIdStr] = { ...currentLoteData, value: newVal };
+      } else {
+        updatedLoteWfo[loteIdStr] = { ...currentLoteData, qty: newVal };
+      }
+
+      updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [editingWfo, monthKey, sectors, matrixView, getManualRealStat, updateManualRealStat]);
+
+  // Generate days for the selected month
+  const [year, month] = monthKey.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
 
   // Filter sectors based on selected sector and type
   const filteredSectors = useMemo(() => {
@@ -47,10 +90,6 @@ export const Indicators: React.FC = () => {
     });
     return total;
   }, [filteredSectors, monthKey, getManualRealStat]);
-
-  // Generate days for the selected month
-  const [year, month] = monthKey.split('-').map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
 
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
@@ -359,14 +398,18 @@ export const Indicators: React.FC = () => {
                 <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
               </Line>
               {moTarget > 0 && chartMetric === 'extras' && (
-                <Line
-                  type="monotone"
-                  dataKey={() => moTarget}
+                <ReferenceLine
+                  y={moTarget}
                   stroke="#F8981C"
                   strokeWidth={2}
                   strokeDasharray="5 5"
-                  name="Meta MO / UH"
-                  dot={false}
+                  label={{
+                    value: `Meta: ${moTarget.toFixed(3)}`,
+                    position: 'right',
+                    fill: '#F8981C',
+                    fontSize: 10,
+                    fontWeight: 'bold'
+                  }}
                 />
               )}
             </LineChart>
@@ -481,7 +524,7 @@ export const Indicators: React.FC = () => {
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
-                      const wfoData = stats?.loteWfo?.[lote.id];
+                      const wfoData = stats?.loteWfo?.[String(lote.id)] || stats?.loteWfo?.[lote.id]; // Try both string and number keys
 
                       // Determine WFO and workforce metric based on matrixView
                       let workforceMetric = 0;
@@ -517,30 +560,23 @@ export const Indicators: React.FC = () => {
                               <input
                                 type="number"
                                 className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
-                                value={wfoMetric === 0 ? '' : wfoMetric}
+                                value={editingWfo?.sectorId === sectorObj?.id && editingWfo?.loteId === lote.id
+                                  ? editingWfo.value
+                                  : (wfoMetric === 0 ? '' : wfoMetric)}
                                 placeholder="0"
+                                onFocus={() => {
+                                  if (sectorObj) {
+                                    setEditingWfo({
+                                      sectorId: sectorObj.id,
+                                      loteId: lote.id,
+                                      value: wfoMetric === 0 ? '' : String(wfoMetric)
+                                    });
+                                  }
+                                }}
+                                onBlur={() => setEditingWfo(null)}
                                 onChange={(e) => {
                                   if (!sectorObj) return;
-                                  const newVal = parseFloat(e.target.value) || 0;
-                                  const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
-                                    sectorId: sectorObj.id,
-                                    monthKey: monthKey,
-                                    realQty: 0,
-                                    realValue: 0,
-                                    afastadosQty: 0,
-                                    apprenticesQty: 0
-                                  };
-
-                                  const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
-                                  const currentLoteData = updatedLoteWfo[lote.id] || {};
-
-                                  if (matrixView === 'value') {
-                                    updatedLoteWfo[lote.id] = { ...currentLoteData, value: newVal };
-                                  } else {
-                                    updatedLoteWfo[lote.id] = { ...currentLoteData, qty: newVal };
-                                  }
-
-                                  updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+                                  setEditingWfo({ sectorId: sectorObj.id, loteId: lote.id, value: e.target.value });
                                 }}
                               />
                             ) : (
