@@ -273,7 +273,7 @@ export const IdealTable: React.FC = () => {
 
     if (!isAdminUnlocked) return;
 
-    const rows = clipboardData.split(/\r?\n/).filter(line => line.trim() !== '');
+    const rows = clipboardData.replace(/"/g, '').split(/\r?\n/).filter(line => line.trim() !== '');
     const updates: any[] = [];
 
     rows.forEach((rowStr, rowIndex) => {
@@ -290,12 +290,22 @@ export const IdealTable: React.FC = () => {
         const monthKey = `${selectedYear}-${month}`;
 
         let cleanVal = val.trim().replace('R$', '').trim();
-        // Handle Brazilian currency format (1.234,56 -> 1234.56) if detected, or standard
-        // Simple logic: remove dots if comma exists later, replace comma with dot
+
+        // Robust Brazilian Currency Parsing
         if (cleanVal.includes('.') && cleanVal.includes(',')) {
+          // Format: 1.234,56 -> Remove dots, replace comma with dot
           cleanVal = cleanVal.replace(/\./g, '').replace(',', '.');
         } else if (cleanVal.includes(',')) {
+          // Format: 1234,56 -> Replace comma with dot
           cleanVal = cleanVal.replace(',', '.');
+        } else if (cleanVal.includes('.')) {
+          // Format: 1.234 (Thousand separator, no decimal part implied if no comma)
+          // Assumption: In pt-BR context, dot is commonly thousand separator.
+          // However, we must be careful. If the user copies "1.5" meaning one-and-a-half?
+          // In pt-BR, one-and-a-half is written "1,5". So "1.5" usually means 1500 (incomplete format) or is US format.
+          // Given the explicit "R$" trimming, we assume pt-BR source.
+          // We'll strip dots to treat them as thousand separators.
+          cleanVal = cleanVal.replace(/\./g, '');
         }
 
         const numVal = parseFloat(cleanVal) || 0;
