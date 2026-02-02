@@ -13,6 +13,7 @@ export const Dashboard: React.FC = () => {
   // Filters State
   const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
   const [selectedYear, setSelectedYear] = useState(() => sessionStorage.getItem('dashboard_year') || String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedLote, setSelectedLote] = useState(() => sessionStorage.getItem('dashboard_lote') || 'Todos');
   const [selectedStatus, setSelectedStatus] = useState(() => sessionStorage.getItem('dashboard_status') || 'Todos');
 
