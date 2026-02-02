@@ -52,81 +52,68 @@ interface MatrixCellProps {
 }
 
 const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disabled, type }) => {
-  // Local state to allow smooth typing (handling "1,5", empty string, etc.)
   const [localValue, setLocalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [justPasted, setJustPasted] = useState(false);
+  // Ref to track if we should skip the next blur save (e.g. because we just pasted and blurred intentionally)
+  const skipBlurRef = React.useRef(false);
 
-  // Sync local state with prop value when NOT focused OR just pasted
+  // Sync local state with prop value when NOT focused
   useEffect(() => {
-    if (!isFocused || justPasted) {
-      if (value === 0 && !localValue && !justPasted) {
-        // Keep empty if 0 and already empty (cleaner UI), unless we just pasted (force update)
-        if (justPasted) {
-          setLocalValue(value === 0 ? '0' : (type === 'value' ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(value)));
-        } else {
-          setLocalValue(''); // Keep empty if 0 and already empty (cleaner UI)
-        }
+    if (!isFocused) {
+      // Format for display
+      if (type === 'value') {
+        setLocalValue(value ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '');
       } else {
-        // Format for display
-        if (type === 'value') {
-          setLocalValue(value ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '');
-        } else {
-          setLocalValue(value ? String(value) : '');
-        }
-      }
-
-      if (justPasted) {
-        setJustPasted(false);
+        setLocalValue(value ? String(value) : '');
       }
     }
-  }, [value, isFocused, type, justPasted]);
+  }, [value, isFocused, type]);
 
   const handleBlur = () => {
     setIsFocused(false);
 
-    // Parse whatever is in localValue to number and commit
-    let cleanVal = localValue.trim();
-    if (cleanVal === '') {
-      onChange(0);
+    if (skipBlurRef.current) {
+      skipBlurRef.current = false;
       return;
     }
 
-    // Handle Brazilian format manually if it looks like one
-    // Remove "R$"
-    cleanVal = cleanVal.replace('R$', '').trim();
+    let cleanVal = localValue.trim();
+    if (cleanVal === '') {
+      // Only trigger change if value is actually different from 0 which is default
+      if (value !== 0) onChange(0);
+      return;
+    }
 
-    // If we have commas and dots, assume pt-BR
+    cleanVal = cleanVal.replace('R$', '').trim();
     if (cleanVal.includes('.') && cleanVal.includes(',')) {
       cleanVal = cleanVal.replace(/\./g, '').replace(',', '.');
     } else if (cleanVal.includes(',')) {
-      // Only comma -> replace with dot
       cleanVal = cleanVal.replace(',', '.');
     } else if (cleanVal.includes('.')) {
-      // Only dot. In pt-BR typing "1.500" usually means 1500. 
-      // But "1.5" could be 1.5. 
-      // Given this is a Brazilian app, let's assume dot is thousands separator IF it looks like a big number?
-      // Actually, safer to treat dot as nothing (remove it) for integers/currency logic if user intends pt-BR.
-      // But browser behavior for "1.5" is 1.5.
-      // Let's stick to: remove dots.
       cleanVal = cleanVal.replace(/\./g, '');
     }
 
     const num = parseFloat(cleanVal) || 0;
-    onChange(num);
+    if (num !== value) {
+      onChange(num);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Just update text, allow anything while typing (to support "10," then "10,5")
-    // But maybe filter non-numeric chars to avoid mess?
-    // Allow numbers, commas, dots, R$
-    const valid = e.target.value.replace(/[^0-9,.\sR$]/g, '');
+    // Basic filtering to prevent invalid chars but allow typing flow
+    const valid = e.target.value;
     setLocalValue(valid);
   };
 
   const handlePasteInternal = (e: React.ClipboardEvent) => {
-    setJustPasted(true);
+    // When pasting, we assume the parent 'onPaste' handles the data update (bulk).
+    // The input's current localValue is 'stale' or incomplete.
+    // We want to blur this input so it stops holding focus, and we want to prevent
+    // handleBlur from saving the stale localValue over the new pasted data.
+
+    skipBlurRef.current = true;
     onPaste(e);
+    e.currentTarget.blur();
   };
 
   return (
