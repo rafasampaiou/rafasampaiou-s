@@ -55,22 +55,32 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disab
   // Local state to allow smooth typing (handling "1,5", empty string, etc.)
   const [localValue, setLocalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [justPasted, setJustPasted] = useState(false);
 
-  // Sync local state with prop value when NOT focused (e.g. initial load, external update like paste)
+  // Sync local state with prop value when NOT focused OR just pasted
   useEffect(() => {
-    if (!isFocused) {
-      if (value === 0 && !localValue) {
-        setLocalValue(''); // Keep empty if 0 and already empty (cleaner UI)
+    if (!isFocused || justPasted) {
+      if (value === 0 && !localValue && !justPasted) {
+        // Keep empty if 0 and already empty (cleaner UI), unless we just pasted (force update)
+        if (justPasted) {
+          setLocalValue(value === 0 ? '0' : (type === 'value' ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(value)));
+        } else {
+          setLocalValue(''); // Keep empty if 0 and already empty (cleaner UI)
+        }
       } else {
-        // Format for display: 1234.56 -> "1.234,56" (VALUE) or "1235" (QTY)
+        // Format for display
         if (type === 'value') {
           setLocalValue(value ? value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '');
         } else {
           setLocalValue(value ? String(value) : '');
         }
       }
+
+      if (justPasted) {
+        setJustPasted(false);
+      }
     }
-  }, [value, isFocused, type]);
+  }, [value, isFocused, type, justPasted]);
 
   const handleBlur = () => {
     setIsFocused(false);
@@ -114,6 +124,11 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disab
     setLocalValue(valid);
   };
 
+  const handlePasteInternal = (e: React.ClipboardEvent) => {
+    setJustPasted(true);
+    onPaste(e);
+  };
+
   return (
     <input
       type="text"
@@ -122,7 +137,7 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disab
       onChange={handleChange}
       onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
-      onPaste={onPaste}
+      onPaste={handlePasteInternal}
       disabled={disabled}
       placeholder={type === 'value' ? "0,00" : "0"}
     />
