@@ -23,12 +23,13 @@ export const PrintableExtract: React.FC = () => {
     qty: 35,
     role: 100,
     shift: 50,
-    timeIn: 40,
-    timeOut: 40,
+    timeIn: 45,
+    timeOut: 45,
     hours: 40,
     rate: 85,
     total: 90,
-    occupancy: 45
+    occupancy: 45,
+    justification: 160
   });
 
   const handlePrint = () => {
@@ -215,7 +216,7 @@ export const PrintableExtract: React.FC = () => {
           </div>
         </div>
 
-        <table className="w-full text-[10px] text-left border-collapse border border-slate-300 table-fixed">
+        <table className="mx-auto text-[10px] text-left border-collapse border border-slate-300 table-fixed" style={{ width: '100%', maxWidth: '900px' }}>
           <thead>
             <tr className="bg-slate-100 font-bold text-center text-[#155645]">
               <th
@@ -223,13 +224,13 @@ export const PrintableExtract: React.FC = () => {
                 style={{ width: `${colWidths.date}px` }}
                 onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
-                ENTRADA {sortDirection === 'asc' ? '↑' : '↓'}
+                ENTRADA <span className="no-print">{sortDirection === 'asc' ? '↑' : '↓'}</span>
               </th>
               {/* Column Removed: Data de Saída */}
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.days}px` }}>DIAS</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.qty}px` }}>QTD.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.role}px` }}>FUNÇÃO</th>
-              <th className="border border-slate-300 p-1" style={{ minWidth: '150px' }}>JUSTIFICATIVA</th>
+              <th className="border border-slate-300 p-1" style={{ width: `${colWidths.justification}px` }}>JUSTIFICATIVA</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.shift}px` }}>TURNO</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.timeIn}px` }}>ENT.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.timeOut}px` }}>SAÍDA</th>

@@ -126,6 +126,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           specialRate: r.special_rate,
           extrasQty: r.extras_qty,
           functionRole: r.function_role,
+          timeIn: r.time_in,
+          timeOut: r.time_out,
+          justification: r.justification,
+          status: r.status,
+          occupancyRate: r.occupancy_rate,
           createdAt: r.created_at,
           totalValue: r.total_value,
           requestorEmail: r.requestor_email

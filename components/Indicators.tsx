@@ -61,7 +61,6 @@ export const Indicators: React.FC = () => {
     // Get Occupancy (Ensure number)
     const occRecord = occupancyData[dateStr] as any;
     const occupiedUH = Number(occRecord?.total || 0);
-    极
 
     // Get Extras Count (Approved only, considering date ranges)
     const activeRequests = requests.filter(r => {
