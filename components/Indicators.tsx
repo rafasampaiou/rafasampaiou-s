@@ -404,7 +404,7 @@ export const Indicators: React.FC = () => {
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   label={{
-                    value: `Meta: ${moTarget.toFixed(3)}`,
+                    value: `Meta: ${moTarget.toFixed(2).replace('.', ',')}`,
                     position: 'right',
                     fill: '#F8981C',
                     fontSize: 10,

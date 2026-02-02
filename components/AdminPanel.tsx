@@ -375,6 +375,22 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       <div className="p-6 flex-1 flex flex-col">
+        {activeTab === 'sectors' && (
+          <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex items-center gap-4 w-fit">
+            <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada (Gráfico em Indicadores):</label>
+            <input
+              type="number"
+              step="0.01"
+              className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white"
+              value={getMonthlyAppConfig(selectedMonth).moTarget || 0}
+              onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
+            />
+            <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic">
+              Este valor define a linha de meta laranja no gráfico de indicadores.
+            </div>
+          </div>
+        )}
+
         {(activeTab === 'sectors' || activeTab === 'config' || activeTab === 'general') && (
           <div className="mb-6 flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 w-fit">
             <span className="text-sm font-bold text-slate-700">Mês de Referência:</span>
@@ -392,19 +408,6 @@ export const AdminPanel: React.FC = () => {
             <div className="flex justify-between items-start mb-6">
               <div className="flex flex-col gap-3">
                 <h3 className="text-lg font-bold text-[#155645]">Orçamento de Extraordinários ({selectedMonth})</h3>
-                <div className="flex items-center gap-4 p-3 bg-orange-50 rounded-lg border border-orange-100 shadow-sm">
-                  <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada (Índice):</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white"
-                    value={getMonthlyAppConfig(selectedMonth).moTarget || 0}
-                    onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
-                  />
-                  <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic">
-                    Este valor define a linha de meta laranja no gráfico de indicadores.
-                  </div>
-                </div>
               </div>
               <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 font-medium">
                 Dica: Valor Orçado | Valor Hora | Horas Trab. | Dias Trab.
