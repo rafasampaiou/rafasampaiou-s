@@ -377,7 +377,7 @@ export const AdminPanel: React.FC = () => {
       <div className="p-6 flex-1 flex flex-col">
         {activeTab === 'sectors' && (
           <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex items-center gap-4 w-fit">
-            <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada (Gráfico em Indicadores):</label>
+            <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada:</label>
             <input
               type="number"
               step="0.01"
