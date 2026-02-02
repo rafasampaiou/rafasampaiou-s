@@ -35,6 +35,9 @@ export const AdminPanel: React.FC = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [userMsg, setUserMsg] = useState('');
 
+  // Local state for MO Target input to allow smooth decimal typing
+  const [moTargetInput, setMoTargetInput] = useState('');
+
   // Fetch profiles when tab is active
   useEffect(() => {
     if (activeTab === 'users' && fetchProfiles) {
@@ -58,6 +61,20 @@ export const AdminPanel: React.FC = () => {
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
+
+  // Sync MO Target from store to local state when month changes or data loads
+  const currentMoTarget = getMonthlyAppConfig(selectedMonth).moTarget;
+  useEffect(() => {
+    setMoTargetInput(currentMoTarget ? currentMoTarget.toString() : '');
+  }, [currentMoTarget, selectedMonth]);
+
+  const handleMoTargetBlur = () => {
+    const newVal = parseFloat(moTargetInput.replace(',', '.')) || 0;
+    // Only update if different to avoid unnecessary calls (though updateMonthlyAppConfig handles upsert)
+    if (newVal !== currentMoTarget) {
+      updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: newVal });
+    }
+  };
 
   const isValidDate = (y: number, m: number, d: number) => {
     const date = new Date(y, m, d);
@@ -379,11 +396,12 @@ export const AdminPanel: React.FC = () => {
           <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex items-center gap-4 w-fit">
             <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada:</label>
             <input
-              type="number"
-              step="0.01"
+              type="text"
               className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white"
-              value={getMonthlyAppConfig(selectedMonth).moTarget || 0}
-              onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
+              value={moTargetInput}
+              onChange={(e) => setMoTargetInput(e.target.value)}
+              onBlur={handleMoTargetBlur}
+              placeholder="0.00"
             />
             <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic">
               Este valor define a linha de meta laranja no gráfico de indicadores.
@@ -683,28 +701,19 @@ export const AdminPanel: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Meta de MO por UH Ocupada:</label>
                   <div className="flex items-center gap-3">
                     <input
-                      type="number"
-                      step="0.001"
+                      type="text"
                       className="border border-slate-300 rounded px-3 py-2 w-full md:w-1/2 focus:ring-1 focus:ring-[#155645] outline-none font-bold text-[#F8981C]"
-                      value={getMonthlyAppConfig(selectedMonth).moTarget || 0}
-                      onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
+                      value={moTargetInput}
+                      onChange={(e) => setMoTargetInput(e.target.value)}
+                      onBlur={handleMoTargetBlur}
+                      placeholder="Ex: 2,18"
                     />
                     <div className="text-xs text-slate-500 italic">
                       Esta meta será exibida como uma linha laranja no gráfico de indicadores.
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Meta MO por UH Ocupada (Alvo)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
-                    value={getMonthlyAppConfig(selectedMonth).moTarget || ''}
-                    placeholder="Ex: 0.150"
-                    onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
+
                 <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação (Global)</label>
                   <button
