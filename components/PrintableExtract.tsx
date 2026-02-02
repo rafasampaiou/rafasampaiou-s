@@ -158,15 +158,17 @@ export const PrintableExtract: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-[#155645] text-white px-4 py-2 rounded hover:bg-[#104033] transition-colors text-sm shadow-sm"
-          >
-            <Printer size={18} />
-            Imprimir
-          </button>
+          <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 flex items-center gap-3 shadow-sm">
+            <div className="bg-orange-200/50 p-2 rounded-full">
+              <Printer size={20} className="text-orange-700" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-orange-800 leading-tight">Dica de Impressão</p>
+              <p className="text-xs text-orange-700 mt-0.5">Para imprimir, aperte <strong>Control + P</strong> e ajuste o % de zoom conforme necessário.</p>
+            </div>
+          </div>
         </div>
+        极
       </div>
 
       <div ref={componentRef} className="bg-white p-8 shadow-sm print:shadow-none print:p-0 print:w-full print:max-w-none w-full">
