@@ -35,7 +35,8 @@ export const AdminPanel: React.FC = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [userMsg, setUserMsg] = useState('');
 
-  // Local state for MO Target input to allow smooth decimal typing
+  // Local state for MO Target input
+  const [moTargetMonth, setMoTargetMonth] = useState(new Date().toISOString().slice(0, 7));
   const [moTargetInput, setMoTargetInput] = useState('');
 
   // Fetch profiles when tab is active
@@ -62,17 +63,17 @@ export const AdminPanel: React.FC = () => {
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
-  // Sync MO Target from store to local state when month changes or data loads
-  const currentMoTarget = getMonthlyAppConfig(selectedMonth).moTarget;
+  // Sync MO Target from store to local state when targeted month changes
+  const currentMoTarget = getMonthlyAppConfig(moTargetMonth).moTarget;
   useEffect(() => {
     setMoTargetInput(currentMoTarget ? currentMoTarget.toString() : '');
-  }, [currentMoTarget, selectedMonth]);
+  }, [currentMoTarget, moTargetMonth]);
 
   const handleMoTargetBlur = () => {
     const newVal = parseFloat(moTargetInput.replace(',', '.')) || 0;
-    // Only update if different to avoid unnecessary calls (though updateMonthlyAppConfig handles upsert)
+    // Update config for the SPECIFIC input month, not the global one
     if (newVal !== currentMoTarget) {
-      updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: newVal });
+      updateMonthlyAppConfig({ ...getMonthlyAppConfig(moTargetMonth), moTarget: newVal });
     }
   };
 
@@ -393,18 +394,36 @@ export const AdminPanel: React.FC = () => {
 
       <div className="p-6 flex-1 flex flex-col">
         {activeTab === 'sectors' && (
-          <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex items-center gap-4 w-fit">
-            <label className="text-sm font-bold text-orange-800">Meta de MO por UH Ocupada:</label>
-            <input
-              type="text"
-              className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white"
-              value={moTargetInput}
-              onChange={(e) => setMoTargetInput(e.target.value)}
-              onBlur={handleMoTargetBlur}
-              placeholder="0.00"
-            />
-            <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic">
-              Este valor define a linha de meta laranja no gráfico de indicadores.
+          <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4 w-fit">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Mês de Referência da Meta</label>
+              <input
+                type="month"
+                className="border border-orange-200 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-orange-500 text-orange-800 bg-white shadow-sm"
+                value={moTargetMonth}
+                onChange={(e) => setMoTargetMonth(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta de MO / UH</label>
+              <input
+                type="text"
+                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                value={moTargetInput}
+                onChange={(e) => setMoTargetInput(e.target.value)}
+                onBlur={handleMoTargetBlur}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic border-l border-orange-200 pl-3">
+              Defina a meta para o mês selecionado ao lado. Este valor aparecerá como linha laranja no gráfico.
             </div>
           </div>
         )}

@@ -405,10 +405,11 @@ export const Indicators: React.FC = () => {
                   strokeDasharray="5 5"
                   label={{
                     value: `Meta: ${moTarget.toFixed(2).replace('.', ',')}`,
-                    position: 'right',
+                    position: 'insideLeft',
                     fill: '#F8981C',
                     fontSize: 10,
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    dy: -10
                   }}
                 />
               )}
