@@ -648,14 +648,17 @@ export const IdealTable: React.FC = () => {
                       return (
                         <td key={m} className="p-0 border border-slate-300">
                           <input
-                            type="number"
+                            type="text"
                             className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            value={budget.cltBudgetQty || 0}
+                            value={budget.cltBudgetQty || ''}
                             onChange={(e) => {
-                              updateMonthlyBudget({ ...budget, cltBudgetQty: parseFloat(e.target.value) || 0 })
+                              // Allow only numbers
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              updateMonthlyBudget({ ...budget, cltBudgetQty: parseFloat(val) || 0 })
                             }}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'qty')}
                             disabled={!isAdminUnlocked}
+                            placeholder="0"
                           />
                         </td>
                       );
@@ -692,15 +695,22 @@ export const IdealTable: React.FC = () => {
                       return (
                         <td key={m} className="p-0 border border-slate-300">
                           <input
-                            type="number"
-                            step="0.01"
+                            type="text"
                             className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            value={budget.cltBudgetValue || 0}
+                            // Format on display: 1234.56 -> 1.234,56
+                            value={budget.cltBudgetValue ? budget.cltBudgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
                             onChange={(e) => {
-                              updateMonthlyBudget({ ...budget, cltBudgetValue: parseFloat(e.target.value) || 0 })
+                              // Handle manual typing (accept comma as decimal)
+                              let val = e.target.value;
+                              // Keep only numbers and comma
+                              val = val.replace(/[^0-9,]/g, '');
+                              // Replace comma with dot for storage
+                              const numVal = parseFloat(val.replace(',', '.')) || 0;
+                              updateMonthlyBudget({ ...budget, cltBudgetValue: numVal })
                             }}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'value')}
                             disabled={!isAdminUnlocked}
+                            placeholder="0,00"
                           />
                         </td>
                       );
