@@ -680,7 +680,7 @@ export const AdminPanel: React.FC = () => {
                   />
                 </div>
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Meta de MO por UH Ocupada (Índice)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Meta de MO por UH Ocupada:</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="number"
