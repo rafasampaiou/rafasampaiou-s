@@ -18,17 +18,17 @@ export const PrintableExtract: React.FC = () => {
 
   // Column Widths State (px) - Fixed configuration
   const [colWidths] = useState({
-    date: 70,
-    days: 40,
-    qty: 40,
-    role: 120,
-    shift: 60,
-    timeIn: 45,
-    timeOut: 45,
-    hours: 45,
-    rate: 95,
-    total: 100,
-    occupancy: 50
+    date: 65,
+    days: 35,
+    qty: 35,
+    role: 100,
+    shift: 50,
+    timeIn: 40,
+    timeOut: 40,
+    hours: 40,
+    rate: 85,
+    total: 90,
+    occupancy: 45
   });
 
   const handlePrint = () => {
@@ -220,7 +220,7 @@ export const PrintableExtract: React.FC = () => {
             <tr className="bg-slate-100 font-bold text-center text-[#155645]">
               <th
                 className="border border-slate-300 p-1 cursor-pointer hover:bg-slate-200"
-                style={{ width: `85px` }}
+                style={{ width: `${colWidths.date}px` }}
                 onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 ENTRADA {sortDirection === 'asc' ? '↑' : '↓'}
@@ -229,7 +229,7 @@ export const PrintableExtract: React.FC = () => {
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.days}px` }}>DIAS</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.qty}px` }}>QTD.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.role}px` }}>FUNÇÃO</th>
-              <th className="border border-slate-300 p-1">JUSTIFICATIVA</th>
+              <th className="border border-slate-300 p-1" style={{ minWidth: '150px' }}>JUSTIFICATIVA</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.shift}px` }}>TURNO</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.timeIn}px` }}>ENT.</th>
               <th className="border border-slate-300 p-1" style={{ width: `${colWidths.timeOut}px` }}>SAÍDA</th>

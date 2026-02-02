@@ -304,7 +304,7 @@ export const IdealTable: React.FC = () => {
 
         updates.push({
           ...currentBudget,
-          [type === 'qty' ? 'budgetQty' : 'budgetValue']: numVal,
+          [type === 'qty' ? 'cltBudgetQty' : 'cltBudgetValue']: numVal,
           monthKey // ensure update format is correct for bulk update
         });
       });
@@ -640,9 +640,9 @@ export const IdealTable: React.FC = () => {
                           <input
                             type="number"
                             className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            value={budget.budgetQty}
+                            value={budget.cltBudgetQty || 0}
                             onChange={(e) => {
-                              updateMonthlyBudget({ ...budget, budgetQty: parseFloat(e.target.value) || 0 })
+                              updateMonthlyBudget({ ...budget, cltBudgetQty: parseFloat(e.target.value) || 0 })
                             }}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'qty')}
                             disabled={!isAdminUnlocked}
@@ -685,9 +685,9 @@ export const IdealTable: React.FC = () => {
                             type="number"
                             step="0.01"
                             className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
-                            value={budget.budgetValue}
+                            value={budget.cltBudgetValue || 0}
                             onChange={(e) => {
-                              updateMonthlyBudget({ ...budget, budgetValue: parseFloat(e.target.value) || 0 })
+                              updateMonthlyBudget({ ...budget, cltBudgetValue: parseFloat(e.target.value) || 0 })
                             }}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'value')}
                             disabled={!isAdminUnlocked}

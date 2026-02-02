@@ -59,7 +59,9 @@ export const Indicators: React.FC = () => {
     const currentLoopDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid timezone edge cases
 
     // Get Occupancy (Ensure number)
-    const occupiedUH = Number(occupancyData[dateStr] || 0);
+    const occRecord = occupancyData[dateStr] as any;
+    const occupiedUH = Number(occRecord?.total || 0);
+    极
 
     // Get Extras Count (Approved only, considering date ranges)
     const activeRequests = requests.filter(r => {
