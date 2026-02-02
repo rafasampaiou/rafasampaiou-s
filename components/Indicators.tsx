@@ -22,6 +22,8 @@ export const Indicators: React.FC = () => {
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
+  const config = getMonthlyAppConfig(monthKey);
+  const moTarget = config.moTarget || 0;
 
   // Filter sectors based on selected sector and type
   const filteredSectors = useMemo(() => {
@@ -355,6 +357,17 @@ export const Indicators: React.FC = () => {
               <Line type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
                 <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
               </Line>
+              {moTarget > 0 && chartMetric === 'extras' && (
+                <Line
+                  type="monotone"
+                  dataKey={() => moTarget}
+                  stroke="#F8981C"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  name="Meta MO / UH"
+                  dot={false}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>

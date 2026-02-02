@@ -64,6 +64,8 @@ export interface MonthlyBudget {
   workHoursPerDay: number; // Horas de trabalho (default 8)
   workingDaysPerMonth: number; // Dias trabalhados (default 22)
   extraQtyPerDay: number; // Qtd Extras por dia (Calculado)
+  cltBudgetQty?: number; // NEW: Qtd CLT no Quadro Orçado
+  cltBudgetValue?: number; // NEW: Valor Salário no Quadro Orçado
 }
 
 // Stores manual overrides for "Real" values in Ideal Table if user edits them
@@ -102,6 +104,8 @@ export interface MonthlyStats {
 export interface OccupancyRecord {
   date: string; // YYYY-MM-DD
   occupiedRooms: number;
+  lazer?: number;
+  eventos?: number;
 }
 
 export interface SpecialRole {
@@ -120,4 +124,5 @@ export interface MonthlyAppConfig {
   monthKey: string;
   standardHourRate: number;
   taxRate: number;
+  moTarget?: number; // Meta de MO por UH Ocupada
 }

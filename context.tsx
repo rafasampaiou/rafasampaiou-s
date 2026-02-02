@@ -36,8 +36,8 @@ interface AppContextType {
   bulkUpdateManualRealStats: (stats: ManualRealStat[]) => Promise<void>;
 
   // Occupancy
-  occupancyData: Record<string, number>; // Date "YYYY-MM-DD" -> Count
-  saveOccupancyBatch: (data: Record<string, number>) => void;
+  occupancyData: Record<string, { total: number, lazer: number, eventos: number }>; // Date "YYYY-MM-DD" -> Values
+  saveOccupancyBatch: (data: Record<string, { total: number, lazer: number, eventos: number }>) => void;
 
   // Configs
   systemConfig: SystemConfig;
@@ -74,7 +74,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [monthlyBudgets, setMonthlyBudgets] = useState<Record<string, MonthlyBudget>>({});
   const [monthlyLotes, setMonthlyLotes] = useState<Record<string, LoteConfig[]>>({});
   const [manualRealStats, setManualRealStats] = useState<Record<string, ManualRealStat>>({});
-  const [occupancyData, setOccupancyData] = useState<Record<string, number>>({});
+  const [occupancyData, setOccupancyData] = useState<Record<string, { total: number, lazer: number, eventos: number }>>({});
 
   // System Configs
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ standardHourRate: 15.00, taxRate: 0, isFormLocked: false });
@@ -165,6 +165,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             workHoursPerDay: Number(b.work_hours_per_day) || 8,
             workingDaysPerMonth: Number(b.working_days_per_month) || 22,
             extraQtyPerDay: Number(b.extra_qty_per_day) || 0,
+            cltBudgetQty: Number(b.clt_budget_qty) || 0,
+            cltBudgetValue: Number(b.clt_budget_value) || 0,
           };
         });
         setMonthlyBudgets(budgetMap);
@@ -202,11 +204,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (occupancy) {
-        const occMap: Record<string, number> = {};
+        const occMap: Record<string, { total: number, lazer: number, eventos: number }> = {};
         occupancy.forEach((o: any) => {
-          occMap[o.date_key] = Number(o.count);
+          occMap[o.date_key] = {
+            total: Number(o.count || 0),
+            lazer: Number(o.lazer || 0),
+            eventos: Number(o.eventos || 0)
+          };
         });
-        setOccupancyData(occMap);
+        setOccupancyData(occMap as any);
       }
 
       if (mAppConfigs) {
@@ -215,7 +221,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           configMap[c.month_key] = {
             monthKey: c.month_key,
             standardHourRate: Number(c.standard_hour_rate),
-            taxRate: Number(c.tax_rate)
+            taxRate: Number(c.tax_rate),
+            moTarget: Number(c.mo_target || 0)
           };
         });
         setMonthlyAppConfigs(configMap);
@@ -413,8 +420,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveOccupancyBatch = async (data: Record<string, number>) => {
-    const batch = Object.entries(data).map(([date_key, count]) => ({ date_key, count }));
+  const saveOccupancyBatch = async (data: Record<string, { total: number, lazer: number, eventos: number }>) => {
+    const batch = Object.entries(data).map(([date_key, vals]) => ({
+      date_key,
+      count: vals.total,
+      lazer: vals.lazer,
+      eventos: vals.eventos
+    }));
     const { error } = await supabase.from('occupancy_data').upsert(batch);
     if (!error) setOccupancyData(prev => ({ ...prev, ...data }));
   };
@@ -525,7 +537,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       hour_rate: data.hourRate,
       work_hours_per_day: data.workHoursPerDay,
       working_days_per_month: data.workingDaysPerMonth,
-      extra_qty_per_day: data.extraQtyPerDay
+      extra_qty_per_day: data.extraQtyPerDay,
+      clt_budget_qty: data.cltBudgetQty,
+      clt_budget_value: data.cltBudgetValue
     }, { onConflict: 'sector_id, month_key' });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
@@ -594,7 +608,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         hour_rate: b.hourRate,
         work_hours_per_day: b.workHoursPerDay,
         working_days_per_month: b.workingDaysPerMonth,
-        extra_qty_per_day: b.extraQtyPerDay
+        extra_qty_per_day: b.extraQtyPerDay,
+        clt_budget_qty: b.cltBudgetQty,
+        clt_budget_value: b.cltBudgetValue
       })), { onConflict: 'sector_id, month_key' }
     ).select();
 
@@ -682,7 +698,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { error } = await supabase.from('monthly_app_configs').upsert({
       month_key: config.monthKey,
       standard_hour_rate: config.standardHourRate,
-      tax_rate: config.taxRate
+      tax_rate: config.taxRate,
+      mo_target: config.moTarget
     });
 
     if (!error) {

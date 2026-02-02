@@ -97,7 +97,7 @@ export const IdealTable: React.FC = () => {
     'realValue'
   ];
 
-  const handleBudgetChange = (sectorId: string, field: 'budgetQty' | 'budgetValue', value: string) => {
+  const handleBudgetChange = (sectorId: string, field: 'cltBudgetQty' | 'cltBudgetValue', value: string) => {
     const current = getMonthlyBudget(sectorId, selectedMonthKey);
     updateMonthlyBudget({
       ...current,
@@ -244,8 +244,10 @@ export const IdealTable: React.FC = () => {
         }
         const numVal = parseFloat(cleanVal) || 0;
 
-        if (targetField === 'budgetQty' || targetField === 'budgetValue') {
-          updatesBySector[sector.id].budget[targetField] = numVal;
+        if (targetField === 'budgetQty') {
+          updatesBySector[sector.id].budget.cltBudgetQty = numVal;
+        } else if (targetField === 'budgetValue') {
+          updatesBySector[sector.id].budget.cltBudgetValue = numVal;
         } else {
           updatesBySector[sector.id].real[targetField] = numVal;
         }
@@ -338,15 +340,15 @@ export const IdealTable: React.FC = () => {
     const apprenticesQty = manualReal?.apprenticesQty || 0;
 
     const activeRealQty = realQty - afastadosQty - apprenticesQty;
-    const diffQty = activeRealQty - budget.budgetQty;
-    const diffValue = realValue - budget.budgetValue;
-    const diffPercent = budget.budgetValue > 0 ? (diffValue / budget.budgetValue) * 100 : 0;
+    const diffQty = activeRealQty - (budget.cltBudgetQty || 0);
+    const diffValue = realValue - (budget.cltBudgetValue || 0);
+    const diffPercent = (budget.cltBudgetValue || 0) > 0 ? (diffValue / (budget.cltBudgetValue || 0)) * 100 : 0;
 
     return {
       sectorId: s.id,
       sectorName: s.name,
-      budgetQty: budget.budgetQty,
-      budgetValue: budget.budgetValue,
+      budgetQty: budget.cltBudgetQty || 0,
+      budgetValue: budget.cltBudgetValue || 0,
       realQty,
       realValue,
       afastadosQty,
@@ -498,7 +500,7 @@ export const IdealTable: React.FC = () => {
                       type="number"
                       className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors"
                       value={row.budgetQty}
-                      onChange={(e) => handleBudgetChange(row.sectorId, 'budgetQty', e.target.value)}
+                      onChange={(e) => handleBudgetChange(row.sectorId, 'cltBudgetQty', e.target.value)}
                       onPaste={(e) => handlePaste(e, index, 'budgetQty')}
                     // disabled={!isAdminUnlocked} // Allowing edit in top table too, why not
                     />
@@ -506,7 +508,7 @@ export const IdealTable: React.FC = () => {
                   <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
                     <CurrencyInput
                       value={row.budgetValue}
-                      onChange={(val) => handleBudgetChange(row.sectorId, 'budgetValue', val)}
+                      onChange={(val) => handleBudgetChange(row.sectorId, 'cltBudgetValue', val)}
                       onPaste={(e) => handlePaste(e, index, 'budgetValue')}
                     />
                   </td>

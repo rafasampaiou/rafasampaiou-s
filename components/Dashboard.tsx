@@ -13,7 +13,6 @@ export const Dashboard: React.FC = () => {
   // Filters State
   const [selectedSector, setSelectedSector] = useState(() => sessionStorage.getItem('dashboard_sector') || 'Todos');
   const [selectedYear, setSelectedYear] = useState(() => sessionStorage.getItem('dashboard_year') || String(new Date().getFullYear()));
-  const [selectedMonth, setSelectedMonth] = useState(() => sessionStorage.getItem('dashboard_month') || String(new Date().padStart ? (new Date().getMonth() + 1).toString().padStart(2, '0') : String(new Date().getMonth() + 1)));
   const [selectedLote, setSelectedLote] = useState(() => sessionStorage.getItem('dashboard_lote') || 'Todos');
   const [selectedStatus, setSelectedStatus] = useState(() => sessionStorage.getItem('dashboard_status') || 'Todos');
 
@@ -267,6 +266,24 @@ export const Dashboard: React.FC = () => {
                 type="time"
                 value={editData.timeOut}
                 onChange={(e) => setEditData({ ...editData, timeOut: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data Início</label>
+              <input
+                type="date"
+                value={editData.dateEvent}
+                onChange={(e) => setEditData({ ...editData, dateEvent: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
+              <input
+                type="text"
+                value={editData.reason}
+                onChange={(e) => setEditData({ ...editData, reason: e.target.value })}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
               />
             </div>
@@ -552,6 +569,7 @@ export const Dashboard: React.FC = () => {
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor Total</th>
                 <th className="p-4 text-center">Status</th>
+                {isAdminUnlocked && <th className="p-4 text-center">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -576,6 +594,18 @@ export const Dashboard: React.FC = () => {
                       {req.status}
                     </span>
                   </td>
+                  {isAdminUnlocked && (
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => setEditingRequest(req)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Editar">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => { if (window.confirm('Excluir esta solicitação permanentemente?')) deleteRequest(req.id); }} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Excluir">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {filteredRequests.length === 0 && (

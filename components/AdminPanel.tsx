@@ -19,7 +19,8 @@ export const AdminPanel: React.FC = () => {
 
   // Occupancy State
   const [occupancyYear, setOccupancyYear] = useState(new Date().getFullYear());
-  const [gridData, setGridData] = useState<Record<string, string>>({});
+  const [occupancyMonth, setOccupancyMonth] = useState(new Date().getMonth()); // 0-11
+  const [gridData, setGridData] = useState<Record<string, { lazer: string, eventos: string, total: string }>>({});
 
   // New Inputs State
   const [newRoleName, setNewRoleName] = useState('');
@@ -43,14 +44,17 @@ export const AdminPanel: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    const newGridData: Record<string, string> = {};
+    const newGridData: Record<string, { lazer: string, eventos: string, total: string }> = {};
     Object.entries(occupancyData).forEach(([dateStr, val]) => {
-      if (dateStr.startsWith(String(occupancyYear))) {
-        newGridData[dateStr] = val.toString();
-      }
+      // @ts-ignore
+      newGridData[dateStr] = {
+        lazer: (val as any).lazer?.toString() || '',
+        eventos: (val as any).eventos?.toString() || '',
+        total: (val as any).total?.toString() || ''
+      };
     });
     setGridData(newGridData);
-  }, [occupancyYear, occupancyData]);
+  }, [occupancyData]);
 
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -154,12 +158,21 @@ export const AdminPanel: React.FC = () => {
     alert('Lotes salvos com sucesso!');
   };
 
-  const handleGridChange = (monthIndex: number, day: number, value: string) => {
-    const dateKey = `${occupancyYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    setGridData(prev => ({
-      ...prev,
-      [dateKey]: value
-    }));
+  const handleGridChange = (day: number, field: 'lazer' | 'eventos' | 'total', value: string) => {
+    const dateKey = `${occupancyYear}-${String(occupancyMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setGridData(prev => {
+      const current = prev[dateKey] || { lazer: '', eventos: '', total: '' };
+      const updated = { ...current, [field]: value };
+
+      // Auto-calculate total if lazer or eventos changes
+      if (field === 'lazer' || field === 'eventos') {
+        const l = parseFloat(updated.lazer.replace(',', '.')) || 0;
+        const e = parseFloat(updated.eventos.replace(',', '.')) || 0;
+        updated.total = (l + e).toString();
+      }
+
+      return { ...prev, [dateKey]: updated };
+    });
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, startMIdx: number, startDay: number) => {
@@ -207,12 +220,13 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleSaveOccupancy = () => {
-    const batchToSave: Record<string, number> = {};
-    Object.entries(gridData).forEach(([key, val]) => {
-      const strVal = String(val);
-      if (strVal !== '') {
-        batchToSave[key] = parseFloat(strVal.replace(',', '.')) || 0;
-      }
+    const batchToSave: Record<string, { total: number, lazer: number, eventos: number }> = {};
+    (Object.entries(gridData) as [string, { lazer: string, eventos: string, total: string }][]).forEach(([key, vals]) => {
+      batchToSave[key] = {
+        lazer: parseFloat(vals.lazer.replace(',', '.')) || 0,
+        eventos: parseFloat(vals.eventos.replace(',', '.')) || 0,
+        total: parseFloat(vals.total.replace(',', '.')) || 0
+      };
     });
     saveOccupancyBatch(batchToSave);
     alert('Dados de ocupação salvos com sucesso!');
@@ -517,23 +531,32 @@ export const AdminPanel: React.FC = () => {
         {activeTab === 'occupancy' && (
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 <h3 className="text-lg font-bold text-slate-800">Tabela de Ocupação</h3>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-slate-600">Ano:</label>
-                  <select
-                    value={occupancyYear}
-                    onChange={(e) => setOccupancyYear(Number(e.target.value))}
-                    className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                  >
-                    {years.map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-600">Ano:</label>
+                    <select
+                      value={occupancyYear}
+                      onChange={(e) => setOccupancyYear(Number(e.target.value))}
+                      className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                    >
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-600">Mês:</label>
+                    <select
+                      value={occupancyMonth}
+                      onChange={(e) => setOccupancyMonth(Number(e.target.value))}
+                      className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                    >
+                      {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
-                  Dica: Copie do Excel e cole na 1ª célula para preencher
-                </div>
                 <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
                   <Save size={16} /> Salvar Ocupação
                 </button>
@@ -541,39 +564,52 @@ export const AdminPanel: React.FC = () => {
             </div>
             <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
               <table className="w-full text-center border-collapse">
-                <thead className="bg-slate-100 text-slate-600 sticky top-0 z-10 shadow-sm">
+                <thead className="bg-[#155645] text-white sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="p-2 text-xs uppercase bg-slate-200 border border-slate-300 w-12 sticky left-0 z-20">Dia</th>
-                    {months.map(m => (
-                      <th key={m} className="p-2 text-xs uppercase border border-slate-300 min-w-[60px]">{m}</th>
-                    ))}
+                    <th className="p-3 text-xs uppercase border border-white/20 w-20">Dia</th>
+                    <th className="p-3 text-xs uppercase border border-white/20">Lazer</th>
+                    <th className="p-3 text-xs uppercase border border-white/20">Eventos</th>
+                    <th className="p-3 text-xs uppercase border border-white/20 bg-[#F8981C]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {days.map(day => (
-                    <tr key={day}>
-                      <td className="p-2 text-xs font-bold bg-slate-50 border border-slate-300 sticky left-0 z-10">{day}</td>
-                      {months.map((_, mIdx) => {
-                        const valid = isValidDate(occupancyYear, mIdx, day);
-                        const dateKey = `${occupancyYear}-${String(mIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const val = gridData[dateKey] || '';
-                        return valid ? (
-                          <td key={mIdx} className="border border-slate-300 p-0">
-                            <input
-                              id={`occ-input-${mIdx}-${day}`}
-                              type="text"
-                              className="w-full h-full p-2 text-center text-sm outline-none focus:bg-blue-50 transition-colors"
-                              value={val}
-                              placeholder="-"
-                              onChange={(e) => handleGridChange(mIdx, day, e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, mIdx, day)}
-                              onPaste={(e) => handlePaste(e, mIdx, day)}
-                            />
-                          </td>
-                        ) : <td key={mIdx} className="bg-slate-100 border border-slate-300"></td>;
-                      })}
-                    </tr>
-                  ))}
+                  {days.map(day => {
+                    const valid = isValidDate(occupancyYear, occupancyMonth, day);
+                    if (!valid) return null;
+                    const dateKey = `${occupancyYear}-${String(occupancyMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const vals = gridData[dateKey] || { lazer: '', eventos: '', total: '' };
+                    return (
+                      <tr key={day} className="hover:bg-slate-50 border-b border-slate-200">
+                        <td className="p-3 text-sm font-bold bg-slate-50 border-r border-slate-200">{day}</td>
+                        <td className="p-1 border-r border-slate-200">
+                          <input
+                            type="text"
+                            className="w-full p-2 text-center text-sm outline-none bg-transparent"
+                            value={vals.lazer}
+                            placeholder="0"
+                            onChange={(e) => handleGridChange(day, 'lazer', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-1 border-r border-slate-200">
+                          <input
+                            type="text"
+                            className="w-full p-2 text-center text-sm outline-none bg-transparent"
+                            value={vals.eventos}
+                            placeholder="0"
+                            onChange={(e) => handleGridChange(day, 'eventos', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-1 bg-orange-50">
+                          <input
+                            type="text"
+                            className="w-full p-2 text-center text-sm outline-none bg-transparent font-bold text-[#F8981C]"
+                            value={vals.total}
+                            readOnly
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -605,6 +641,17 @@ export const AdminPanel: React.FC = () => {
                     className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
                     value={getMonthlyAppConfig(selectedMonth).taxRate}
                     onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), taxRate: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Meta MO por UH Ocupada (Alvo)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    className="border border-slate-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#155645] outline-none"
+                    value={getMonthlyAppConfig(selectedMonth).moTarget || ''}
+                    placeholder="Ex: 0.150"
+                    onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), moTarget: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
