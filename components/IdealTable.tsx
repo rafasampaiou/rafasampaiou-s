@@ -412,9 +412,16 @@ export const IdealTable: React.FC = () => {
         const currentBudget = getMonthlyBudget(sector.id, monthKey);
 
         updates.push({
-          ...currentBudget,
-          [type === 'qty' ? 'cltBudgetQty' : 'cltBudgetValue']: numVal,
-          monthKey
+          sectorId: sector.id,
+          monthKey: monthKey,
+          budgetQty: currentBudget.budgetQty || 0,
+          budgetValue: currentBudget.budgetValue || 0,
+          hourRate: currentBudget.hourRate || 0,
+          workHoursPerDay: currentBudget.workHoursPerDay || 8,
+          workingDaysPerMonth: currentBudget.workingDaysPerMonth || 22,
+          extraQtyPerDay: currentBudget.extraQtyPerDay || 0,
+          cltBudgetQty: type === 'qty' ? numVal : (currentBudget.cltBudgetQty || 0),
+          cltBudgetValue: type === 'value' ? numVal : (currentBudget.cltBudgetValue || 0)
         });
         cellCount++;
       });
@@ -427,14 +434,36 @@ export const IdealTable: React.FC = () => {
         uniqueUpdates[`${u.sectorId}_${u.monthKey}`] = u;
       });
 
-      bulkUpdateMonthlyBudgets(Object.values(uniqueUpdates))
-        .then(() => {
-          setStatusMessage({ type: 'success', text: `${cellCount} valores colados com sucesso!` });
-        })
-        .catch(err => {
-          console.error(err);
-          setStatusMessage({ type: 'error', text: 'Erro ao salvar colagem.' });
-        });
+      const allItems = Object.values(uniqueUpdates);
+      const chunkSize = 20; // Chunk size 20 for safety
+      let processed = 0;
+      let errors: string[] = [];
+
+      const processChunk = async () => {
+        for (let i = 0; i < allItems.length; i += chunkSize) {
+          const chunk = allItems.slice(i, i + chunkSize);
+          setStatusMessage({ type: 'info', text: `Salvando lote ${Math.floor(i / chunkSize) + 1}...` });
+          try {
+            // @ts-ignore
+            await bulkUpdateMonthlyBudgets(chunk);
+            processed += chunk.length;
+          } catch (err: any) {
+            console.error('Batch save error:', err);
+            errors.push(err.message || 'Erro desconhecido');
+          }
+        }
+
+        if (errors.length > 0) {
+          setStatusMessage({ type: 'error', text: `Erro: ${errors[0].substring(0, 30)}...` });
+          alert(`Ocorreu um erro ao salvar: ${errors.join(', ')}`);
+        } else {
+          setStatusMessage({ type: 'success', text: `Sucesso! Quadro Orçado atualizado.` });
+        }
+      };
+
+      processChunk();
+    } else {
+      alert('Nenhum dado válido encontrado na colagem.');
     }
   };
 
