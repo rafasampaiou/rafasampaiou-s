@@ -529,7 +529,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       hourRate: 0,
       workHoursPerDay: 8,
       workingDaysPerMonth: 22,
-      extraQtyPerDay: 0
+      extraQtyPerDay: 0,
+      cltBudgetQty: 0,
+      cltBudgetValue: 0
     };
   };
 
@@ -537,14 +539,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { error } = await supabase.from('monthly_budgets').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
-      budget_qty: data.budgetQty,
-      budget_value: data.budgetValue,
-      hour_rate: data.hourRate,
-      work_hours_per_day: data.workHoursPerDay,
-      working_days_per_month: data.workingDaysPerMonth,
-      extra_qty_per_day: data.extraQtyPerDay,
-      clt_budget_qty: data.cltBudgetQty,
-      clt_budget_value: data.cltBudgetValue
+      budget_qty: data.budgetQty || 0,
+      budget_value: data.budgetValue || 0,
+      hour_rate: data.hourRate || 0,
+      work_hours_per_day: data.workHoursPerDay || 8,
+      working_days_per_month: data.workingDaysPerMonth || 22,
+      extra_qty_per_day: data.extraQtyPerDay || 0,
+      clt_budget_qty: data.cltBudgetQty || 0,
+      clt_budget_value: data.cltBudgetValue || 0
     }, { onConflict: 'sector_id, month_key' });
     if (!error) {
       const key = `${data.sectorId}_${data.monthKey}`;
@@ -608,14 +610,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       budgets.map(b => ({
         sector_id: b.sectorId,
         month_key: b.monthKey,
-        budget_qty: b.budgetQty,
-        budget_value: b.budgetValue,
-        hour_rate: b.hourRate,
-        work_hours_per_day: b.workHoursPerDay,
-        working_days_per_month: b.workingDaysPerMonth,
-        extra_qty_per_day: b.extraQtyPerDay,
-        clt_budget_qty: b.cltBudgetQty,
-        clt_budget_value: b.cltBudgetValue
+        budget_qty: b.budgetQty || 0,
+        budget_value: b.budgetValue || 0,
+        hour_rate: b.hourRate || 0,
+        work_hours_per_day: b.workHoursPerDay || 8,
+        working_days_per_month: b.workingDaysPerMonth || 22,
+        extra_qty_per_day: b.extraQtyPerDay || 0,
+        clt_budget_qty: b.cltBudgetQty || 0,
+        clt_budget_value: b.cltBudgetValue || 0
       })), { onConflict: 'sector_id, month_key' }
     ).select();
 
