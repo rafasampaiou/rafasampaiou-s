@@ -27,7 +27,12 @@ export const Indicators: React.FC = () => {
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
-  const moTarget = config.moTarget || 0;
+  const activeMoTarget = useMemo(() => {
+    if (chartMetric === 'extras') return config.moTargetExtra || config.moTarget || 0;
+    if (chartMetric === 'clt') return config.moTargetClt || 0;
+    if (chartMetric === 'total') return config.moTargetTotal || 0;
+    return 0;
+  }, [chartMetric, config]);
 
   // Debounced WFO saving
   useEffect(() => {
@@ -397,14 +402,14 @@ export const Indicators: React.FC = () => {
               <Line type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
                 <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
               </Line>
-              {moTarget > 0 && chartMetric === 'extras' && (
+              {activeMoTarget > 0 && (
                 <ReferenceLine
-                  y={moTarget}
+                  y={activeMoTarget}
                   stroke="#F8981C"
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   label={{
-                    value: `Meta: ${moTarget.toFixed(2).replace('.', ',')}`,
+                    value: `Meta: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
                     position: 'insideLeft',
                     fill: '#F8981C',
                     fontSize: 10,
