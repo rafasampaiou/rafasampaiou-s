@@ -609,7 +609,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     console.log('[updateManualRealStat] Saving:', data);
 
-    const { error } = await supabase.from('manual_real_stats').upsert({
+    const payload: any = {
       sector_id: data.sectorId,
       month_key: data.monthKey,
       real_qty: data.realQty ?? 0,
@@ -617,10 +617,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       afastados_qty: data.afastadosQty ?? 0,
       apprentices_qty: data.apprenticesQty ?? 0,
       wfo_qty: data.wfoQty ?? 0,
-      wfo_lotes_json: data.loteWfo || {},
-      wfo_qty_lotes_json: data.loteWfoQty || {},
-      wfo_value_lotes_json: data.loteWfoValue || {}
-    }, { onConflict: 'sector_id, month_key' }).select();
+    };
+
+    if (data.loteWfo !== undefined) payload.wfo_lotes_json = data.loteWfo;
+    if (data.loteWfoQty !== undefined) payload.wfo_qty_lotes_json = data.loteWfoQty;
+    if (data.loteWfoValue !== undefined) payload.wfo_value_lotes_json = data.loteWfoValue;
+
+    const { error } = await supabase.from('manual_real_stats').upsert(payload, { onConflict: 'sector_id, month_key' }).select();
 
     if (error) {
       console.error('[updateManualRealStat] Supabase Error:', error);

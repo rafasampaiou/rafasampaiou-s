@@ -689,9 +689,10 @@ export const Indicators: React.FC = () => {
                                     nextLoteWfoValue[loteIdStr] = { ...currentLoteData, value: num };
 
                                     await updateManualRealStat({
-                                      ...currentStats,
+                                      sectorId: sectorObj.id,
+                                      monthKey: monthKey,
                                       loteWfoValue: nextLoteWfoValue
-                                    });
+                                    } as any);
                                   } else {
                                     const nextLoteWfoQty = { ...(currentStats.loteWfoQty || {}) } as any;
                                     const currentLoteData = nextLoteWfoQty[loteIdStr] || {};
@@ -706,9 +707,10 @@ export const Indicators: React.FC = () => {
                                     }
 
                                     await updateManualRealStat({
-                                      ...currentStats,
+                                      sectorId: sectorObj.id,
+                                      monthKey: monthKey,
                                       loteWfoQty: nextLoteWfoQty
-                                    });
+                                    } as any);
                                   }
                                 } catch (err) {
                                   console.error('Error in WfoCell onSave:', err);
