@@ -227,7 +227,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             monthKey: c.month_key,
             standardHourRate: Number(c.standard_hour_rate),
             taxRate: Number(c.tax_rate),
-            moTarget: Number(c.mo_target || 0)
+            moTarget: Number(c.mo_target || 0),
+            moTargetExtra: Number(c.mo_target_extra || 0),
+            moTargetClt: Number(c.mo_target_clt || 0),
+            moTargetTotal: Number(c.mo_target_total || 0)
           };
         });
         setMonthlyAppConfigs(configMap);
@@ -684,7 +687,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return monthlyAppConfigs[monthKey] || {
       monthKey,
       standardHourRate: systemConfig.standardHourRate, // Fallback to global
-      taxRate: systemConfig.taxRate // Fallback to global
+      taxRate: systemConfig.taxRate, // Fallback to global
+      moTarget: 0,
+      moTargetExtra: 0,
+      moTargetClt: 0,
+      moTargetTotal: 0
     };
   };
 
@@ -709,7 +716,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       month_key: config.monthKey,
       standard_hour_rate: config.standardHourRate,
       tax_rate: config.taxRate,
-      mo_target: config.moTarget
+      mo_target: config.moTarget,
+      mo_target_extra: config.moTargetExtra || 0,
+      mo_target_clt: config.moTargetClt || 0,
+      mo_target_total: config.moTargetTotal || 0
     });
 
     if (!error) {

@@ -79,6 +79,9 @@ export const AdminPanel: React.FC = () => {
   // Local state for MO Target input
   const [moTargetMonth, setMoTargetMonth] = useState(new Date().toISOString().slice(0, 7));
   const [moTargetInput, setMoTargetInput] = useState('');
+  const [moTargetExtraInput, setMoTargetExtraInput] = useState('');
+  const [moTargetCltInput, setMoTargetCltInput] = useState('');
+  const [moTargetTotalInput, setMoTargetTotalInput] = useState('');
 
   // Fetch profiles when tab is active
   useEffect(() => {
@@ -105,16 +108,20 @@ export const AdminPanel: React.FC = () => {
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
   // Sync MO Target from store to local state when targeted month changes
-  const currentMoTarget = getMonthlyAppConfig(moTargetMonth).moTarget;
+  const currentAppConfig = getMonthlyAppConfig(moTargetMonth);
   useEffect(() => {
-    setMoTargetInput(currentMoTarget ? currentMoTarget.toString() : '');
-  }, [currentMoTarget, moTargetMonth]);
+    setMoTargetInput(currentAppConfig.moTarget ? currentAppConfig.moTarget.toString() : '');
+    setMoTargetExtraInput(currentAppConfig.moTargetExtra ? currentAppConfig.moTargetExtra.toString() : '');
+    setMoTargetCltInput(currentAppConfig.moTargetClt ? currentAppConfig.moTargetClt.toString() : '');
+    setMoTargetTotalInput(currentAppConfig.moTargetTotal ? currentAppConfig.moTargetTotal.toString() : '');
+  }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, moTargetMonth]);
 
-  const handleMoTargetBlur = () => {
-    const newVal = parseFloat(moTargetInput.replace(',', '.')) || 0;
+  const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal', inputVal: string) => {
+    const newVal = parseFloat(inputVal.replace(',', '.')) || 0;
+    const currentVal = currentAppConfig[field];
     // Update config for the SPECIFIC input month, not the global one
-    if (newVal !== currentMoTarget) {
-      updateMonthlyAppConfig({ ...getMonthlyAppConfig(moTargetMonth), moTarget: newVal });
+    if (newVal !== currentVal) {
+      updateMonthlyAppConfig({ ...currentAppConfig, [field]: newVal });
     }
   };
 
@@ -447,18 +454,40 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta de MO / UH</label>
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH Extra</label>
               <input
                 type="text"
                 className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
-                value={moTargetInput}
-                onChange={(e) => setMoTargetInput(e.target.value)}
-                onBlur={handleMoTargetBlur}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.currentTarget.blur();
-                  }
-                }}
+                value={moTargetExtraInput}
+                onChange={(e) => setMoTargetExtraInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('moTargetExtra', moTargetExtraInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (CLT)</label>
+              <input
+                type="text"
+                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                value={moTargetCltInput}
+                onChange={(e) => setMoTargetCltInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('moTargetClt', moTargetCltInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (Total)</label>
+              <input
+                type="text"
+                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                value={moTargetTotalInput}
+                onChange={(e) => setMoTargetTotalInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('moTargetTotal', moTargetTotalInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="0.00"
               />
             </div>

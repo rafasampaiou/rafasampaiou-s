@@ -124,5 +124,8 @@ export interface MonthlyAppConfig {
   monthKey: string;
   standardHourRate: number;
   taxRate: number;
-  moTarget?: number; // Meta de MO por UH Ocupada
+  moTarget?: number; // Legacy/Reference
+  moTargetExtra?: number; // Meta de MO / UH Extra
+  moTargetClt?: number; // Meta de MO / UH (Quadro CLT)
+  moTargetTotal?: number; // Meta de MO / UH (Total)
 }
