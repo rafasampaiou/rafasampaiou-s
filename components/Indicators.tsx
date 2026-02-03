@@ -63,14 +63,15 @@ interface WfoCellProps {
 }
 
 const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
-  const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString());
+  const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString().replace('.', ','));
   const [isFocused, setIsFocused] = useState(false);
   const lastPropValue = React.useRef(value);
 
   // Update local value only when prop changes AND not focused
   useEffect(() => {
     if (!isFocused && value !== lastPropValue.current) {
-      setLocalValue(value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString()));
+      const formatted = value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString());
+      setLocalValue(formatted.replace('.', ','));
       lastPropValue.current = value;
     }
   }, [value, isFocused, isIndex]);
@@ -90,7 +91,7 @@ const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
   };
 
   if (isIndex) {
-    return <span className="text-[10px] font-medium text-slate-500">{(value || 0).toFixed(3)}</span>;
+    return <span className="text-[10px] font-medium text-slate-500">{(value || 0).toFixed(3).replace('.', ',')}</span>;
   }
 
   return (
@@ -101,6 +102,7 @@ const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={handleBlur}
       onFocus={() => setIsFocused(true)}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
       placeholder="0"
     />
   );
