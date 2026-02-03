@@ -536,6 +536,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateMonthlyBudget = async (data: MonthlyBudget) => {
+    // Optimistic Update: Update local state immediately
+    const key = `${data.sectorId}_${data.monthKey}`;
+    setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
+
     const { error } = await supabase.from('monthly_budgets').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
@@ -548,12 +552,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       clt_budget_qty: data.cltBudgetQty || 0,
       clt_budget_value: data.cltBudgetValue || 0
     }, { onConflict: 'sector_id, month_key' });
-    if (!error) {
-      const key = `${data.sectorId}_${data.monthKey}`;
-      setMonthlyBudgets(prev => ({ ...prev, [key]: data }));
-    } else {
+
+    if (error) {
       console.error('[updateMonthlyBudget] Error:', error);
-      alert('Erro ao salvar orçamento: ' + error.message);
+      // Revert if needed, or just alert. Since it's an admin tool, alert is acceptable.
+      alert('Erro ao salvar orçamento no banco de dados: ' + error.message);
     }
   };
 
