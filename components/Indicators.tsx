@@ -628,20 +628,22 @@ export const Indicators: React.FC = () => {
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
-                      const wfoData = (stats?.loteWfo as any)?.[String(lote.id)];
-                      const wfoMetric = matrixView === 'value' ? (wfoData?.value || 0) : (wfoData?.qty || 0);
+                      const loteIdStr = String(lote.id);
 
                       let workforceMetric = 0;
                       let currentWfoMetric = 0;
 
                       if (matrixView === 'value') {
                         workforceMetric = cell.value;
+                        const wfoData = (stats?.loteWfoValue as any)?.[loteIdStr];
                         currentWfoMetric = wfoData?.value || 0;
                       } else if (matrixView === 'qty') {
                         workforceMetric = cell.qty;
+                        const wfoData = (stats?.loteWfoQty as any)?.[loteIdStr];
                         currentWfoMetric = wfoData?.qty || 0;
                       } else {
                         workforceMetric = cell.index;
+                        const wfoData = (stats?.loteWfoQty as any)?.[loteIdStr];
                         const statsLote = loteStats.find(ls => ls.id === lote.id);
                         const occ = statsLote ? statsLote.totalOccupancy : 0;
                         currentWfoMetric = occ > 0 ? (wfoData?.qty || 0) / occ : 0;
@@ -679,28 +681,35 @@ export const Indicators: React.FC = () => {
                                     loteWfo: {}
                                   };
 
-                                  const nextLoteWfo = { ...(currentStats.loteWfo || {}) } as any;
                                   const loteIdStr = String(lote.id);
 
-                                  // Get current data for THIS lote specifically
-                                  const currentLoteData = nextLoteWfo[loteIdStr] || {};
-
                                   if (matrixView === 'value') {
-                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, value: num };
-                                  } else if (matrixView === 'qty') {
-                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, qty: num };
-                                  } else if (matrixView === 'index') {
-                                    // In Index mode, we back-calculate the Quantity based on Lote Occupancy
-                                    const statsLote = loteStats.find(ls => ls.id === lote.id);
-                                    const occ = statsLote ? statsLote.totalOccupancy : 0;
-                                    const calculatedQty = occ > 0 ? num * occ : 0;
-                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
-                                  }
+                                    const nextLoteWfoValue = { ...(currentStats.loteWfoValue || {}) } as any;
+                                    const currentLoteData = nextLoteWfoValue[loteIdStr] || {};
+                                    nextLoteWfoValue[loteIdStr] = { ...currentLoteData, value: num };
 
-                                  await updateManualRealStat({
-                                    ...currentStats,
-                                    loteWfo: nextLoteWfo
-                                  });
+                                    await updateManualRealStat({
+                                      ...currentStats,
+                                      loteWfoValue: nextLoteWfoValue
+                                    });
+                                  } else {
+                                    const nextLoteWfoQty = { ...(currentStats.loteWfoQty || {}) } as any;
+                                    const currentLoteData = nextLoteWfoQty[loteIdStr] || {};
+
+                                    if (matrixView === 'qty') {
+                                      nextLoteWfoQty[loteIdStr] = { ...currentLoteData, qty: num };
+                                    } else if (matrixView === 'index') {
+                                      const statsLote = loteStats.find(ls => ls.id === lote.id);
+                                      const occ = statsLote ? statsLote.totalOccupancy : 0;
+                                      const calculatedQty = occ > 0 ? num * occ : 0;
+                                      nextLoteWfoQty[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
+                                    }
+
+                                    await updateManualRealStat({
+                                      ...currentStats,
+                                      loteWfoQty: nextLoteWfoQty
+                                    });
+                                  }
                                 } catch (err) {
                                   console.error('Error in WfoCell onSave:', err);
                                 } finally {
@@ -727,14 +736,14 @@ export const Indicators: React.FC = () => {
 
                       if (matrixView === 'value') {
                         workforceTotal = row.totalSectorValue;
-                        wfoTotal = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                        wfoTotal = (Object.values(sectorStats?.loteWfoValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
                       } else if (matrixView === 'qty') {
                         workforceTotal = row.totalSectorQty;
-                        wfoTotal = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        wfoTotal = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                       } else {
                         workforceTotal = row.totalSectorIndex;
                         // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
-                        const totalWfoQty = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalWfoQty = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                         const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
                         wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
                       }

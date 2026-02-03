@@ -210,6 +210,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             wfoQty: s.wfo_qty,
             loteWfo: s.wfo_lotes_json
               ? (typeof s.wfo_lotes_json === 'string' ? JSON.parse(s.wfo_lotes_json) : s.wfo_lotes_json)
+              : undefined,
+            loteWfoQty: s.wfo_qty_lotes_json
+              ? (typeof s.wfo_qty_lotes_json === 'string' ? JSON.parse(s.wfo_qty_lotes_json) : s.wfo_qty_lotes_json)
+              : undefined,
+            loteWfoValue: s.wfo_value_lotes_json
+              ? (typeof s.wfo_value_lotes_json === 'string' ? JSON.parse(s.wfo_value_lotes_json) : s.wfo_value_lotes_json)
               : undefined
           };
         });
@@ -611,7 +617,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       afastados_qty: data.afastadosQty ?? 0,
       apprentices_qty: data.apprenticesQty ?? 0,
       wfo_qty: data.wfoQty ?? 0,
-      wfo_lotes_json: data.loteWfo || {}
+      wfo_lotes_json: data.loteWfo || {},
+      wfo_qty_lotes_json: data.loteWfoQty || {},
+      wfo_value_lotes_json: data.loteWfoValue || {}
     }, { onConflict: 'sector_id, month_key' }).select();
 
     if (error) {
