@@ -63,43 +63,47 @@ interface WfoCellProps {
 }
 
 const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
-  const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString().replace('.', ','));
+  const [localValue, setLocalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const prevValueProp = React.useRef(value);
 
   // Synchronize localValue with value prop only when value prop actually changes
-  // and we are not currently editing it.
+  // or when we finished editing/lost focus.
   useEffect(() => {
-    if (!isFocused && value !== prevValueProp.current) {
+    if (!isFocused) {
       const formatted = value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString());
       setLocalValue(formatted.replace('.', ','));
       prevValueProp.current = value;
     }
   }, [value, isFocused, isIndex]);
 
+  // AUTO-SAVE: Debounced effect to save while typing
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const timer = setTimeout(() => {
+      const num = parseFloat(localValue.replace(',', '.')) || 0;
+      // Precision check to avoid unnecessary saves
+      if (Math.abs(num - value) > 0.0001) {
+        onSave(num);
+      }
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [localValue, isFocused, onSave, value]);
+
   const handleBlur = () => {
-    if (isIndex) {
-      setIsFocused(false);
-      return;
-    }
-
-    const num = parseFloat(localValue.replace(',', '.')) || 0;
-    if (num !== value) {
-      onSave(num);
-      // We don't update prevValueProp here. 
-      // We wait for the parent to pass the new value to confirm it worked.
-    }
     setIsFocused(false);
+    const num = parseFloat(localValue.replace(',', '.')) || 0;
+    if (Math.abs(num - value) > 0.0001) {
+      onSave(num);
+    }
   };
-
-  if (isIndex) {
-    return <span className="text-[10px] font-medium text-slate-500">{(value || 0).toFixed(3).replace('.', ',')}</span>;
-  }
 
   return (
     <input
       type="text"
-      className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
+      className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none bg-white"
       value={localValue}
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={handleBlur}
@@ -670,8 +674,14 @@ export const Indicators: React.FC = () => {
 
                                 if (matrixView === 'value') {
                                   (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, value: num };
-                                } else {
+                                } else if (matrixView === 'qty') {
                                   (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: num };
+                                } else if (matrixView === 'index') {
+                                  // In Index mode, we back-calculate the Quantity based on Lote Occupancy
+                                  const statsLote = loteStats.find(ls => ls.id === lote.id);
+                                  const occ = statsLote ? statsLote.totalOccupancy : 0;
+                                  const calculatedQty = occ > 0 ? num * occ : 0;
+                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
                                 }
 
                                 updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo as any });
