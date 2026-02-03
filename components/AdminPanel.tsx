@@ -753,22 +753,7 @@ export const AdminPanel: React.FC = () => {
                     onChange={(e) => updateMonthlyAppConfig({ ...getMonthlyAppConfig(selectedMonth), taxRate: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Meta de MO por UH Ocupada:</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      className="border border-slate-300 rounded px-3 py-2 w-full md:w-1/2 focus:ring-1 focus:ring-[#155645] outline-none font-bold text-[#F8981C]"
-                      value={moTargetInput}
-                      onChange={(e) => setMoTargetInput(e.target.value)}
-                      onBlur={handleMoTargetBlur}
-                      placeholder="Ex: 2,18"
-                    />
-                    <div className="text-xs text-slate-500 italic">
-                      Esta meta será exibida como uma linha laranja no gráfico de indicadores.
-                    </div>
-                  </div>
-                </div>
+
 
                 <div className="col-span-1 md:col-span-2 border-t border-slate-200 pt-6 mt-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Status do Formulário de Solicitação (Global)</label>
