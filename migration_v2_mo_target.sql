@@ -31,3 +31,35 @@ BEGIN
     END IF;
 END
 $$;
+
+-- 5. Monthly Budgets Persistence Fix (clt_budget_qty and clt_budget_value)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'monthly_budgets' AND column_name = 'clt_budget_qty') THEN
+        ALTER TABLE monthly_budgets ADD COLUMN clt_budget_qty numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'monthly_budgets' AND column_name = 'clt_budget_value') THEN
+        ALTER TABLE monthly_budgets ADD COLUMN clt_budget_value numeric DEFAULT 0;
+    END IF;
+END
+$$;
+
+-- 6. Ensure RLS allows saves to monthly_budgets
+ALTER TABLE monthly_budgets ENABLE ROW LEVEL SECURITY;
+
+-- Drop old/restrictive policies
+DROP POLICY IF EXISTS "Allow all access to monthly_budgets" ON monthly_budgets;
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON monthly_budgets;
+DROP POLICY IF EXISTS "Enable read access for all users" ON monthly_budgets;
+
+-- Create permissive policy for authenticated users
+CREATE POLICY "Allow all access to monthly_budgets"
+ON monthly_budgets
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- 7. Explicit Grants
+GRANT ALL ON monthly_budgets TO authenticated;
+GRANT ALL ON monthly_app_configs TO authenticated;
