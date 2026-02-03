@@ -15,6 +15,89 @@ import {
   Label
 } from 'recharts';
 
+interface BudgetCellProps {
+  value: number;
+  onChange: (val: string) => void;
+  onPaste?: (e: React.ClipboardEvent) => void;
+  step?: string;
+  placeholder?: string;
+  className?: string;
+}
+
+const BudgetCell: React.FC<BudgetCellProps> = ({ value, onChange, onPaste, step, placeholder, className }) => {
+  const [localValue, setLocalValue] = useState(value?.toString() || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value?.toString() || '');
+    }
+  }, [value, isFocused]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localValue !== value?.toString()) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      step={step}
+      placeholder={placeholder}
+      className={className}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onFocus={() => setIsFocused(true)}
+      onPaste={onPaste}
+    />
+  );
+};
+
+interface WfoCellProps {
+  value: number;
+  onSave: (val: number) => void;
+  isIndex?: boolean;
+}
+
+const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
+  const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString());
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString()));
+    }
+  }, [value, isFocused, isIndex]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (isIndex) return; // Cannot edit index
+    const num = parseFloat(localValue.replace(',', '.')) || 0;
+    if (num !== value) {
+      onSave(num);
+    }
+  };
+
+  if (isIndex) {
+    return <span className="text-[10px] font-medium text-slate-500">{(value || 0).toFixed(3)}</span>;
+  }
+
+  return (
+    <input
+      type="text"
+      className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onFocus={() => setIsFocused(true)}
+      placeholder="0"
+    />
+  );
+};
+
 export const Indicators: React.FC = () => {
   const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig, calculateRequestTotal } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
@@ -23,7 +106,6 @@ export const Indicators: React.FC = () => {
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
-  const [editingWfo, setEditingWfo] = useState<{ sectorId: string, loteId: number, value: string } | null>(null);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
@@ -34,40 +116,8 @@ export const Indicators: React.FC = () => {
     return 0;
   }, [chartMetric, config]);
 
-  // Debounced WFO saving
-  useEffect(() => {
-    if (!editingWfo) return;
+  // Debounced WFO saving is now replaced by WfoCell (onBlur saving)
 
-    const timer = setTimeout(() => {
-      const sectorObj = sectors.find(s => s.id === editingWfo.sectorId);
-      if (!sectorObj) return;
-
-      const newVal = parseFloat(editingWfo.value) || 0;
-      const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
-        sectorId: sectorObj.id,
-        monthKey: monthKey,
-        realQty: 0,
-        realValue: 0,
-        afastadosQty: 0,
-        apprenticesQty: 0
-      };
-
-      const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
-      const loteIdStr = String(editingWfo.loteId);
-      const currentLoteData = updatedLoteWfo[loteIdStr] || updatedLoteWfo[editingWfo.loteId] || {};
-
-      // Determine view to update correct field
-      if (matrixView === 'value') {
-        updatedLoteWfo[loteIdStr] = { ...currentLoteData, value: newVal };
-      } else {
-        updatedLoteWfo[loteIdStr] = { ...currentLoteData, qty: newVal };
-      }
-
-      updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [editingWfo, monthKey, sectors, matrixView, getManualRealStat, updateManualRealStat]);
 
   // Generate days for the selected month
   const [year, month] = monthKey.split('-').map(Number);
@@ -199,7 +249,6 @@ export const Indicators: React.FC = () => {
 
         // Calculate daily cost base
         const reportMonth = r.dateEvent.substring(0, 7);
-        const config = getMonthlyAppConfig(reportMonth);
         const dailyCost = calculateRequestTotal({ ...r, daysQty: 1 });
         const dailyQty = r.extrasQty;
 
@@ -221,17 +270,42 @@ export const Indicators: React.FC = () => {
         }
       });
 
+      // CLT Contribution
+      const sectorObj = sectors.find(s => s.name === sector.name);
+      const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : null;
+      const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0) - (sectorStats.apprenticesQty || 0)) : 0;
+      const cltValue = sectorStats ? sectorStats.realValue : 0;
+
+      const daysInLoteMatch = lote.endDay - lote.startDay + 1;
+      const cltLoteQty = cltHeadcount * daysInLoteMatch;
+      const cltLoteValue = (cltValue / daysInMonth) * daysInLoteMatch;
+
+      // Determine metrics based on chartMetric
+      let finalValue = 0;
+      let finalQty = 0;
+
+      if (chartMetric === 'extras') {
+        finalValue = loteTotalBaseValue;
+        finalQty = loteTotalQty;
+      } else if (chartMetric === 'clt') {
+        finalValue = cltLoteValue;
+        finalQty = cltLoteQty;
+      } else {
+        finalValue = loteTotalBaseValue + cltLoteValue;
+        finalQty = loteTotalQty + cltLoteQty;
+      }
+
       // Apply Tax Rate to the accumulated base value for this lote
       const taxRate = getMonthlyAppConfig(monthKey).taxRate;
-      const valueWithTax = loteTotalBaseValue * (1 + (taxRate / 100));
+      const valueWithTax = finalValue * (1 + (taxRate / 100));
 
-      // Calculate Index: Total Extras Days / Total Occupied Room Nights in Lote
-      const sectorIndex = loteOccupancy > 0 ? (loteTotalQty / loteOccupancy) : 0;
+      // Calculate Index: Total Days / Total Occupied Room Nights in Lote
+      const sectorIndex = loteOccupancy > 0 ? (finalQty / loteOccupancy) : 0;
 
       return {
         loteId: lote.id,
         value: valueWithTax,
-        qty: loteTotalQty,
+        qty: finalQty,
         index: sectorIndex
       };
     });
@@ -562,34 +636,31 @@ export const Indicators: React.FC = () => {
                             {renderMatrixCell(workforceMetric, matrixView)}
                           </td>
                           <td className="p-2 border-r border-slate-100 text-center w-20 min-w-[80px]">
-                            {isNumericInput ? (
-                              <input
-                                type="number"
-                                className="w-14 border border-slate-200 rounded px-1 py-0.5 text-center text-[10px] focus:ring-1 focus:ring-[#155645] outline-none"
-                                value={editingWfo?.sectorId === sectorObj?.id && editingWfo?.loteId === lote.id
-                                  ? editingWfo.value
-                                  : (wfoMetric === 0 ? '' : wfoMetric)}
-                                placeholder="0"
-                                onFocus={() => {
-                                  if (sectorObj) {
-                                    setEditingWfo({
-                                      sectorId: sectorObj.id,
-                                      loteId: lote.id,
-                                      value: wfoMetric === 0 ? '' : String(wfoMetric)
-                                    });
-                                  }
-                                }}
-                                onBlur={() => setEditingWfo(null)}
-                                onChange={(e) => {
-                                  if (!sectorObj) return;
-                                  setEditingWfo({ sectorId: sectorObj.id, loteId: lote.id, value: e.target.value });
-                                }}
-                              />
-                            ) : (
-                              <span className="text-[10px] font-medium text-slate-500">
-                                {renderMatrixCell(wfoMetric, 'index')}
-                              </span>
-                            )}
+                            <WfoCell
+                              value={wfoMetric}
+                              isIndex={matrixView === 'index'}
+                              onSave={(num) => {
+                                if (!sectorObj) return;
+                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+                                  sectorId: sectorObj.id,
+                                  monthKey: monthKey,
+                                  realQty: 0,
+                                  realValue: 0,
+                                  afastadosQty: 0,
+                                  apprenticesQty: 0
+                                };
+                                const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
+                                const loteIdStr = String(lote.id);
+                                const currentLoteData = updatedLoteWfo[loteIdStr] || updatedLoteWfo[lote.id] || {};
+
+                                if (matrixView === 'value') {
+                                  updatedLoteWfo[loteIdStr] = { ...currentLoteData, value: num };
+                                } else {
+                                  updatedLoteWfo[loteIdStr] = { ...currentLoteData, qty: num };
+                                }
+                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+                              }}
+                            />
                           </td>
                           <td className={`p-2 border-r border-slate-200 text-center font-bold text-[11px] w-16 ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
                             {diff > 0 ? `+${renderMatrixCell(diff, matrixView)}` : renderMatrixCell(diff, matrixView)}
@@ -603,16 +674,19 @@ export const Indicators: React.FC = () => {
                       let workforceTotal = 0;
                       let wfoTotal = 0;
 
+                      const sectorObj = sectors.find(s => s.name === row.sectorName);
+                      const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
+
                       if (matrixView === 'value') {
                         workforceTotal = row.totalSectorValue;
-                        wfoTotal = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                        wfoTotal = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
                       } else if (matrixView === 'qty') {
                         workforceTotal = row.totalSectorQty;
-                        wfoTotal = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        wfoTotal = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                       } else {
                         workforceTotal = row.totalSectorIndex;
                         // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
-                        const totalWfoQty = (Object.values(stats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalWfoQty = (Object.values(sectorStats?.loteWfo || {}) as { value?: number; qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                         const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
                         wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
                       }
