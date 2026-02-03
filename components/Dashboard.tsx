@@ -216,6 +216,46 @@ export const Dashboard: React.FC = () => {
               </select>
             </div>
             <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
+              <select
+                value={editData.reason}
+                onChange={(e) => setEditData({ ...editData, reason: e.target.value as any })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              >
+                <option value="Ocupação">Ocupação</option>
+                <option value="Quadro Ideal">Quadro Ideal</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo</label>
+              <select
+                value={editData.type}
+                onChange={(e) => setEditData({ ...editData, type: e.target.value as any })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              >
+                <option value={RequestType.DIARIA}>Diária</option>
+                <option value={RequestType.PACOTE}>Pacote</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Entrada</label>
+              <input
+                type="time"
+                value={editData.timeIn}
+                onChange={(e) => setEditData({ ...editData, timeIn: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Saída</label>
+              <input
+                type="time"
+                value={editData.timeOut}
+                onChange={(e) => setEditData({ ...editData, timeOut: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd Extras</label>
               <input
                 type="number"
@@ -231,6 +271,28 @@ export const Dashboard: React.FC = () => {
                 value={editData.daysQty}
                 onChange={(e) => setEditData({ ...editData, daysQty: parseInt(e.target.value) || 0 })}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Vl. Especial (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editData.specialRate || ''}
+                onChange={(e) => setEditData({ ...editData, specialRate: parseFloat(e.target.value) || 0 })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+                placeholder="Opcional"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ocupação (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editData.occupancyRate || ''}
+                onChange={(e) => setEditData({ ...editData, occupancyRate: parseFloat(e.target.value) || 0 })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
+                placeholder="0.00"
               />
             </div>
             <div>
@@ -252,39 +314,12 @@ export const Dashboard: React.FC = () => {
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Entrada</label>
-              <input
-                type="time"
-                value={editData.timeIn}
-                onChange={(e) => setEditData({ ...editData, timeIn: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Saída</label>
-              <input
-                type="time"
-                value={editData.timeOut}
-                onChange={(e) => setEditData({ ...editData, timeOut: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
-              />
-            </div>
-            <div>
+            <div className="col-span-2">
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data Início</label>
               <input
                 type="date"
                 value={editData.dateEvent}
                 onChange={(e) => setEditData({ ...editData, dateEvent: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
-              <input
-                type="text"
-                value={editData.reason}
-                onChange={(e) => setEditData({ ...editData, reason: e.target.value })}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#155645]"
               />
             </div>
