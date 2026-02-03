@@ -98,16 +98,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
-      const [
-        { data: reqs },
-        { data: roles },
-        { data: config },
-        { data: budgets },
-        { data: lotes },
-        { data: stats },
-        { data: occupancy },
-        { data: mAppConfigs }
-      ] = await Promise.all([
+      const fetchResults = await Promise.all([
         supabase.from('requests').select('*').order('created_at', { ascending: false }),
         supabase.from('special_roles').select('*').order('name'),
         supabase.from('system_config').select('*').single(),
@@ -117,6 +108,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         supabase.from('occupancy_data').select('*'),
         supabase.from('monthly_app_configs').select('*')
       ]);
+
+      const [
+        { data: reqs, error: reqErr },
+        { data: roles, error: roleErr },
+        { data: config, error: configErr },
+        { data: budgets, error: budgetErr },
+        { data: lotes, error: loteErr },
+        { data: stats, error: statErr },
+        { data: occupancy, error: occErr },
+        { data: mAppConfigs, error: mAppErr }
+      ] = fetchResults;
+
+      if (statErr) console.error('[fetchAllData] Error fetching manual_real_stats:', statErr);
+      if (stats) console.log('[fetchAllData] Fetched manual_real_stats rows:', stats.length);
 
       if (reqs) {
         setRequests(reqs.map((r: any) => ({
@@ -192,6 +197,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (stats) {
+        console.log('[fetchAllData] Found manual_real_stats records:', stats.length);
         const statsMap: Record<string, ManualRealStat> = {};
         stats.forEach((s: any) => {
           statsMap[`${s.sector_id}_${s.month_key}`] = {
@@ -207,6 +213,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               : undefined
           };
         });
+        console.log('[fetchAllData] Mapped stats keys:', Object.keys(statsMap));
         setManualRealStats(statsMap);
       }
 
@@ -595,7 +602,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Optimistic update
     setManualRealStats(prev => ({ ...prev, [key]: data }));
 
-    const { error } = await supabase.from('manual_real_stats').upsert({
+    const result = await supabase.from('manual_real_stats').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
       real_qty: data.realQty,
@@ -604,11 +611,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       apprentices_qty: data.apprenticesQty,
       wfo_qty: data.wfoQty,
       wfo_lotes_json: data.loteWfo || null
-    }, { onConflict: 'sector_id, month_key' });
+    }, { onConflict: 'sector_id, month_key' }).select();
+
+    const { data: upsertData, error } = result;
+
+    console.log('[updateManualRealStat] Supabase Response:', { upsertData, error });
 
     if (error) {
       console.error('[updateManualRealStat] Supabase Error:', error);
-      alert('Erro ao salvar dados reais: ' + error.message);
+      alert('Erro ao salvar no banco: ' + error.message);
     } else {
       console.log('[updateManualRealStat] Success for key:', key);
     }
@@ -832,6 +843,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       getMonthlyBudget, updateMonthlyBudget,
       getMonthlyLote, updateMonthlyLote,
       getManualRealStat, updateManualRealStat,
+      manualRealStats,
       bulkUpdateMonthlyBudgets, bulkUpdateManualRealStats,
       occupancyData, saveOccupancyBatch,
       systemConfig, updateSystemConfig, getMonthlyAppConfig, updateMonthlyAppConfig,

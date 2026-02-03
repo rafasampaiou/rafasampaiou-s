@@ -156,7 +156,7 @@ export const Indicators: React.FC = () => {
       }
     });
     return total;
-  }, [filteredSectors, monthKey, getManualRealStat]);
+  }, [filteredSectors, monthKey, getManualRealStat, manualRealStats]);
 
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
@@ -616,7 +616,6 @@ export const Indicators: React.FC = () => {
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
-                      const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
                       const wfoData = (stats?.loteWfo as any)?.[String(lote.id)];
                       const wfoMetric = matrixView === 'value' ? (wfoData?.value || 0) : (wfoData?.qty || 0);
 
