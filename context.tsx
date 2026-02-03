@@ -607,8 +607,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
-      console.error('[updateManualRealStats] Error:', error);
+      console.error('[updateManualRealStat] Supabase Error:', error);
       alert('Erro ao salvar dados reais: ' + error.message);
+    } else {
+      console.log('[updateManualRealStat] Success for key:', key);
     }
   };
 

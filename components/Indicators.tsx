@@ -65,14 +65,15 @@ interface WfoCellProps {
 const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
   const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString().replace('.', ','));
   const [isFocused, setIsFocused] = useState(false);
-  const lastPropValue = React.useRef(value);
+  const prevValueProp = React.useRef(value);
 
-  // Update local value only when prop changes AND not focused
+  // Synchronize localValue with value prop only when value prop actually changes
+  // and we are not currently editing it.
   useEffect(() => {
-    if (!isFocused && value !== lastPropValue.current) {
+    if (!isFocused && value !== prevValueProp.current) {
       const formatted = value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString());
       setLocalValue(formatted.replace('.', ','));
-      lastPropValue.current = value;
+      prevValueProp.current = value;
     }
   }, [value, isFocused, isIndex]);
 
@@ -85,7 +86,8 @@ const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
     const num = parseFloat(localValue.replace(',', '.')) || 0;
     if (num !== value) {
       onSave(num);
-      lastPropValue.current = num; // Optimistically assume success
+      // We don't update prevValueProp here. 
+      // We wait for the parent to pass the new value to confirm it worked.
     }
     setIsFocused(false);
   };
@@ -109,7 +111,7 @@ const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
 };
 
 export const Indicators: React.FC = () => {
-  const { requests, sectors, occupancyData, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig, calculateRequestTotal } = useApp();
+  const { requests, sectors, occupancyData, manualRealStats, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig, calculateRequestTotal } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
@@ -614,30 +616,27 @@ export const Indicators: React.FC = () => {
 
                     {row.loteValues.map((cell, cIdx) => {
                       const lote = lotes[cIdx];
-                      const wfoData = stats?.loteWfo?.[String(lote.id)] || stats?.loteWfo?.[lote.id]; // Try both string and number keys
+                      const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
+                      const wfoData = (stats?.loteWfo as any)?.[String(lote.id)];
+                      const wfoMetric = matrixView === 'value' ? (wfoData?.value || 0) : (wfoData?.qty || 0);
 
-                      // Determine WFO and workforce metric based on matrixView
                       let workforceMetric = 0;
-                      let wfoMetric = 0;
-                      let isNumericInput = true;
+                      let currentWfoMetric = 0;
 
                       if (matrixView === 'value') {
                         workforceMetric = cell.value;
-                        wfoMetric = wfoData?.value || 0;
+                        currentWfoMetric = wfoData?.value || 0;
                       } else if (matrixView === 'qty') {
                         workforceMetric = cell.qty;
-                        wfoMetric = wfoData?.qty || 0;
-                      } else if (matrixView === 'index') {
+                        currentWfoMetric = wfoData?.qty || 0;
+                      } else {
                         workforceMetric = cell.index;
-                        // Index is calculated: WFO Qty / Lote Occupancy
                         const statsLote = loteStats.find(ls => ls.id === lote.id);
                         const occ = statsLote ? statsLote.totalOccupancy : 0;
-                        wfoMetric = occ > 0 ? (wfoData?.qty || 0) / occ : 0;
-                        isNumericInput = false;
+                        currentWfoMetric = occ > 0 ? (wfoData?.qty || 0) / occ : 0;
                       }
 
-                      const diff = workforceMetric - wfoMetric;
-                      // Precision check for background color
+                      const diff = workforceMetric - currentWfoMetric;
                       const isDifferent = Math.abs(diff) > 0.0001;
 
                       return (
@@ -647,31 +646,38 @@ export const Indicators: React.FC = () => {
                           </td>
                           <td className="p-2 border-r border-slate-100 text-center w-20 min-w-[80px]">
                             <WfoCell
-                              value={wfoMetric}
+                              value={currentWfoMetric}
                               isIndex={matrixView === 'index'}
                               onSave={(num) => {
+                                console.log('[WfoCell onSave] Starting...', { sector: sectorObj?.name, num, matrixView });
                                 if (!sectorObj) return;
-                                const currentStats = getManualRealStat(sectorObj.id, monthKey) || {
+
+                                const existing = getManualRealStat(sectorObj.id, monthKey);
+                                const currentStats = existing || {
                                   sectorId: sectorObj.id,
                                   monthKey: monthKey,
                                   realQty: 0,
                                   realValue: 0,
                                   afastadosQty: 0,
-                                  apprenticesQty: 0
+                                  apprenticesQty: 0,
+                                  wfoQty: 0,
+                                  loteWfo: {}
                                 };
                                 const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
                                 const loteIdStr = String(lote.id);
 
-                                // Clean up any duplicate keys (string vs number)
-                                delete updatedLoteWfo[lote.id];
-                                const currentLoteData = updatedLoteWfo[loteIdStr] || {};
+                                // FORCE STRING KEY
+                                delete (updatedLoteWfo as any)[lote.id];
+                                const currentLoteData = (updatedLoteWfo as any)[loteIdStr] || {};
 
                                 if (matrixView === 'value') {
-                                  updatedLoteWfo[loteIdStr] = { ...currentLoteData, value: num };
+                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, value: num };
                                 } else {
-                                  updatedLoteWfo[loteIdStr] = { ...currentLoteData, qty: num };
+                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: num };
                                 }
-                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo });
+
+                                console.log('[WfoCell onSave] Calling update with:', { loteIdStr, updatedLoteWfo });
+                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo as any });
                               }}
                             />
                           </td>
