@@ -57,6 +57,7 @@ interface AppContextType {
   updateSystemUser: (id: string, data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
   deleteSystemUser: (id: string) => Promise<{ success: boolean; error?: string }>;
 
+  manualRealStats: Record<string, ManualRealStat>;
   currentDate: Date;
 }
 
@@ -121,7 +122,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ] = fetchResults;
 
       if (statErr) console.error('[fetchAllData] Error fetching manual_real_stats:', statErr);
-      if (stats) console.log('[fetchAllData] Fetched manual_real_stats rows:', stats.length);
+      if (stats) {
+        console.log('[fetchAllData] Fetched raw stats from DB:', stats);
+        console.log('[fetchAllData] Fetched manual_real_stats rows count:', stats.length);
+      }
 
       if (reqs) {
         setRequests(reqs.map((r: any) => ({
@@ -200,7 +204,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.log('[fetchAllData] Found manual_real_stats records:', stats.length);
         const statsMap: Record<string, ManualRealStat> = {};
         stats.forEach((s: any) => {
-          statsMap[`${s.sector_id}_${s.month_key}`] = {
+          const key = `${s.sector_id}_${s.month_key}`;
+          statsMap[key] = {
             sectorId: s.sector_id,
             monthKey: s.month_key,
             realQty: s.real_qty,
@@ -212,8 +217,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               ? (typeof s.wfo_lotes_json === 'string' ? JSON.parse(s.wfo_lotes_json) : s.wfo_lotes_json)
               : undefined
           };
+          console.log(`[fetchAllData] Mapped key: ${key}`, statsMap[key]);
         });
-        console.log('[fetchAllData] Mapped stats keys:', Object.keys(statsMap));
+        console.log('[fetchAllData] Final statsMap size:', Object.keys(statsMap).length);
         setManualRealStats(statsMap);
       }
 
