@@ -122,6 +122,7 @@ export const Indicators: React.FC = () => {
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
+  const [isSaving, setIsSaving] = useState(false);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
@@ -554,7 +555,14 @@ export const Indicators: React.FC = () => {
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col">
             <h3 className="text-sm font-bold text-slate-800">Extraordinários por Setor</h3>
-            <span className="text-xs text-slate-500">Taxa Configurada: {getMonthlyAppConfig(monthKey).taxRate}%</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-slate-500">Taxa Configurada: {getMonthlyAppConfig(monthKey).taxRate}%</span>
+              {isSaving && (
+                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full animate-pulse font-bold flex items-center gap-1">
+                  <Activity size={10} className="animate-spin" /> SALVANDO...
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Matrix View Filter */}
@@ -651,40 +659,54 @@ export const Indicators: React.FC = () => {
                             <WfoCell
                               value={currentWfoMetric}
                               isIndex={matrixView === 'index'}
-                              onSave={(num) => {
+                              onSave={async (num) => {
                                 if (!sectorObj) return;
+                                setIsSaving(true);
 
-                                const existing = getManualRealStat(sectorObj.id, monthKey);
-                                const currentStats = existing || {
-                                  sectorId: sectorObj.id,
-                                  monthKey: monthKey,
-                                  realQty: 0,
-                                  realValue: 0,
-                                  afastadosQty: 0,
-                                  apprenticesQty: 0,
-                                  wfoQty: 0,
-                                  loteWfo: {}
-                                };
-                                const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
-                                const loteIdStr = String(lote.id);
+                                try {
+                                  // Re-fetch latest existing from local stats map (state) to avoid stale closures
+                                  const key = `${sectorObj.id}_${monthKey}`;
+                                  const existing = manualRealStats[key];
 
-                                // FORCE STRING KEY
-                                delete (updatedLoteWfo as any)[lote.id];
-                                const currentLoteData = (updatedLoteWfo as any)[loteIdStr] || {};
+                                  const currentStats = existing || {
+                                    sectorId: sectorObj.id,
+                                    monthKey: monthKey,
+                                    realQty: 0,
+                                    realValue: 0,
+                                    afastadosQty: 0,
+                                    apprenticesQty: 0,
+                                    wfoQty: 0,
+                                    loteWfo: {}
+                                  };
 
-                                if (matrixView === 'value') {
-                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, value: num };
-                                } else if (matrixView === 'qty') {
-                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: num };
-                                } else if (matrixView === 'index') {
-                                  // In Index mode, we back-calculate the Quantity based on Lote Occupancy
-                                  const statsLote = loteStats.find(ls => ls.id === lote.id);
-                                  const occ = statsLote ? statsLote.totalOccupancy : 0;
-                                  const calculatedQty = occ > 0 ? num * occ : 0;
-                                  (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
+                                  const nextLoteWfo = { ...(currentStats.loteWfo || {}) } as any;
+                                  const loteIdStr = String(lote.id);
+
+                                  // Get current data for THIS lote specifically
+                                  const currentLoteData = nextLoteWfo[loteIdStr] || {};
+
+                                  if (matrixView === 'value') {
+                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, value: num };
+                                  } else if (matrixView === 'qty') {
+                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, qty: num };
+                                  } else if (matrixView === 'index') {
+                                    // In Index mode, we back-calculate the Quantity based on Lote Occupancy
+                                    const statsLote = loteStats.find(ls => ls.id === lote.id);
+                                    const occ = statsLote ? statsLote.totalOccupancy : 0;
+                                    const calculatedQty = occ > 0 ? num * occ : 0;
+                                    nextLoteWfo[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
+                                  }
+
+                                  await updateManualRealStat({
+                                    ...currentStats,
+                                    loteWfo: nextLoteWfo
+                                  });
+                                } catch (err) {
+                                  console.error('Error in WfoCell onSave:', err);
+                                } finally {
+                                  // Small delay so user sees the "Saving" indicator
+                                  setTimeout(() => setIsSaving(false), 500);
                                 }
-
-                                updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo as any });
                               }}
                             />
                           </td>

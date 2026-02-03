@@ -601,20 +601,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Optimistic update
     setManualRealStats(prev => ({ ...prev, [key]: data }));
 
+    console.log('[updateManualRealStat] Saving:', data);
+
     const { error } = await supabase.from('manual_real_stats').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
-      real_qty: data.realQty,
-      real_value: data.realValue,
-      afastados_qty: data.afastadosQty,
-      apprentices_qty: data.apprenticesQty,
-      wfo_qty: data.wfoQty,
+      real_qty: data.realQty ?? 0,
+      real_value: data.realValue ?? 0,
+      afastados_qty: data.afastadosQty ?? 0,
+      apprentices_qty: data.apprenticesQty ?? 0,
+      wfo_qty: data.wfoQty ?? 0,
       wfo_lotes_json: data.loteWfo || {}
-    }, { onConflict: 'sector_id, month_key' });
+    }, { onConflict: 'sector_id, month_key' }).select();
 
     if (error) {
       console.error('[updateManualRealStat] Supabase Error:', error);
-      alert('Erro ao salvar no banco: ' + error.message);
+      alert('Erro ao salvar no banco: ' + error.message + ' (' + error.code + ')');
+    } else {
+      console.log('[updateManualRealStat] Save successful!');
     }
   };
 
