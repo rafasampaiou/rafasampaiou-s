@@ -65,20 +65,28 @@ interface WfoCellProps {
 const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
   const [localValue, setLocalValue] = useState(value === 0 ? '' : value.toString());
   const [isFocused, setIsFocused] = useState(false);
+  const lastPropValue = React.useRef(value);
 
+  // Update local value only when prop changes AND not focused
   useEffect(() => {
-    if (!isFocused) {
+    if (!isFocused && value !== lastPropValue.current) {
       setLocalValue(value === 0 ? '' : (isIndex ? value.toFixed(3) : value.toString()));
+      lastPropValue.current = value;
     }
   }, [value, isFocused, isIndex]);
 
   const handleBlur = () => {
-    setIsFocused(false);
-    if (isIndex) return; // Cannot edit index
+    if (isIndex) {
+      setIsFocused(false);
+      return;
+    }
+
     const num = parseFloat(localValue.replace(',', '.')) || 0;
     if (num !== value) {
       onSave(num);
+      lastPropValue.current = num; // Optimistically assume success
     }
+    setIsFocused(false);
   };
 
   if (isIndex) {
@@ -651,7 +659,10 @@ export const Indicators: React.FC = () => {
                                 };
                                 const updatedLoteWfo = { ...(currentStats.loteWfo || {}) };
                                 const loteIdStr = String(lote.id);
-                                const currentLoteData = updatedLoteWfo[loteIdStr] || updatedLoteWfo[lote.id] || {};
+
+                                // Clean up any duplicate keys (string vs number)
+                                delete updatedLoteWfo[lote.id];
+                                const currentLoteData = updatedLoteWfo[loteIdStr] || {};
 
                                 if (matrixView === 'value') {
                                   updatedLoteWfo[loteIdStr] = { ...currentLoteData, value: num };
