@@ -8,9 +8,12 @@ CREATE TABLE IF NOT EXISTS monthly_app_configs (
   tax_rate numeric DEFAULT 0
 );
 
--- 2. Add mo_target column (numeric for decimals)
+-- 2. Add mo_target columns (numeric for decimals)
 ALTER TABLE monthly_app_configs 
-ADD COLUMN IF NOT EXISTS mo_target numeric DEFAULT 0;
+ADD COLUMN IF NOT EXISTS mo_target numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS mo_target_extra numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS mo_target_clt numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS mo_target_total numeric DEFAULT 0;
 
 -- 3. Verify settings / Add Comments
 COMMENT ON COLUMN monthly_app_configs.mo_target IS 'Meta de MO por UH Ocupada (ex: 2.18)';
@@ -63,3 +66,32 @@ WITH CHECK (true);
 -- 7. Explicit Grants
 GRANT ALL ON monthly_budgets TO authenticated;
 GRANT ALL ON monthly_app_configs TO authenticated;
+
+-- 8. WFO & MANUAL REAL STATS PERSISTENCE FIX
+-- This ensures the manual_real_stats table has the correct PK and JSON support
+DROP TABLE IF EXISTS manual_real_stats CASCADE;
+
+CREATE TABLE manual_real_stats (
+    sector_id uuid REFERENCES sectors(id) ON DELETE CASCADE,
+    month_key text NOT NULL,
+    real_qty numeric DEFAULT 0,
+    real_value numeric DEFAULT 0,
+    afastados_qty numeric DEFAULT 0,
+    apprentices_qty numeric DEFAULT 0,
+    wfo_qty numeric DEFAULT 0,
+    wfo_lotes_json jsonb DEFAULT '{}',
+    PRIMARY KEY (sector_id, month_key)
+);
+
+-- Reset RLS and Policies for manual_real_stats
+ALTER TABLE manual_real_stats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all access to manual_real_stats" 
+ON manual_real_stats FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+
+GRANT ALL ON manual_real_stats TO authenticated;
+GRANT ALL ON manual_real_stats TO service_role;
+
