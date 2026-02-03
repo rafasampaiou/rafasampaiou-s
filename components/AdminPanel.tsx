@@ -3,6 +3,47 @@ import { useApp } from '../context';
 import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock, Users, Key } from 'lucide-react';
 import { MonthlyBudget, LoteConfig, UserRole } from '../types';
 
+interface BudgetCellProps {
+  value: number;
+  onChange: (val: string) => void;
+  onPaste?: (e: React.ClipboardEvent) => void;
+  step?: string;
+  placeholder?: string;
+  className?: string;
+}
+
+const BudgetCell: React.FC<BudgetCellProps> = ({ value, onChange, onPaste, step, placeholder, className }) => {
+  const [localValue, setLocalValue] = useState(value?.toString() || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value?.toString() || '');
+    }
+  }, [value, isFocused]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localValue !== value?.toString()) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      step={step}
+      placeholder={placeholder}
+      className={className}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onFocus={() => setIsFocused(true)}
+      onPaste={onPaste}
+    />
+  );
+};
+
 export const AdminPanel: React.FC = () => {
   const {
     sectors, addSector, removeSector,
@@ -470,34 +511,31 @@ export const AdminPanel: React.FC = () => {
                       <tr key={sector.id} className="hover:bg-blue-50/30 transition-colors">
                         <td className="p-2 font-bold text-slate-700 border border-slate-300 bg-slate-50/50">{sector.name}</td>
                         <td className="p-0 border border-slate-300">
-                          <input
-                            type="number"
+                          <BudgetCell
                             step="0.01"
                             placeholder="0,00"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
-                            value={budget.budgetValue || ''}
-                            onChange={(e) => handleBudgetChange(sector.id, 'budgetValue', e.target.value)}
+                            value={budget.budgetValue}
+                            onChange={(val) => handleBudgetChange(sector.id, 'budgetValue', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
                         <td className="p-0 border border-slate-300">
-                          <input
-                            type="number"
+                          <BudgetCell
                             step="0.01"
                             placeholder="0,00"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
-                            value={budget.hourRate || ''}
-                            onChange={(e) => handleBudgetChange(sector.id, 'hourRate', e.target.value)}
+                            value={budget.hourRate}
+                            onChange={(val) => handleBudgetChange(sector.id, 'hourRate', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
                         <td className="p-0 border border-slate-300">
-                          <input
-                            type="number"
+                          <BudgetCell
                             placeholder="8"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
-                            value={budget.workHoursPerDay || ''}
-                            onChange={(e) => handleBudgetChange(sector.id, 'workHoursPerDay', e.target.value)}
+                            value={budget.workHoursPerDay}
+                            onChange={(val) => handleBudgetChange(sector.id, 'workHoursPerDay', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
@@ -505,12 +543,11 @@ export const AdminPanel: React.FC = () => {
                           {budget.budgetQty}
                         </td>
                         <td className="p-0 border border-slate-300">
-                          <input
-                            type="number"
+                          <BudgetCell
                             placeholder="22"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
-                            value={budget.workingDaysPerMonth || ''}
-                            onChange={(e) => handleBudgetChange(sector.id, 'workingDaysPerMonth', e.target.value)}
+                            value={budget.workingDaysPerMonth}
+                            onChange={(val) => handleBudgetChange(sector.id, 'workingDaysPerMonth', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
                           />
                         </td>
