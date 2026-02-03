@@ -122,10 +122,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ] = fetchResults;
 
       if (statErr) console.error('[fetchAllData] Error fetching manual_real_stats:', statErr);
-      if (stats) {
-        console.log('[fetchAllData] Fetched raw stats from DB:', stats);
-        console.log('[fetchAllData] Fetched manual_real_stats rows count:', stats.length);
-      }
 
       if (reqs) {
         setRequests(reqs.map((r: any) => ({
@@ -201,7 +197,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (stats) {
-        console.log('[fetchAllData] Found manual_real_stats records:', stats.length);
         const statsMap: Record<string, ManualRealStat> = {};
         stats.forEach((s: any) => {
           const key = `${s.sector_id}_${s.month_key}`;
@@ -217,9 +212,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               ? (typeof s.wfo_lotes_json === 'string' ? JSON.parse(s.wfo_lotes_json) : s.wfo_lotes_json)
               : undefined
           };
-          console.log(`[fetchAllData] Mapped key: ${key}`, statsMap[key]);
         });
-        console.log('[fetchAllData] Final statsMap size:', Object.keys(statsMap).length);
         setManualRealStats(statsMap);
       }
 
@@ -580,9 +573,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const getMonthlyLote = (monthKey: string): LoteConfig[] => {
     return monthlyLotes[monthKey] || [
-      { id: Date.now(), name: '1º Lote', startDay: 1, endDay: 10 },
-      { id: Date.now() + 1, name: '2º Lote', startDay: 11, endDay: 20 },
-      { id: Date.now() + 2, name: '3º Lote', startDay: 21, endDay: 31 },
+      { id: 1, name: '1º Lote', startDay: 1, endDay: 10 },
+      { id: 2, name: '2º Lote', startDay: 11, endDay: 20 },
+      { id: 3, name: '3º Lote', startDay: 21, endDay: 31 },
     ];
   };
 
@@ -608,7 +601,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Optimistic update
     setManualRealStats(prev => ({ ...prev, [key]: data }));
 
-    const result = await supabase.from('manual_real_stats').upsert({
+    const { error } = await supabase.from('manual_real_stats').upsert({
       sector_id: data.sectorId,
       month_key: data.monthKey,
       real_qty: data.realQty,
@@ -616,18 +609,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       afastados_qty: data.afastadosQty,
       apprentices_qty: data.apprenticesQty,
       wfo_qty: data.wfoQty,
-      wfo_lotes_json: data.loteWfo || null
-    }, { onConflict: 'sector_id, month_key' }).select();
-
-    const { data: upsertData, error } = result;
-
-    console.log('[updateManualRealStat] Supabase Response:', { upsertData, error });
+      wfo_lotes_json: data.loteWfo || {}
+    }, { onConflict: 'sector_id, month_key' });
 
     if (error) {
       console.error('[updateManualRealStat] Supabase Error:', error);
       alert('Erro ao salvar no banco: ' + error.message);
-    } else {
-      console.log('[updateManualRealStat] Success for key:', key);
     }
   };
 

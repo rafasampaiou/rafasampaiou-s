@@ -648,7 +648,6 @@ export const Indicators: React.FC = () => {
                               value={currentWfoMetric}
                               isIndex={matrixView === 'index'}
                               onSave={(num) => {
-                                console.log('[WfoCell onSave] Starting...', { sector: sectorObj?.name, num, matrixView });
                                 if (!sectorObj) return;
 
                                 const existing = getManualRealStat(sectorObj.id, monthKey);
@@ -675,7 +674,6 @@ export const Indicators: React.FC = () => {
                                   (updatedLoteWfo as any)[loteIdStr] = { ...currentLoteData, qty: num };
                                 }
 
-                                console.log('[WfoCell onSave] Calling update with:', { loteIdStr, updatedLoteWfo });
                                 updateManualRealStat({ ...currentStats, loteWfo: updatedLoteWfo as any });
                               }}
                             />
