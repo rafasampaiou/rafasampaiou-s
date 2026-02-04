@@ -655,13 +655,13 @@ export const Indicators: React.FC = () => {
                   <React.Fragment key={lote.id}>
                     <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Work<br />force</th>
                     <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Wfo</th>
-                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Intermitentes</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Inter<br />mitente</th>
                     <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-16">Diff</th>
                   </React.Fragment>
                 ))}
                 <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Work<br />force</th>
                 <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Wfo</th>
-                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Intermitentes</th>
+                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Inter<br />mitente</th>
                 <th className="p-1.5 font-bold text-center text-[10px] uppercase bg-slate-100 w-16">Diff</th>
               </tr>
             </thead>
