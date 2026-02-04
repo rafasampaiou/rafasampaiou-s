@@ -658,11 +658,8 @@ export const Dashboard: React.FC = () => {
                         <button onClick={() => setEditingRequest(req)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Editar">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => { if (window.confirm('Rejeitar esta solicitação?')) updateRequestStatus(req.id, 'Rejeitado'); }} className="p-1.5 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-600 hover:text-white transition-all shadow-sm" title="Rejeitar">
-                          <X size={14} />
-                        </button>
                         <button onClick={() => { if (window.confirm('Excluir esta solicitação permanentemente?')) deleteRequest(req.id); }} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Excluir">
-                          <Trash2 size={14} />
+                          <X size={14} />
                         </button>
                       </div>
                     </td>

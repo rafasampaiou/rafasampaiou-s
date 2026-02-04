@@ -383,6 +383,30 @@ export const Indicators: React.FC = () => {
     return val;
   };
 
+  // Calculate Totals for WFO and Diff in the matrix
+  const loteWfoTotals = lotes.map(lote => {
+    return sectors.reduce((acc, s) => {
+      const stats = getManualRealStat(s.id, monthKey);
+      const loteIdStr = String(lote.id);
+      const val = (stats?.loteWfoValue as any)?.[loteIdStr]?.value || 0;
+      const qty = (stats?.loteWfoQty as any)?.[loteIdStr]?.qty || 0;
+      return {
+        value: acc.value + val,
+        qty: acc.qty + qty
+      };
+    }, { value: 0, qty: 0 });
+  });
+
+  const monthlyWfoTotals = sectors.reduce((acc, s) => {
+    const stats = getManualRealStat(s.id, monthKey);
+    const valTotal = (Object.values(stats?.loteWfoValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    const qtyTotal = (Object.values(stats?.loteWfoQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+    return {
+      value: acc.value + valTotal,
+      qty: acc.qty + qtyTotal
+    };
+  }, { value: 0, qty: 0 });
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -620,8 +644,6 @@ export const Indicators: React.FC = () => {
               {financialMatrix.map((row, idx) => {
                 const sectorObj = sectors.find(s => s.name === row.sectorName);
                 const stats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
-                const workforce = stats ? Math.max(0, stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0)) : 0;
-
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
                     <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
@@ -778,27 +800,57 @@ export const Indicators: React.FC = () => {
             </tbody>
             <tfoot className="bg-slate-100 font-bold border-t border-slate-300">
               <tr>
-                <td className="p-3 text-left uppercase">Total Geral</td>
-                {loteTotalsWithIndex.map((total, idx) => (
-                  <React.Fragment key={idx}>
-                    <td className="p-3 border-r border-slate-300 text-center w-20 min-w-[80px]">
-                      {renderMatrixCell(
-                        matrixView === 'value' ? total.value :
-                          matrixView === 'qty' ? total.qty : total.index,
-                        matrixView
-                      )}
-                    </td>
-                    <td colSpan={2} className="border-r border-slate-300"></td>
-                  </React.Fragment>
-                ))}
-                <td className="p-3 bg-slate-200 border-r border-slate-300 text-center w-20 min-w-[80px]">
-                  {renderMatrixCell(
-                    matrixView === 'value' ? grandTotalValue :
-                      matrixView === 'qty' ? grandTotalQty : grandTotalIndex,
-                    matrixView
-                  )}
-                </td>
-                <td colSpan={2} className="bg-slate-200"></td>
+                <td className="p-3 text-left border-r border-slate-200 uppercase">Total Geral</td>
+                {loteTotalsWithIndex.map((total, idx) => {
+                  const wfoMetric = matrixView === 'value' ? loteWfoTotals[idx].value :
+                    matrixView === 'qty' ? loteWfoTotals[idx].qty :
+                      (loteStats[idx].totalOccupancy > 0 ? loteWfoTotals[idx].qty / loteStats[idx].totalOccupancy : 0);
+                  const workforceMetric = matrixView === 'value' ? total.value :
+                    matrixView === 'qty' ? total.qty : total.index;
+                  const diff = workforceMetric - wfoMetric;
+                  const isDifferent = Math.abs(diff) > 0.0001;
+
+                  return (
+                    <React.Fragment key={idx}>
+                      <td className="p-3 border-r border-slate-300 text-center w-20 min-w-[80px]">
+                        {renderMatrixCell(workforceMetric, matrixView)}
+                      </td>
+                      <td className="p-3 border-r border-slate-300 text-center text-[#155645] w-20 min-w-[80px]">
+                        {renderMatrixCell(wfoMetric, matrixView)}
+                      </td>
+                      <td className={`p-2 border-r border-slate-300 text-center text-[11px] w-16 ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
+                        {diff > 0 ? `+${renderMatrixCell(diff, matrixView)}` : renderMatrixCell(diff, matrixView)}
+                      </td>
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Monthly Grand Totals */}
+                {(() => {
+                  const wfMonthly = matrixView === 'value' ? grandTotalValue :
+                    matrixView === 'qty' ? grandTotalQty : grandTotalIndex;
+
+                  const wfoMonthly = matrixView === 'value' ? monthlyWfoTotals.value :
+                    matrixView === 'qty' ? monthlyWfoTotals.qty :
+                      (grandTotalOccupancy > 0 ? monthlyWfoTotals.qty / grandTotalOccupancy : 0);
+
+                  const mDiff = wfMonthly - wfoMonthly;
+                  const isMDiff = Math.abs(mDiff) > 0.0001;
+
+                  return (
+                    <>
+                      <td className="p-3 bg-slate-200 border-r border-slate-300 text-center w-20 min-w-[80px]">
+                        {renderMatrixCell(wfMonthly, matrixView)}
+                      </td>
+                      <td className="p-3 bg-slate-200 border-r border-slate-300 text-center text-[#155645] w-20 min-w-[80px]">
+                        {renderMatrixCell(wfoMonthly, matrixView)}
+                      </td>
+                      <td className={`p-2 bg-slate-200 text-center text-[11px] w-16 ${isMDiff ? 'text-red-500' : 'text-green-600'}`}>
+                        {mDiff > 0 ? `+${renderMatrixCell(mDiff, matrixView)}` : renderMatrixCell(mDiff, matrixView)}
+                      </td>
+                    </>
+                  );
+                })()}
               </tr>
             </tfoot>
           </table>
