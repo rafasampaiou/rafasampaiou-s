@@ -63,8 +63,11 @@ export const Dashboard: React.FC = () => {
     }
     return true;
   }).sort((a, b) => {
-    if (a.dateEvent < b.dateEvent) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (a.dateEvent > b.dateEvent) return sortConfig.direction === 'asc' ? 1 : -1;
+    const valueA = a[sortConfig.key as keyof RequestItem] || '';
+    const valueB = b[sortConfig.key as keyof RequestItem] || '';
+
+    if (valueA < valueB) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (valueA > valueB) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
   });
 
@@ -75,8 +78,11 @@ export const Dashboard: React.FC = () => {
   const pendingRequests = useMemo(() => {
     let list = requests.filter(r => r.status === 'Pendente');
     list.sort((a, b) => {
-      if (a.dateEvent < b.dateEvent) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (a.dateEvent > b.dateEvent) return sortConfig.direction === 'asc' ? 1 : -1;
+      const valueA = a[sortConfig.key as keyof RequestItem] || '';
+      const valueB = b[sortConfig.key as keyof RequestItem] || '';
+
+      if (valueA < valueB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
     return list;
@@ -404,15 +410,23 @@ export const Dashboard: React.FC = () => {
                     className="p-3 cursor-pointer hover:bg-slate-100 transition-colors"
                     onClick={() => setSortConfig(prev => ({
                       key: 'dateEvent',
-                      direction: prev.direction === 'asc' ? 'desc' : 'asc'
+                      direction: prev.key === 'dateEvent' && prev.direction === 'asc' ? 'desc' : 'asc'
                     }))}
                   >
-                    Início {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    Início {sortConfig.key === 'dateEvent' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                   </th>
                   <th className="p-3">Fim</th>
                   <th className="p-3">Solicitado em</th>
                   <th className="p-3">Dias</th>
-                  <th className="p-3">Setor</th>
+                  <th
+                    className="p-3 cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => setSortConfig(prev => ({
+                      key: 'sector',
+                      direction: prev.key === 'sector' && prev.direction === 'asc' ? 'desc' : 'asc'
+                    }))}
+                  >
+                    Setor {sortConfig.key === 'sector' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                  </th>
                   <th className="p-3">Função</th>
                   <th className="p-3">Qtd</th>
                   <th className="p-3">Horário</th>
@@ -591,13 +605,21 @@ export const Dashboard: React.FC = () => {
                   className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
                   onClick={() => setSortConfig(prev => ({
                     key: 'dateEvent',
-                    direction: prev.direction === 'asc' ? 'desc' : 'asc'
+                    direction: prev.key === 'dateEvent' && prev.direction === 'asc' ? 'desc' : 'asc'
                   }))}
                 >
-                  Início {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  Início {sortConfig.key === 'dateEvent' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                 </th>
                 <th className="p-4">Fim</th>
-                <th className="p-4">Setor</th>
+                <th
+                  className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => setSortConfig(prev => ({
+                    key: 'sector',
+                    direction: prev.key === 'sector' && prev.direction === 'asc' ? 'desc' : 'asc'
+                  }))}
+                >
+                  Setor {sortConfig.key === 'sector' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                </th>
                 <th className="p-4">Função</th>
                 <th className="p-4 text-center">Extras</th>
                 <th className="p-4 text-center">Dias</th>
