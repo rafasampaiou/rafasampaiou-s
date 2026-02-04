@@ -507,7 +507,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteRequest = async (id: string) => {
     console.log('[deleteRequest] Attempting to delete request ID:', id, 'Type:', typeof id);
+    console.log('[deleteRequest] Current user:', user?.email);
+    console.log('[deleteRequest] Request exists in local state:', requests.some(r => r.id === id));
+
     try {
+      // First, try to fetch the request to see if it exists and check permissions
+      const { data: existingRequest, error: fetchError } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('[deleteRequest] Error fetching request:', fetchError);
+        alert('Erro ao buscar solicitação: ' + fetchError.message + '\nVerifique se você tem permissão para visualizar este registro.');
+        return;
+      }
+
+      console.log('[deleteRequest] Found request:', existingRequest);
+
+      // Now attempt to delete
       const { data, error, status } = await supabase
         .from('requests')
         .delete()
@@ -515,8 +534,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .select();
 
       if (error) {
-        console.error('[deleteRequest] Supabase error:', error);
-        alert('Falha ao excluir a solicitação: ' + error.message);
+        console.error('[deleteRequest] Supabase delete error:', error);
+        console.error('[deleteRequest] Error details:', JSON.stringify(error, null, 2));
+        alert('Falha ao excluir a solicitação: ' + error.message + '\n\nPossível problema de permissão (RLS). Verifique as políticas do Supabase.');
         return;
       }
 
@@ -526,11 +546,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setRequests(prev => prev.filter(req => req.id !== id));
         alert('Solicitação excluída com sucesso!');
       } else {
-        console.warn('[deleteRequest] No rows were deleted. Checking if ID exists...');
+        console.warn('[deleteRequest] No rows were deleted despite no error.');
         // Fallback: check if we have it in state, if so, maybe it's already gone or RLS issue
         const existsLocally = requests.some(r => r.id === id);
         if (existsLocally) {
-          alert('Aviso: O registro não pôde ser excluído do banco de dados (verifique permissões), mas será removido da sua tela temporariamente.');
+          alert('Aviso: O registro não pôde ser excluído do banco de dados (possível problema de permissão RLS), mas será removido da sua tela temporariamente.');
           setRequests(prev => prev.filter(req => req.id !== id));
         } else {
           alert('Solicitação não encontrada no banco de dados.');
@@ -539,6 +559,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     } catch (err: any) {
       console.error('[deleteRequest] Exception:', err);
+      console.error('[deleteRequest] Exception stack:', err.stack);
       alert('Erro inesperado ao excluir: ' + err.message);
     }
   };

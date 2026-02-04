@@ -397,10 +397,33 @@ export const Indicators: React.FC = () => {
     }, { value: 0, qty: 0 });
   });
 
+  const loteIntermitentesTotals = lotes.map(lote => {
+    return sectors.reduce((acc, s) => {
+      const stats = getManualRealStat(s.id, monthKey);
+      const loteIdStr = String(lote.id);
+      const val = (stats?.loteIntermitentesValue as any)?.[loteIdStr]?.value || 0;
+      const qty = (stats?.loteIntermitentesQty as any)?.[loteIdStr]?.qty || 0;
+      return {
+        value: acc.value + val,
+        qty: acc.qty + qty
+      };
+    }, { value: 0, qty: 0 });
+  });
+
   const monthlyWfoTotals = sectors.reduce((acc, s) => {
     const stats = getManualRealStat(s.id, monthKey);
     const valTotal = (Object.values(stats?.loteWfoValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
     const qtyTotal = (Object.values(stats?.loteWfoQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+    return {
+      value: acc.value + valTotal,
+      qty: acc.qty + qtyTotal
+    };
+  }, { value: 0, qty: 0 });
+
+  const monthlyIntermitentesTotals = sectors.reduce((acc, s) => {
+    const stats = getManualRealStat(s.id, monthKey);
+    const valTotal = (Object.values(stats?.loteIntermitentesValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    const qtyTotal = (Object.values(stats?.loteIntermitentesQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
     return {
       value: acc.value + valTotal,
       qty: acc.qty + qtyTotal
@@ -620,23 +643,25 @@ export const Indicators: React.FC = () => {
               <tr>
                 <th rowSpan={2} className="p-3 border-r border-slate-200 text-left align-middle uppercase w-32 min-w-[140px]">Setor</th>
                 {lotes.map(lote => (
-                  <th key={lote.id} colSpan={3} className="p-2 border-r border-b border-slate-200 text-center uppercase">
+                  <th key={lote.id} colSpan={4} className="p-2 border-r border-b border-slate-200 text-center uppercase">
                     {lote.name}
                     <div className="text-[9px] text-slate-400 font-normal normal-case">Dia {lote.startDay}-{lote.endDay}</div>
                   </th>
                 ))}
-                <th colSpan={3} className="p-2 border-b border-slate-200 text-center bg-slate-100 uppercase">Total Mensal</th>
+                <th colSpan={4} className="p-2 border-b border-slate-200 text-center bg-slate-100 uppercase">Total Mensal</th>
               </tr>
               <tr className="border-b border-slate-200">
                 {lotes.map(lote => (
                   <React.Fragment key={lote.id}>
-                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Workforce</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Work<br />force</th>
                     <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Wfo</th>
+                    <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-20 min-w-[80px]">Intermitentes</th>
                     <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase w-16">Diff</th>
                   </React.Fragment>
                 ))}
-                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Workforce</th>
+                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Work<br />force</th>
                 <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Wfo</th>
+                <th className="p-1.5 border-r border-slate-200 font-bold text-center text-[10px] uppercase bg-slate-100 w-20 min-w-[80px]">Intermitentes</th>
                 <th className="p-1.5 font-bold text-center text-[10px] uppercase bg-slate-100 w-16">Diff</th>
               </tr>
             </thead>
@@ -654,24 +679,31 @@ export const Indicators: React.FC = () => {
 
                       let workforceMetric = 0;
                       let currentWfoMetric = 0;
+                      let currentIntermitentesMetric = 0;
 
                       if (matrixView === 'value') {
                         workforceMetric = cell.value;
                         const wfoData = (stats?.loteWfoValue as any)?.[loteIdStr];
                         currentWfoMetric = wfoData?.value || 0;
+                        const intermitentesData = (stats?.loteIntermitentesValue as any)?.[loteIdStr];
+                        currentIntermitentesMetric = intermitentesData?.value || 0;
                       } else if (matrixView === 'qty') {
                         workforceMetric = cell.qty;
                         const wfoData = (stats?.loteWfoQty as any)?.[loteIdStr];
                         currentWfoMetric = wfoData?.qty || 0;
+                        const intermitentesData = (stats?.loteIntermitentesQty as any)?.[loteIdStr];
+                        currentIntermitentesMetric = intermitentesData?.qty || 0;
                       } else {
                         workforceMetric = cell.index;
                         const wfoData = (stats?.loteWfoQty as any)?.[loteIdStr];
+                        const intermitentesData = (stats?.loteIntermitentesQty as any)?.[loteIdStr];
                         const statsLote = loteStats.find(ls => ls.id === lote.id);
                         const occ = statsLote ? statsLote.totalOccupancy : 0;
                         currentWfoMetric = occ > 0 ? (wfoData?.qty || 0) / occ : 0;
+                        currentIntermitentesMetric = occ > 0 ? (intermitentesData?.qty || 0) / occ : 0;
                       }
 
-                      const diff = workforceMetric - currentWfoMetric;
+                      const diff = workforceMetric - (currentWfoMetric + currentIntermitentesMetric);
                       const isDifferent = Math.abs(diff) > 0.0001;
 
                       return (
@@ -688,7 +720,6 @@ export const Indicators: React.FC = () => {
                                 setIsSaving(true);
 
                                 try {
-                                  // Re-fetch latest existing from local stats map (state) to avoid stale closures
                                   const key = `${sectorObj.id}_${monthKey}`;
                                   const existing = manualRealStats[key];
 
@@ -737,7 +768,68 @@ export const Indicators: React.FC = () => {
                                 } catch (err) {
                                   console.error('Error in WfoCell onSave:', err);
                                 } finally {
-                                  // Small delay so user sees the "Saving" indicator
+                                  setTimeout(() => setIsSaving(false), 500);
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="p-2 border-r border-slate-100 text-center w-20 min-w-[80px]">
+                            <WfoCell
+                              value={currentIntermitentesMetric}
+                              isIndex={matrixView === 'index'}
+                              onSave={async (num) => {
+                                if (!sectorObj) return;
+                                setIsSaving(true);
+
+                                try {
+                                  const key = `${sectorObj.id}_${monthKey}`;
+                                  const existing = manualRealStats[key];
+
+                                  const currentStats = existing || {
+                                    sectorId: sectorObj.id,
+                                    monthKey: monthKey,
+                                    realQty: 0,
+                                    realValue: 0,
+                                    afastadosQty: 0,
+                                    apprenticesQty: 0,
+                                    wfoQty: 0,
+                                    loteWfo: {}
+                                  };
+
+                                  const loteIdStr = String(lote.id);
+
+                                  if (matrixView === 'value') {
+                                    const nextLoteIntermitentesValue = { ...(currentStats.loteIntermitentesValue || {}) } as any;
+                                    const currentLoteData = nextLoteIntermitentesValue[loteIdStr] || {};
+                                    nextLoteIntermitentesValue[loteIdStr] = { ...currentLoteData, value: num };
+
+                                    await updateManualRealStat({
+                                      sectorId: sectorObj.id,
+                                      monthKey: monthKey,
+                                      loteIntermitentesValue: nextLoteIntermitentesValue
+                                    } as any);
+                                  } else {
+                                    const nextLoteIntermitentesQty = { ...(currentStats.loteIntermitentesQty || {}) } as any;
+                                    const currentLoteData = nextLoteIntermitentesQty[loteIdStr] || {};
+
+                                    if (matrixView === 'qty') {
+                                      nextLoteIntermitentesQty[loteIdStr] = { ...currentLoteData, qty: num };
+                                    } else if (matrixView === 'index') {
+                                      const statsLote = loteStats.find(ls => ls.id === lote.id);
+                                      const occ = statsLote ? statsLote.totalOccupancy : 0;
+                                      const calculatedQty = occ > 0 ? num * occ : 0;
+                                      nextLoteIntermitentesQty[loteIdStr] = { ...currentLoteData, qty: calculatedQty };
+                                    }
+
+                                    await updateManualRealStat({
+                                      sectorId: sectorObj.id,
+                                      monthKey: monthKey,
+                                      loteIntermitentesQty: nextLoteIntermitentesQty
+                                    } as any);
+                                  }
+                                } catch (err) {
+                                  console.error('Error in IntermitentesCell onSave:', err);
+                                } finally {
                                   setTimeout(() => setIsSaving(false), 500);
                                 }
                               }}
@@ -754,6 +846,7 @@ export const Indicators: React.FC = () => {
                     {(() => {
                       let workforceTotal = 0;
                       let wfoTotal = 0;
+                      let intermitentesTotal = 0;
 
                       const sectorObj = sectors.find(s => s.name === row.sectorName);
                       const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : undefined;
@@ -761,18 +854,22 @@ export const Indicators: React.FC = () => {
                       if (matrixView === 'value') {
                         workforceTotal = row.totalSectorValue;
                         wfoTotal = (Object.values(sectorStats?.loteWfoValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                        intermitentesTotal = (Object.values(sectorStats?.loteIntermitentesValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
                       } else if (matrixView === 'qty') {
                         workforceTotal = row.totalSectorQty;
                         wfoTotal = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        intermitentesTotal = (Object.values(sectorStats?.loteIntermitentesQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                       } else {
                         workforceTotal = row.totalSectorIndex;
                         // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
                         const totalWfoQty = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalIntermitentesQty = (Object.values(sectorStats?.loteIntermitentesQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
                         const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
                         wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
+                        intermitentesTotal = totalOccupancy > 0 ? totalIntermitentesQty / totalOccupancy : 0;
                       }
 
-                      const monthlyDiff = workforceTotal - wfoTotal;
+                      const monthlyDiff = workforceTotal - (wfoTotal + intermitentesTotal);
                       const isMonthlyDiff = Math.abs(monthlyDiff) > 0.0001;
 
                       return (
@@ -782,6 +879,9 @@ export const Indicators: React.FC = () => {
                           </td>
                           <td className="p-3 bg-slate-100 border-r border-slate-200 text-center font-bold text-[#155645] w-20 min-w-[80px]">
                             {renderMatrixCell(wfoTotal, matrixView)}
+                          </td>
+                          <td className="p-3 bg-slate-100 border-r border-slate-200 text-center font-bold text-purple-600 w-20 min-w-[80px]">
+                            {renderMatrixCell(intermitentesTotal, matrixView)}
                           </td>
                           <td className={`p-2 bg-slate-100 text-center font-bold text-[11px] w-16 ${isMonthlyDiff ? 'text-red-500' : 'text-green-600'}`}>
                             {monthlyDiff > 0 ? `+${renderMatrixCell(monthlyDiff, matrixView)}` : renderMatrixCell(monthlyDiff, matrixView)}
@@ -794,7 +894,7 @@ export const Indicators: React.FC = () => {
               })}
               {financialMatrix.length === 0 && (
                 <tr>
-                  <td colSpan={(lotes.length * 3) + 4} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
+                  <td colSpan={(lotes.length * 4) + 5} className="p-4 text-center text-slate-400">Nenhum dado disponível.</td>
                 </tr>
               )}
             </tbody>
@@ -805,9 +905,12 @@ export const Indicators: React.FC = () => {
                   const wfoMetric = matrixView === 'value' ? loteWfoTotals[idx].value :
                     matrixView === 'qty' ? loteWfoTotals[idx].qty :
                       (loteStats[idx].totalOccupancy > 0 ? loteWfoTotals[idx].qty / loteStats[idx].totalOccupancy : 0);
+                  const intermitentesMetric = matrixView === 'value' ? loteIntermitentesTotals[idx].value :
+                    matrixView === 'qty' ? loteIntermitentesTotals[idx].qty :
+                      (loteStats[idx].totalOccupancy > 0 ? loteIntermitentesTotals[idx].qty / loteStats[idx].totalOccupancy : 0);
                   const workforceMetric = matrixView === 'value' ? total.value :
                     matrixView === 'qty' ? total.qty : total.index;
-                  const diff = workforceMetric - wfoMetric;
+                  const diff = workforceMetric - (wfoMetric + intermitentesMetric);
                   const isDifferent = Math.abs(diff) > 0.0001;
 
                   return (
@@ -817,6 +920,9 @@ export const Indicators: React.FC = () => {
                       </td>
                       <td className="p-3 border-r border-slate-300 text-center text-[#155645] w-20 min-w-[80px]">
                         {renderMatrixCell(wfoMetric, matrixView)}
+                      </td>
+                      <td className="p-3 border-r border-slate-300 text-center text-purple-600 w-20 min-w-[80px]">
+                        {renderMatrixCell(intermitentesMetric, matrixView)}
                       </td>
                       <td className={`p-2 border-r border-slate-300 text-center text-[11px] w-16 ${isDifferent ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}`}>
                         {diff > 0 ? `+${renderMatrixCell(diff, matrixView)}` : renderMatrixCell(diff, matrixView)}
@@ -834,7 +940,11 @@ export const Indicators: React.FC = () => {
                     matrixView === 'qty' ? monthlyWfoTotals.qty :
                       (grandTotalOccupancy > 0 ? monthlyWfoTotals.qty / grandTotalOccupancy : 0);
 
-                  const mDiff = wfMonthly - wfoMonthly;
+                  const intermitentesMonthly = matrixView === 'value' ? monthlyIntermitentesTotals.value :
+                    matrixView === 'qty' ? monthlyIntermitentesTotals.qty :
+                      (grandTotalOccupancy > 0 ? monthlyIntermitentesTotals.qty / grandTotalOccupancy : 0);
+
+                  const mDiff = wfMonthly - (wfoMonthly + intermitentesMonthly);
                   const isMDiff = Math.abs(mDiff) > 0.0001;
 
                   return (
@@ -844,6 +954,9 @@ export const Indicators: React.FC = () => {
                       </td>
                       <td className="p-3 bg-slate-200 border-r border-slate-300 text-center text-[#155645] w-20 min-w-[80px]">
                         {renderMatrixCell(wfoMonthly, matrixView)}
+                      </td>
+                      <td className="p-3 bg-slate-200 border-r border-slate-300 text-center text-purple-600 w-20 min-w-[80px]">
+                        {renderMatrixCell(intermitentesMonthly, matrixView)}
                       </td>
                       <td className={`p-2 bg-slate-200 text-center text-[11px] w-16 ${isMDiff ? 'text-red-500' : 'text-green-600'}`}>
                         {mDiff > 0 ? `+${renderMatrixCell(mDiff, matrixView)}` : renderMatrixCell(mDiff, matrixView)}

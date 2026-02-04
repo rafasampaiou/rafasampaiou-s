@@ -80,6 +80,8 @@ export interface ManualRealStat {
   loteWfo?: Record<string | number, { value?: number; qty?: number; }>; // Legacy/Merged
   loteWfoQty?: Record<string | number, { qty?: number; }>; // Independent Qty Base
   loteWfoValue?: Record<string | number, { value?: number; }>; // Independent Value Base
+  loteIntermitentesQty?: Record<string | number, { qty?: number; }>; // Intermitentes Qty Base
+  loteIntermitentesValue?: Record<string | number, { value?: number; }>; // Intermitentes Value Base
 }
 
 export interface LoteConfig {
