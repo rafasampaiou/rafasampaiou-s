@@ -454,8 +454,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateRequestStatus = async (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => {
-    const { error } = await supabase.from('requests').update({ status }).eq('id', id);
-    if (!error) setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
+    try {
+      const { error } = await supabase.from('requests').update({ status }).eq('id', id);
+      if (!error) {
+        setRequests(prev => prev.map(req => req.id === id ? { ...req, status } : req));
+        alert(`Solicitação ${status === 'Aprovado' ? 'aprovada' : status === 'Rejeitado' ? 'rejeitada' : 'movida para pendente'} com sucesso!`);
+      } else {
+        console.error('[updateRequestStatus] Error:', error);
+        alert('Erro ao atualizar status: ' + error.message);
+      }
+    } catch (err: any) {
+      console.error('[updateRequestStatus] Exception:', err);
+      alert('Erro inesperado ao atualizar status: ' + err.message);
+    }
   };
 
   const updateRequest = async (id: string, updates: Partial<RequestItem>) => {
@@ -487,6 +498,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { error } = await supabase.from('requests').update(payload).eq('id', id);
     if (!error) {
       setRequests(prev => prev.map(req => req.id === id ? { ...req, ...updates, totalValue: payload.total_value ?? req.totalValue } : req));
+      alert('Solicitação atualizada com sucesso!');
     } else {
       console.error('[updateRequest] Error:', error);
       alert('Erro ao atualizar solicitação: ' + error.message);
@@ -515,9 +527,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         alert('Solicitação excluída com sucesso!');
       } else {
         console.warn('[deleteRequest] No rows were deleted. Checking if ID exists...');
-        // Fallback: update local state anyway if user is sure, but better to alert
-        alert('Aviso: O registro não foi encontrado no banco de dados, mas será removido da sua tela.');
-        setRequests(prev => prev.filter(req => req.id !== id));
+        // Fallback: check if we have it in state, if so, maybe it's already gone or RLS issue
+        const existsLocally = requests.some(r => r.id === id);
+        if (existsLocally) {
+          alert('Aviso: O registro não pôde ser excluído do banco de dados (verifique permissões), mas será removido da sua tela temporariamente.');
+          setRequests(prev => prev.filter(req => req.id !== id));
+        } else {
+          alert('Solicitação não encontrada no banco de dados.');
+        }
       }
 
     } catch (err: any) {
