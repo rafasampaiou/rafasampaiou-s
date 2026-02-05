@@ -115,7 +115,12 @@ const WfoCell: React.FC<WfoCellProps> = ({ value, onSave, isIndex }) => {
 };
 
 export const Indicators: React.FC = () => {
-  const { requests, sectors, occupancyData, manualRealStats, getMonthlyLote, getManualRealStat, updateManualRealStat, systemConfig, getMonthlyAppConfig, calculateRequestTotal } = useApp();
+  const {
+    requests, sectors, occupancyData, manualRealStats,
+    getMonthlyLote, getManualRealStat, updateManualRealStat,
+    systemConfig, getMonthlyAppConfig, calculateRequestTotal,
+    getMonthlyBudget
+  } = useApp();
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [selectedSector, setSelectedSector] = useState('Todos');
@@ -248,99 +253,78 @@ export const Indicators: React.FC = () => {
 
   // Financial Matrix Calculation (Sector x Lote)
   // UPDATED: Now calculates Value, Qty and Index for the Matrix
-  const financialMatrix = filteredSectors.map(sector => {
-    const loteValues = lotes.map(lote => {
-      let loteTotalBaseValue = 0;
-      let loteTotalQty = 0;
+  // Financial Matrix Calculation (Sector x Lote)
+  // Logic extracted into a helper to reuse for "All Sectors" view
+  const calculateMatrix = (sectorList: typeof sectors, metricOverride?: typeof chartMetric) => {
+    return sectorList.map(sector => {
+      const loteValues = lotes.map(lote => {
+        let loteTotalBaseValue = 0;
+        let loteTotalQty = 0;
 
-      // We need total occupancy for this specific lote to calculate sector index
-      const stats = loteStats.find(ls => ls.id === lote.id);
-      const loteOccupancy = stats ? stats.totalOccupancy : 0;
+        const stats = loteStats.find(ls => ls.id === lote.id);
+        const loteOccupancy = stats ? stats.totalOccupancy : 0;
 
-      requests.forEach(r => {
-        // Filter by Sector and Status
-        if (r.sector !== sector.name || r.status !== 'Aprovado') return;
+        requests.forEach(r => {
+          if (r.sector !== sector.name || r.status !== 'Aprovado') return;
+          const [rYear, rMonth, rDay] = r.dateEvent.split('-').map(Number);
+          const startDate = new Date(rYear, rMonth - 1, rDay);
+          const dailyCost = calculateRequestTotal({ ...r, daysQty: 1 });
+          const dailyQty = r.extrasQty;
 
-        const [rYear, rMonth, rDay] = r.dateEvent.split('-').map(Number);
-        const startDate = new Date(rYear, rMonth - 1, rDay);
-
-        // Calculate daily cost base
-        const reportMonth = r.dateEvent.substring(0, 7);
-        const dailyCost = calculateRequestTotal({ ...r, daysQty: 1 });
-        const dailyQty = r.extrasQty;
-
-        // Iterate through each day of the request
-        for (let i = 0; i < r.daysQty; i++) {
-          const currentLoopDate = new Date(startDate);
-          currentLoopDate.setDate(startDate.getDate() + i);
-
-          // Check if this specific day falls within the selected VIEW month
-          if (currentLoopDate.getMonth() + 1 === month && currentLoopDate.getFullYear() === year) {
-            const currentDay = currentLoopDate.getDate();
-
-            // Check if this day falls within the current Lote
-            if (currentDay >= lote.startDay && currentDay <= lote.endDay) {
-              loteTotalBaseValue += dailyCost;
-              loteTotalQty += dailyQty;
+          for (let i = 0; i < r.daysQty; i++) {
+            const currentLoopDate = new Date(startDate);
+            currentLoopDate.setDate(startDate.getDate() + i);
+            if (currentLoopDate.getMonth() + 1 === month && currentLoopDate.getFullYear() === year) {
+              const currentDay = currentLoopDate.getDate();
+              if (currentDay >= lote.startDay && currentDay <= lote.endDay) {
+                loteTotalBaseValue += dailyCost;
+                loteTotalQty += dailyQty;
+              }
             }
           }
+        });
+
+        const sectorObj = sectors.find(s => s.name === sector.name);
+        const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : null;
+        const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0) - (sectorStats.apprenticesQty || 0)) : 0;
+        const cltValue = sectorStats ? sectorStats.realValue : 0;
+        const daysInLoteMatch = lote.endDay - lote.startDay + 1;
+        const cltLoteQty = cltHeadcount * daysInLoteMatch;
+        const cltLoteValue = (cltValue / daysInMonth) * daysInLoteMatch;
+
+        let finalValue = 0;
+        let finalQty = 0;
+        const activeMetric = metricOverride || chartMetric;
+
+        if (activeMetric === 'extras') {
+          finalValue = loteTotalBaseValue;
+          finalQty = loteTotalQty;
+        } else if (activeMetric === 'clt') {
+          finalValue = cltLoteValue;
+          finalQty = cltLoteQty;
+        } else {
+          finalValue = loteTotalBaseValue + cltLoteValue;
+          finalQty = loteTotalQty + cltLoteQty;
         }
+
+        const taxRate = getMonthlyAppConfig(monthKey).taxRate;
+        const valueWithTax = finalValue * (1 + (taxRate / 100));
+        const sectorIndex = loteOccupancy > 0 ? (finalQty / loteOccupancy) : 0;
+
+        return { loteId: lote.id, value: valueWithTax, qty: finalQty, index: sectorIndex };
       });
 
-      // CLT Contribution
-      const sectorObj = sectors.find(s => s.name === sector.name);
-      const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : null;
-      const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0) - (sectorStats.apprenticesQty || 0)) : 0;
-      const cltValue = sectorStats ? sectorStats.realValue : 0;
+      const totalSectorValue = loteValues.reduce((acc, curr) => acc + curr.value, 0);
+      const totalSectorQty = loteValues.reduce((acc, curr) => acc + curr.qty, 0);
+      const monthTotalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
+      const totalSectorIndex = monthTotalOccupancy > 0 ? (totalSectorQty / monthTotalOccupancy) : 0;
 
-      const daysInLoteMatch = lote.endDay - lote.startDay + 1;
-      const cltLoteQty = cltHeadcount * daysInLoteMatch;
-      const cltLoteValue = (cltValue / daysInMonth) * daysInLoteMatch;
-
-      // Determine metrics based on chartMetric
-      let finalValue = 0;
-      let finalQty = 0;
-
-      if (chartMetric === 'extras') {
-        finalValue = loteTotalBaseValue;
-        finalQty = loteTotalQty;
-      } else if (chartMetric === 'clt') {
-        finalValue = cltLoteValue;
-        finalQty = cltLoteQty;
-      } else {
-        finalValue = loteTotalBaseValue + cltLoteValue;
-        finalQty = loteTotalQty + cltLoteQty;
-      }
-
-      // Apply Tax Rate to the accumulated base value for this lote
-      const taxRate = getMonthlyAppConfig(monthKey).taxRate;
-      const valueWithTax = finalValue * (1 + (taxRate / 100));
-
-      // Calculate Index: Total Days / Total Occupied Room Nights in Lote
-      const sectorIndex = loteOccupancy > 0 ? (finalQty / loteOccupancy) : 0;
-
-      return {
-        loteId: lote.id,
-        value: valueWithTax,
-        qty: finalQty,
-        index: sectorIndex
-      };
+      return { sectorName: sector.name, loteValues, totalSectorValue, totalSectorQty, totalSectorIndex };
     });
+  };
 
-    const totalSectorValue = loteValues.reduce((acc, curr) => acc + curr.value, 0);
-    const totalSectorQty = loteValues.reduce((acc, curr) => acc + curr.qty, 0);
-    // For total index, we need total occupancy of the month (sum of all lotes occupancy)
-    const monthTotalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
-    const totalSectorIndex = monthTotalOccupancy > 0 ? (totalSectorQty / monthTotalOccupancy) : 0;
-
-    return {
-      sectorName: sector.name,
-      loteValues,
-      totalSectorValue,
-      totalSectorQty,
-      totalSectorIndex
-    };
-  });
+  const financialMatrix = calculateMatrix(filteredSectors);
+  const fullExtrasMatrix = calculateMatrix(sectors, 'extras');
 
   const loteTotals = lotes.map(lote => {
     return financialMatrix.reduce((acc, row) => {
@@ -985,21 +969,21 @@ export const Indicators: React.FC = () => {
           <table className="w-full text-sm text-right">
             <thead className="bg-[#F8981C]/5 text-[#F8981C] text-xs font-bold uppercase">
               <tr>
-                <th className="p-3 border-r border-slate-200 text-left">Setor</th>
+                <th className="p-3 border-r border-slate-200 text-left w-32 min-w-[120px]">Setor</th>
                 <th className="p-3 border-r border-slate-200">Real (R$)</th>
-                <th className="p-3 border-r border-slate-200 text-slate-500">Meta Original</th>
+                <th className="p-3 border-r border-slate-200 text-slate-500 font-normal">Meta Original</th>
                 <th className="p-3 border-r border-slate-200">Meta Ajustada</th>
                 <th className="p-3 border-r border-slate-200">Dif. Valor</th>
                 <th className="p-3">%</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {financialMatrix.map((row, idx) => {
+              {fullExtrasMatrix.map((row, idx) => {
                 const sectorObj = sectors.find(s => s.name === row.sectorName);
                 if (!sectorObj) return null;
 
                 const budget = getMonthlyAppConfig(monthKey).standardHourRate > 0
-                  ? useApp().getMonthlyBudget(sectorObj.id, monthKey)
+                  ? getMonthlyBudget(sectorObj.id, monthKey)
                   : { budgetValue: 0 };
 
                 // Budget in Admin already exists, but we need to factor in tax for comparison with "Real"
@@ -1018,11 +1002,11 @@ export const Indicators: React.FC = () => {
 
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
-                    <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
+                    <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800 w-32 min-w-[120px] truncate" title={row.sectorName}>{row.sectorName}</td>
                     <td className="p-3 border-r border-slate-200 font-bold text-slate-700">
                       R$ {realValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                     </td>
-                    <td className="p-3 border-r border-slate-200 text-slate-400">
+                    <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">
                       R$ {originalMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                     </td>
                     <td className="p-3 border-r border-slate-200 font-bold text-[#155645] bg-green-50/20">
@@ -1045,7 +1029,7 @@ export const Indicators: React.FC = () => {
                 let totalOriginal = 0;
                 let totalAdjusted = 0;
 
-                financialMatrix.forEach(row => {
+                fullExtrasMatrix.forEach(row => {
                   const sectorObj = sectors.find(s => s.name === row.sectorName);
                   if (!sectorObj) return;
 
@@ -1066,7 +1050,7 @@ export const Indicators: React.FC = () => {
 
                 return (
                   <tr>
-                    <td className="p-3 border-r border-slate-200 text-left">TOTAL MENSAL</td>
+                    <td className="p-3 border-r border-slate-200 text-left w-32">TOTAL MENSAL</td>
                     <td className="p-3 border-r border-slate-200">R$ {totalReal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                     <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">R$ {totalOriginal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                     <td className="p-3 border-r border-slate-200 text-[#155645]">R$ {totalAdjusted.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
