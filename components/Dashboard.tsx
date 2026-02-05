@@ -623,7 +623,8 @@ export const Dashboard: React.FC = () => {
                 <th className="p-4">Função</th>
                 <th className="p-4 text-center">Extras</th>
                 <th className="p-4 text-center">Dias</th>
-                <th className="p-4">Solicitante</th>
+                <th className="p-4">Entrada</th>
+                <th className="p-4">Saída</th>
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor Total</th>
                 <th className="p-4 text-center">Status</th>
@@ -641,7 +642,8 @@ export const Dashboard: React.FC = () => {
                   <td className="p-4">{req.functionRole}</td>
                   <td className="p-4 text-center">{req.extrasQty}</td>
                   <td className="p-4 text-center">{req.daysQty}</td>
-                  <td className="p-4 truncate max-w-[150px]" title={req.requestorEmail}>{req.requestorEmail}</td>
+                  <td className="p-4">{req.timeIn}</td>
+                  <td className="p-4">{req.timeOut}</td>
                   <td className="p-4">{req.reason}</td>
                   <td className="p-4 text-right font-bold text-[#155645]">R$ {calculateRequestTotal(req).toLocaleString('pt-BR')}</td>
                   <td className="p-4 text-center">
@@ -659,7 +661,7 @@ export const Dashboard: React.FC = () => {
                           <Edit2 size={14} />
                         </button>
                         <button onClick={() => { if (window.confirm('Excluir esta solicitação permanentemente?')) deleteRequest(req.id); }} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Excluir">
-                          <X size={14} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
