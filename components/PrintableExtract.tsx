@@ -312,7 +312,7 @@ export const PrintableExtract: React.FC = () => {
               Gerente TCF
             </div>
             <div className="border-t border-slate-400 pt-2">
-              Gerência Geral
+              Gerente Geral ou Gerente de Operações
             </div>
           </div>
         </div>
