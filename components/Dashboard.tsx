@@ -19,6 +19,7 @@ export const Dashboard: React.FC = () => {
 
   // Edit State
   const [editingRequest, setEditingRequest] = useState<RequestItem | null>(null);
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const availableLotes = getMonthlyLote(monthKey);
@@ -350,6 +351,38 @@ export const Dashboard: React.FC = () => {
     );
   };
 
+  const DeleteConfirmationModal = ({ id, onConfirm, onClose }: { id: string, onConfirm: () => void, onClose: () => void }) => {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Excluir Solicitação?</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Esta ação não pode ser desfeita. A solicitação será removida permanentemente do sistema.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onConfirm}
+                className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const ChartSection = ({ title, data, color, prefix = '' }: { title: string, data: any[], color: string, prefix?: string }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <h3 className="text-sm font-bold text-[#155645] mb-4 uppercase tracking-wider">{title}</h3>
@@ -660,7 +693,11 @@ export const Dashboard: React.FC = () => {
                         <button onClick={() => setEditingRequest(req)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Editar">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => { if (window.confirm('Excluir esta solicitação permanentemente?')) deleteRequest(req.id); }} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Excluir">
+                        <button
+                          onClick={() => setDeletingRequestId(req.id)}
+                          className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                          title="Excluir"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -670,7 +707,7 @@ export const Dashboard: React.FC = () => {
               ))}
               {filteredRequests.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-12 text-center text-slate-400 italic">
+                  <td colSpan={11} className="p-12 text-center text-slate-400 italic">
                     Nenhuma solicitação encontrada para os filtros selecionados.
                   </td>
                 </tr>
@@ -678,6 +715,18 @@ export const Dashboard: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {deletingRequestId && (
+          <DeleteConfirmationModal
+            id={deletingRequestId}
+            onClose={() => setDeletingRequestId(null)}
+            onConfirm={async () => {
+              const id = deletingRequestId;
+              setDeletingRequestId(null);
+              await deleteRequest(id);
+            }}
+          />
+        )}
       </div>
     </div>
   );

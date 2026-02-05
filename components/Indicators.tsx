@@ -521,43 +521,49 @@ export const Indicators: React.FC = () => {
           </span>
         </h3>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="day" label={{ value: 'Dia', position: 'insideBottom', offset: -5 }} />
-              <Tooltip
-                labelFormatter={(day) => `${day}/${month}/${year}`}
-                formatter={(value: number, name: string) => [
-                  name === 'displayValue' ? (value || 0).toFixed(3) : value,
-                  name === 'displayValue' ? 'Índice' :
-                    name === 'occupiedUH' ? 'UH Ocupada' :
-                      name === 'extrasCount' ? 'Extras' :
-                        name === 'netCltCount' ? 'CLT Ativo' :
-                          name === 'totalHeadcount' ? 'Total Pessoas' : name
-                ]}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
-                <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
-              </Line>
-              {activeMoTarget > 0 && (
-                <ReferenceLine
-                  y={activeMoTarget}
-                  stroke="#F8981C"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  label={{
-                    value: `Meta: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
-                    position: 'insideLeft',
-                    fill: '#F8981C',
-                    fontSize: 10,
-                    fontWeight: 'bold',
-                    dy: -10
-                  }}
+          {dailyData && dailyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="day" label={{ value: 'Dia', position: 'insideBottom', offset: -5 }} />
+                <Tooltip
+                  labelFormatter={(day) => `${day}/${month}/${year}`}
+                  formatter={(value: number, name: string) => [
+                    name === 'displayValue' ? (value || 0).toFixed(3) : value,
+                    name === 'displayValue' ? 'Índice' :
+                      name === 'occupiedUH' ? 'UH Ocupada' :
+                        name === 'extrasCount' ? 'Extras' :
+                          name === 'netCltCount' ? 'CLT Ativo' :
+                            name === 'totalHeadcount' ? 'Total Pessoas' : name
+                  ]}
                 />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
+                <Legend />
+                <Line type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
+                  <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
+                </Line>
+                {activeMoTarget > 0 && (
+                  <ReferenceLine
+                    y={activeMoTarget}
+                    stroke="#F8981C"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: `Meta: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
+                      position: 'insideLeft',
+                      fill: '#F8981C',
+                      fontSize: 10,
+                      fontWeight: 'bold',
+                      dy: -10
+                    }}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-slate-400">
+              Nenhum dado disponível para exibir
+            </div>
+          )}
         </div>
       </div>
 
