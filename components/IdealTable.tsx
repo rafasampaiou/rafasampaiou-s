@@ -712,7 +712,7 @@ export const IdealTable: React.FC = () => {
                   <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.diffValue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
-                      R$ {row.diffValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {row.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                     </span>
                   </td>
                   <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
@@ -739,7 +739,7 @@ export const IdealTable: React.FC = () => {
                 </td>
                 <td className="p-2 text-center border border-slate-300">
                   <span className={totals.diffValue <= 0 ? 'text-green-600' : 'text-red-600'}>
-                    R$ {totals.diffValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {totals.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                   </span>
                 </td>
                 <td className="p-2 text-center border border-slate-300">
