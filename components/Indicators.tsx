@@ -975,6 +975,114 @@ export const Indicators: React.FC = () => {
           </table>
         </div>
       </div>
+      {/* Flexible Budget Comparison Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="text-sm font-bold text-slate-800">Extraordinário por Setor Real x Meta</h3>
+          <p className="text-[10px] text-slate-500">Orçamento flexível de acordo com a ocupação (Desvio: {config.occupancyDeviation || 0}%)</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-right">
+            <thead className="bg-[#F8981C]/5 text-[#F8981C] text-xs font-bold uppercase">
+              <tr>
+                <th className="p-3 border-r border-slate-200 text-left">Setor</th>
+                <th className="p-3 border-r border-slate-200">Real (R$)</th>
+                <th className="p-3 border-r border-slate-200 text-slate-500">Meta Original</th>
+                <th className="p-3 border-r border-slate-200">Meta Ajustada</th>
+                <th className="p-3 border-r border-slate-200">Dif. Valor</th>
+                <th className="p-3">%</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {financialMatrix.map((row, idx) => {
+                const sectorObj = sectors.find(s => s.name === row.sectorName);
+                if (!sectorObj) return null;
+
+                const budget = getMonthlyAppConfig(monthKey).standardHourRate > 0
+                  ? useApp().getMonthlyBudget(sectorObj.id, monthKey)
+                  : { budgetValue: 0 };
+
+                // Budget in Admin already exists, but we need to factor in tax for comparison with "Real"
+                const taxRate = config.taxRate || 0;
+                const originalMeta = budget.budgetValue * (1 + (taxRate / 100));
+
+                const deviation = config.occupancyDeviation || 0;
+                // Rule: If deviation < 0, reduce budget. If > 0, keep original.
+                const adjustedMeta = deviation < 0
+                  ? originalMeta * (1 + (deviation / 100))
+                  : originalMeta;
+
+                const realValue = row.totalSectorValue;
+                const diff = realValue - adjustedMeta;
+                const diffPercent = adjustedMeta > 0 ? (diff / adjustedMeta) * 100 : 0;
+
+                return (
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800">{row.sectorName}</td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-slate-700">
+                      R$ {realValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="p-3 border-r border-slate-200 text-slate-400">
+                      R$ {originalMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-[#155645] bg-green-50/20">
+                      R$ {adjustedMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className={`p-3 border-r border-slate-200 font-bold ${diff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      R$ {diff.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className={`p-3 font-bold ${diff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {diff > 0 ? '+' : ''}{diffPercent.toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {/* Totals Row */}
+            <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
+              {(() => {
+                let totalReal = 0;
+                let totalOriginal = 0;
+                let totalAdjusted = 0;
+
+                financialMatrix.forEach(row => {
+                  const sectorObj = sectors.find(s => s.name === row.sectorName);
+                  if (!sectorObj) return;
+
+                  const budget = useApp().getMonthlyBudget(sectorObj.id, monthKey);
+                  const taxRate = config.taxRate || 0;
+                  const original = budget.budgetValue * (1 + (taxRate / 100));
+
+                  const deviation = config.occupancyDeviation || 0;
+                  const adjusted = deviation < 0 ? original * (1 + (deviation / 100)) : original;
+
+                  totalReal += row.totalSectorValue;
+                  totalOriginal += original;
+                  totalAdjusted += adjusted;
+                });
+
+                const totalDiff = totalReal - totalAdjusted;
+                const totalPercent = totalAdjusted > 0 ? (totalDiff / totalAdjusted) * 100 : 0;
+
+                return (
+                  <tr>
+                    <td className="p-3 border-r border-slate-200 text-left">TOTAL MENSAL</td>
+                    <td className="p-3 border-r border-slate-200">R$ {totalReal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">R$ {totalOriginal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td className="p-3 border-r border-slate-200 text-[#155645]">R$ {totalAdjusted.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td className={`p-3 border-r border-slate-200 ${totalDiff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      R$ {totalDiff.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className={totalDiff <= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {totalDiff > 0 ? '+' : ''}{totalPercent.toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })()}
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
