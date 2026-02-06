@@ -134,10 +134,15 @@ export const AdminPanel: React.FC = () => {
     setOccupiedUhRealInput(currentAppConfig.occupiedUhReal !== undefined ? currentAppConfig.occupiedUhReal.toString() : '');
     setOccupiedUhMetaInput(currentAppConfig.occupiedUhMeta !== undefined ? currentAppConfig.occupiedUhMeta.toString() : '');
   }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, currentAppConfig.occupiedUhReal, currentAppConfig.occupiedUhMeta, selectedMonth]);
-
   const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal' | 'occupancyDeviation' | 'occupiedUhReal' | 'occupiedUhMeta', inputVal: string) => {
     const newVal = parseFloat(inputVal.replace(',', '.')) || 0;
     const currentVal = currentAppConfig[field];
+
+    // Debug saving
+    if (field === 'occupiedUhReal' || field === 'occupiedUhMeta') {
+      console.log(`[PAX Debug] Saving ${field}: ${newVal} (previous: ${currentVal})`);
+    }
+
     // Update config for the SPECIFIC input month, not the global one
     if (newVal !== currentVal) {
       updateMonthlyAppConfig({ ...currentAppConfig, [field]: newVal });

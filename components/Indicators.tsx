@@ -1019,18 +1019,24 @@ export const Indicators: React.FC = () => {
                 const taxRate = config.taxRate || 0;
                 const originalMeta = budget.budgetValue * (1 + (taxRate / 100));
 
-                const devCalc = (config.occupiedUhMeta || 0) > 0
-                  ? ((config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0)) - 1
+                // Calcule o desvio de PAX (UH)
+                // Só aplicamos o desvio se houver Meta E Real preenchidos (maiores que 0)
+                const hasPaxInputs = (config.occupiedUhMeta || 0) > 0 && (config.occupiedUhReal || 0) > 0;
+                const dev = hasPaxInputs
+                  ? (config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0) - 1
                   : 0;
 
-                // Rule: If deviation < 0, reduce budget. If >= 0, keep original meta.
-                const adjustedMeta = devCalc < 0
-                  ? originalMeta * (1 + devCalc)
-                  : originalMeta;
+                // Se o desvio for negativo (menos gente que a meta), reduz a meta de índice proporcionalmente
+                // Se não houver desvio (ou for positivo), mantém a meta base original
+                const adjustedMeta = (dev < 0) ? originalMeta * (1 + dev) : originalMeta;
+
+                // Fallback: se o adjustedMeta final for zero mas o originalMeta era > 0, algo está errado no cálculo do desvio,
+                // então mostramos o originalMeta para a linha não sumir.
+                const finalAdjustedMeta = adjustedMeta > 0 ? adjustedMeta : originalMeta;
 
                 const realValue = row.totalSectorValue;
-                const diff = realValue - adjustedMeta;
-                const diffPercent = adjustedMeta > 0 ? (diff / adjustedMeta) * 100 : 0;
+                const diff = realValue - finalAdjustedMeta;
+                const diffPercent = finalAdjustedMeta > 0 ? (diff / finalAdjustedMeta) * 100 : 0;
 
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
