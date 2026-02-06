@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context';
-import { Settings, Edit3, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock, Users, Key } from 'lucide-react';
+import { Settings, Activity, Database, Download, Plus, Trash2, Save, Sliders, Briefcase, Building2, Lock, Unlock, Users, Key } from 'lucide-react';
 import { MonthlyBudget, LoteConfig, UserRole } from '../types';
 
 interface BudgetCellProps {
@@ -72,7 +72,7 @@ export const AdminPanel: React.FC = () => {
     localStorage.setItem('adminSelectedMonth', selectedMonth);
   }, [selectedMonth]);
 
-  // Occupancy State
+  // PAX State
   const [occupancyYear, setOccupancyYear] = useState(new Date().getFullYear());
   const [gridData, setGridData] = useState<Record<string, { lazer: string, eventos: string, total: string }>>({});
 
@@ -430,8 +430,8 @@ export const AdminPanel: React.FC = () => {
           className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'occupancy' ? 'border-[#F8981C] text-[#155645]' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
         >
-          <Edit3 size={16} />
-          Ocupação
+          <Activity size={16} />
+          Tabela de PAX
         </button>
         <button
           onClick={() => setActiveTab('general')}
@@ -721,7 +721,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex items-center gap-6">
-                <h3 className="text-lg font-bold text-slate-800">Tabela de Ocupação ({occupancyYear})</h3>
+                <h3 className="text-lg font-bold text-slate-800">Tabela de PAX ({occupancyYear})</h3>
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-slate-600">Ano:</label>
                   <select
@@ -735,7 +735,7 @@ export const AdminPanel: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
-                  <Save size={16} /> Salvar Ocupação
+                  <Save size={16} /> Salvar PAX
                 </button>
               </div>
             </div>

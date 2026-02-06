@@ -145,10 +145,17 @@ export const Indicators: React.FC = () => {
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
   const activeMoTarget = useMemo(() => {
-    if (chartMetric === 'extras') return config.moTargetExtra || config.moTarget || 0;
-    if (chartMetric === 'clt') return config.moTargetClt || 0;
-    if (chartMetric === 'total') return config.moTargetTotal || 0;
-    return 0;
+    let base = 0;
+    if (chartMetric === 'extras') base = config.moTargetExtra || config.moTarget || 0;
+    else if (chartMetric === 'clt') base = config.moTargetClt || 0;
+    else if (chartMetric === 'total') base = config.moTargetTotal || 0;
+
+    const dev = (config.occupiedUhMeta || 0) > 0
+      ? (config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0) - 1
+      : 0;
+
+    // If occupancy is lower than meta (dev < 0), reduce the index target proportionally
+    return dev < 0 ? base * (1 + dev) : base;
   }, [chartMetric, config]);
 
   // Debounced WFO saving is now replaced by WfoCell (onBlur saving)
