@@ -791,15 +791,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateMonthlyAppConfig = async (config: MonthlyAppConfig) => {
     const { error } = await supabase.from('monthly_app_configs').upsert({
       month_key: config.monthKey,
-      standard_hour_rate: config.standardHourRate,
-      tax_rate: config.taxRate,
-      mo_target: config.moTarget,
-      mo_target_extra: config.moTargetExtra || 0,
-      mo_target_clt: config.moTargetClt || 0,
-      mo_target_total: config.moTargetTotal || 0,
-      occupancy_deviation: config.occupancyDeviation || 0,
-      occupied_uh_real: config.occupiedUhReal || 0,
-      occupied_uh_meta: config.occupiedUhMeta || 0
+      standard_hour_rate: Number(config.standardHourRate || 0),
+      tax_rate: Number(config.taxRate || 0),
+      mo_target: Number(config.moTarget || 0),
+      mo_target_extra: Number(config.moTargetExtra || 0),
+      mo_target_clt: Number(config.moTargetClt || 0),
+      mo_target_total: Number(config.moTargetTotal || 0),
+      occupancy_deviation: Number(config.occupancyDeviation || 0),
+      occupied_uh_real: Number(config.occupiedUhReal || 0),
+      occupied_uh_meta: Number(config.occupiedUhMeta || 0)
     }, { onConflict: 'month_key' });
 
     if (!error) {

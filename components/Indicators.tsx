@@ -150,12 +150,20 @@ export const Indicators: React.FC = () => {
     else if (chartMetric === 'clt') base = config.moTargetClt || 0;
     else if (chartMetric === 'total') base = config.moTargetTotal || 0;
 
-    const dev = (config.occupiedUhMeta || 0) > 0
+    // Calcule o desvio de PAX (UH)
+    // Só aplicamos o desvio se houver Meta E Real preenchidos (maiores que 0)
+    const hasPaxInputs = (config.occupiedUhMeta || 0) > 0 && (config.occupiedUhReal || 0) > 0;
+    const dev = hasPaxInputs
       ? (config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0) - 1
       : 0;
 
-    // If occupancy is lower than meta (dev < 0), reduce the index target proportionally
-    return dev < 0 ? base * (1 + dev) : base;
+    // Se o desvio for negativo (menos gente que a meta), reduz a meta de índice proporcionalmente
+    // Se não houver desvio (ou for positivo), mantém a meta base original
+    const target = (dev < 0) ? base * (1 + dev) : base;
+
+    // Fallback: se o target final for zero mas o base era > 0, algo está errado no cálculo do desvio,
+    // então mostramos o base para a linha não sumir.
+    return target > 0 ? target : base;
   }, [chartMetric, config]);
 
   // Debounced WFO saving is now replaced by WfoCell (onBlur saving)
