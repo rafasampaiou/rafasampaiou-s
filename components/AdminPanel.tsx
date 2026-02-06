@@ -126,13 +126,13 @@ export const AdminPanel: React.FC = () => {
   // Sync MO Target from store to local state when targeted month changes
   const currentAppConfig = getMonthlyAppConfig(selectedMonth);
   useEffect(() => {
-    setMoTargetInput(currentAppConfig.moTarget ? currentAppConfig.moTarget.toString() : '');
-    setMoTargetExtraInput(currentAppConfig.moTargetExtra ? currentAppConfig.moTargetExtra.toString() : '');
-    setMoTargetCltInput(currentAppConfig.moTargetClt ? currentAppConfig.moTargetClt.toString() : '');
-    setMoTargetTotalInput(currentAppConfig.moTargetTotal ? currentAppConfig.moTargetTotal.toString() : '');
-    setOccupancyDeviationInput(currentAppConfig.occupancyDeviation ? currentAppConfig.occupancyDeviation.toString() : '0');
-    setOccupiedUhRealInput(currentAppConfig.occupiedUhReal ? currentAppConfig.occupiedUhReal.toString() : '');
-    setOccupiedUhMetaInput(currentAppConfig.occupiedUhMeta ? currentAppConfig.occupiedUhMeta.toString() : '');
+    setMoTargetInput(currentAppConfig.moTarget !== undefined ? currentAppConfig.moTarget.toString() : '');
+    setMoTargetExtraInput(currentAppConfig.moTargetExtra !== undefined ? currentAppConfig.moTargetExtra.toString() : '');
+    setMoTargetCltInput(currentAppConfig.moTargetClt !== undefined ? currentAppConfig.moTargetClt.toString() : '');
+    setMoTargetTotalInput(currentAppConfig.moTargetTotal !== undefined ? currentAppConfig.moTargetTotal.toString() : '');
+    setOccupancyDeviationInput(currentAppConfig.occupancyDeviation !== undefined ? currentAppConfig.occupancyDeviation.toString() : '0');
+    setOccupiedUhRealInput(currentAppConfig.occupiedUhReal !== undefined ? currentAppConfig.occupiedUhReal.toString() : '');
+    setOccupiedUhMetaInput(currentAppConfig.occupiedUhMeta !== undefined ? currentAppConfig.occupiedUhMeta.toString() : '');
   }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, currentAppConfig.occupiedUhReal, currentAppConfig.occupiedUhMeta, selectedMonth]);
 
   const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal' | 'occupancyDeviation' | 'occupiedUhReal' | 'occupiedUhMeta', inputVal: string) => {

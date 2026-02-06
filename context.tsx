@@ -766,7 +766,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       moTargetExtra: 0,
       moTargetClt: 0,
       moTargetTotal: 0,
-      occupancyDeviation: 0
+      occupancyDeviation: 0,
+      occupiedUhReal: 0,
+      occupiedUhMeta: 0
     };
   };
 
