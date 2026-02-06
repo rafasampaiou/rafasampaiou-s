@@ -805,8 +805,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) {
       setMonthlyAppConfigs(prev => ({ ...prev, [config.monthKey]: config }));
     } else {
-      console.error('[updateMonthlyAppConfig] Error:', error);
-      alert(`Erro Supabase (${error.code}): ${error.message}\nVerifique se as colunas 'occupied_uh_real' e 'occupied_uh_meta' existem na tabela 'monthly_app_configs'.`);
+      console.error('[updateMonthlyAppConfig] Full Error Object:', error);
+      console.error('[updateMonthlyAppConfig] Error Message:', error.message);
+      console.error('[updateMonthlyAppConfig] Error Hint:', error.hint);
+      console.error('[updateMonthlyAppConfig] Error Details:', error.details);
+      alert(`Erro Supabase (${error.code}): ${error.message}`);
     }
   };
 
