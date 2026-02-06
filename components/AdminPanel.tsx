@@ -507,11 +507,11 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Desvio Ocupação (%)</label>
+            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
+              <label className="text-[10px] font-bold text-orange-900 uppercase">Desvio Ocupação (%)</label>
               <input
                 type="text"
-                className="border border-orange-200 rounded px-3 py-1.5 w-24 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                className="border border-orange-300 rounded px-3 py-1.5 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-black text-orange-800 bg-white shadow-sm text-center text-lg"
                 value={occupancyDeviationInput}
                 onChange={(e) => setOccupancyDeviationInput(e.target.value)}
                 onBlur={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
@@ -520,8 +520,8 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
 
-            <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic border-l border-orange-200 pl-3">
-              Defina as metas e o desvio de ocupação para o mês selecionado. O desvio impacta a "Meta Ajustada" nos indicadores.
+            <div className="text-[10px] text-orange-600 max-w-[180px] leading-tight italic border-l border-orange-200 pl-3">
+              O desvio de ocupação impacta diretamente a "Meta Ajustada" nos indicadores para o mês de {selectedMonth}.
             </div>
           </div>
         )}
@@ -703,34 +703,6 @@ export const AdminPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1 mr-4 bg-white p-2 rounded border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-blue-800 uppercase">Desvio Ocupação ({selectedMonth})</label>
-                    <span className={`text-[10px] font-bold ${parseFloat(occupancyDeviationInput) < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                      {occupancyDeviationInput}%
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="-50"
-                      max="50"
-                      step="1"
-                      className="w-32 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-[#155645]"
-                      value={occupancyDeviationInput}
-                      onChange={(e) => setOccupancyDeviationInput(e.target.value)}
-                      onMouseUp={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
-                      onTouchEnd={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
-                    />
-                    <input
-                      type="text"
-                      className="w-12 text-center text-xs border border-slate-200 rounded px-1 outline-none focus:ring-1 focus:ring-blue-500"
-                      value={occupancyDeviationInput}
-                      onChange={(e) => setOccupancyDeviationInput(e.target.value)}
-                      onBlur={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
-                    />
-                  </div>
-                </div>
                 <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
                   <Save size={16} /> Salvar Ocupação
                 </button>
