@@ -991,10 +991,8 @@ export const Indicators: React.FC = () => {
                 const originalMeta = budget.budgetValue * (1 + (taxRate / 100));
 
                 const deviation = config.occupancyDeviation || 0;
-                // Rule: If deviation < 0, reduce budget. If > 0, keep original.
-                const adjustedMeta = deviation < 0
-                  ? originalMeta * (1 + (deviation / 100))
-                  : originalMeta;
+                // Rule: Adjusted meta follows the occupancy deviation percentage
+                const adjustedMeta = originalMeta * (1 + (deviation / 100));
 
                 const realValue = row.totalSectorValue;
                 const diff = realValue - adjustedMeta;
@@ -1038,7 +1036,7 @@ export const Indicators: React.FC = () => {
                   const original = budget.budgetValue * (1 + (taxRate / 100));
 
                   const deviation = config.occupancyDeviation || 0;
-                  const adjusted = deviation < 0 ? original * (1 + (deviation / 100)) : original;
+                  const adjusted = original * (1 + (deviation / 100));
 
                   totalReal += row.totalSectorValue;
                   totalOriginal += original;

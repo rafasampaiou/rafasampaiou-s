@@ -494,8 +494,21 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
 
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-orange-800 uppercase">Desvio Ocupação (%)</label>
+              <input
+                type="text"
+                className="border border-orange-200 rounded px-3 py-1.5 w-24 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                value={occupancyDeviationInput}
+                onChange={(e) => setOccupancyDeviationInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                placeholder="0"
+              />
+            </div>
+
             <div className="text-[10px] text-orange-600 max-w-[200px] leading-tight italic border-l border-orange-200 pl-3">
-              Defina a meta para o mês selecionado ao lado. Este valor aparecerá como linha laranja no gráfico.
+              Defina as metas e o desvio de ocupação para o mês selecionado. O desvio impacta a "Meta Ajustada" nos indicadores.
             </div>
           </div>
         )}
