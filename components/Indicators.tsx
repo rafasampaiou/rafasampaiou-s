@@ -165,14 +165,6 @@ export const Indicators: React.FC = () => {
     // então mostramos o base para a linha não sumir.
     const finalTarget = target > 0 ? target : base;
 
-    console.log('[Indicators Debug]', {
-      chartMetric,
-      base,
-      moTargetExtra: config.moTargetExtra,
-      hasPaxInputs,
-      dev,
-      finalTarget
-    });
 
     return finalTarget;
   }, [chartMetric, config]);
@@ -549,7 +541,7 @@ export const Indicators: React.FC = () => {
               <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="day" label={{ value: 'Dia', position: 'insideBottom', offset: -5 }} />
-                <YAxis />
+                <YAxis domain={[0, (dataMax: number) => Math.max(dataMax, activeMoTarget * 1.2)]} />
                 <Tooltip
                   labelFormatter={(day) => `${day}/${month}/${year}`}
                   formatter={(value: number, name: string) => [
@@ -571,6 +563,7 @@ export const Indicators: React.FC = () => {
                     stroke="#F8981C"
                     strokeWidth={2}
                     strokeDasharray="5 5"
+                    isFront={true}
                     label={{
                       value: `Meta Índice: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
                       position: 'insideLeft',
