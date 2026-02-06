@@ -523,6 +523,8 @@ export const Indicators: React.FC = () => {
               <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="day" label={{ value: 'Dia', position: 'insideBottom', offset: -5 }} />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
                   labelFormatter={(day) => `${day}/${month}/${year}`}
                   formatter={(value: number, name: string) => [
@@ -535,22 +537,41 @@ export const Indicators: React.FC = () => {
                   ]}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
+                <Line yAxisId="left" type="monotone" dataKey="displayValue" stroke="#155645" strokeWidth={2} name={`Índice (${getMetricLabel()})`} dot={{ r: 4 }}>
                   <LabelList dataKey="displayValue" position="top" style={{ fontSize: '10px', fill: '#666' }} />
                 </Line>
+                <Line yAxisId="right" type="stepAfter" dataKey="occupiedUH" stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" name="UH Ocupada Real" dot={false} />
                 {activeMoTarget > 0 && (
                   <ReferenceLine
+                    yAxisId="left"
                     y={activeMoTarget}
                     stroke="#F8981C"
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     label={{
-                      value: `Meta: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
+                      value: `Meta Índice: ${activeMoTarget.toFixed(2).replace('.', ',')}`,
                       position: 'insideLeft',
                       fill: '#F8981C',
                       fontSize: 10,
                       fontWeight: 'bold',
                       dy: -10
+                    }}
+                  />
+                )}
+                {(config.occupiedUhMeta || 0) > 0 && (
+                  <ReferenceLine
+                    yAxisId="right"
+                    y={config.occupiedUhMeta}
+                    stroke="#3b82f6"
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                    label={{
+                      value: `Meta UH: ${config.occupiedUhMeta}`,
+                      position: 'insideRight',
+                      fill: '#3b82f6',
+                      fontSize: 10,
+                      fontWeight: 'bold',
+                      dy: 10
                     }}
                   />
                 )}
