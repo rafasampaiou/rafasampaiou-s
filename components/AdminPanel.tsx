@@ -512,19 +512,6 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
-              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Meta</label>
-              <input
-                type="text"
-                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
-                value={occupiedUhMetaInput}
-                onChange={(e) => setOccupiedUhMetaInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('occupiedUhMeta', occupiedUhMetaInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
               <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Real</label>
               <input
                 type="text"
@@ -532,6 +519,19 @@ export const AdminPanel: React.FC = () => {
                 value={occupiedUhRealInput}
                 onChange={(e) => setOccupiedUhRealInput(e.target.value)}
                 onBlur={() => handleMoTargetBlur('occupiedUhReal', occupiedUhRealInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
+              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Meta</label>
+              <input
+                type="text"
+                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
+                value={occupiedUhMetaInput}
+                onChange={(e) => setOccupiedUhMetaInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('occupiedUhMeta', occupiedUhMetaInput)}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="0"
               />
