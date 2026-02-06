@@ -98,6 +98,7 @@ export const AdminPanel: React.FC = () => {
   const [occupancyDeviationInput, setOccupancyDeviationInput] = useState('');
   const [occupiedUhRealInput, setOccupiedUhRealInput] = useState('');
   const [occupiedUhMetaInput, setOccupiedUhMetaInput] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Fetch profiles when tab is active
   useEffect(() => {
@@ -145,7 +146,12 @@ export const AdminPanel: React.FC = () => {
 
     // Update config for the SPECIFIC input month, not the global one
     if (newVal !== currentVal) {
-      updateMonthlyAppConfig({ ...currentAppConfig, [field]: newVal });
+      setSaveError(null); // Clear previous errors
+      updateMonthlyAppConfig({ ...currentAppConfig, [field]: newVal }).then(res => {
+        if (!res.success && res.error) {
+          setSaveError(`Erro ao salvar: ${res.error}`);
+        }
+      });
     }
   };
 
@@ -466,98 +472,107 @@ export const AdminPanel: React.FC = () => {
 
       <div className="p-6 flex-1 flex flex-col">
         {activeTab === 'sectors' && (
-          <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4 w-fit">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Mês de Referência da Meta</label>
-              <input
-                type="month"
-                className="border border-orange-200 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-orange-500 text-orange-800 bg-white shadow-sm"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
-            </div>
+          <div className="flex flex-col gap-4 mb-4">
+            {saveError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">Erro de Salvamento: </strong>
+                <span className="block sm:inline">{saveError}</span>
+                <span className="block text-xs mt-1">Provável causa: Colunas faltando no Supabase. Execute o script de correção no SQL Editor.</span>
+              </div>
+            )}
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 shadow-sm flex flex-col md:flex-row md:items-center gap-4 w-fit">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-orange-800 uppercase">Mês de Referência da Meta</label>
+                <input
+                  type="month"
+                  className="border border-orange-200 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-orange-500 text-orange-800 bg-white shadow-sm"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                />
+              </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH Extra</label>
-              <input
-                type="text"
-                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
-                value={moTargetExtraInput}
-                onChange={(e) => setMoTargetExtraInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('moTargetExtra', moTargetExtraInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0.00"
-              />
-            </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH Extra</label>
+                <input
+                  type="text"
+                  className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                  value={moTargetExtraInput}
+                  onChange={(e) => setMoTargetExtraInput(e.target.value)}
+                  onBlur={() => handleMoTargetBlur('moTargetExtra', moTargetExtraInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  placeholder="0.00"
+                />
+              </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (CLT)</label>
-              <input
-                type="text"
-                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
-                value={moTargetCltInput}
-                onChange={(e) => setMoTargetCltInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('moTargetClt', moTargetCltInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0.00"
-              />
-            </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (CLT)</label>
+                <input
+                  type="text"
+                  className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                  value={moTargetCltInput}
+                  onChange={(e) => setMoTargetCltInput(e.target.value)}
+                  onBlur={() => handleMoTargetBlur('moTargetClt', moTargetCltInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  placeholder="0.00"
+                />
+              </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (Total)</label>
-              <input
-                type="text"
-                className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
-                value={moTargetTotalInput}
-                onChange={(e) => setMoTargetTotalInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('moTargetTotal', moTargetTotalInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0.00"
-              />
-            </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-orange-800 uppercase">Meta MO / UH (Total)</label>
+                <input
+                  type="text"
+                  className="border border-orange-200 rounded px-3 py-1.5 w-32 focus:ring-1 focus:ring-orange-500 outline-none font-bold text-orange-700 bg-white shadow-sm text-center"
+                  value={moTargetTotalInput}
+                  onChange={(e) => setMoTargetTotalInput(e.target.value)}
+                  onBlur={() => handleMoTargetBlur('moTargetTotal', moTargetTotalInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  placeholder="0.00"
+                />
+              </div>
 
-            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
-              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Real</label>
-              <input
-                type="text"
-                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
-                value={occupiedUhRealInput}
-                onChange={(e) => setOccupiedUhRealInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('occupiedUhReal', occupiedUhRealInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0"
-              />
-            </div>
+              <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
+                <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Real</label>
+                <input
+                  type="text"
+                  className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
+                  value={occupiedUhRealInput}
+                  onChange={(e) => setOccupiedUhRealInput(e.target.value)}
+                  onBlur={() => handleMoTargetBlur('occupiedUhReal', occupiedUhRealInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  placeholder="0"
+                />
+              </div>
 
-            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
-              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Meta</label>
-              <input
-                type="text"
-                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
-                value={occupiedUhMetaInput}
-                onChange={(e) => setOccupiedUhMetaInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('occupiedUhMeta', occupiedUhMetaInput)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                placeholder="0"
-              />
-            </div>
+              <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
+                <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Meta</label>
+                <input
+                  type="text"
+                  className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
+                  value={occupiedUhMetaInput}
+                  onChange={(e) => setOccupiedUhMetaInput(e.target.value)}
+                  onBlur={() => handleMoTargetBlur('occupiedUhMeta', occupiedUhMetaInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  placeholder="0"
+                />
+              </div>
 
-            {(() => {
-              const meta = parseFloat(occupiedUhMetaInput) || 0;
-              const real = parseFloat(occupiedUhRealInput) || 0;
-              const dev = meta > 0 ? ((real / meta) - 1) * 100 : 0;
-              return (
-                <div className="flex flex-col gap-1 items-center bg-white p-2 rounded-lg border border-orange-200 shadow-sm min-w-[100px]">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Desvio Calc.</label>
-                  <span className={`text-lg font-black ${dev < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                    {dev > 0 ? '+' : ''}{dev.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            })()}
+              {(() => {
+                const meta = parseFloat(occupiedUhMetaInput) || 0;
+                const real = parseFloat(occupiedUhRealInput) || 0;
+                const dev = meta > 0 ? ((real / meta) - 1) * 100 : 0;
+                return (
+                  <div className="flex flex-col gap-1 items-center bg-white p-2 rounded-lg border border-orange-200 shadow-sm min-w-[100px]">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Desvio Calc.</label>
+                    <span className={`text-lg font-black ${dev < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                      {dev > 0 ? '+' : ''}{dev.toFixed(1)}%
+                    </span>
+                  </div>
+                );
+              })()}
 
-            <div className="text-[10px] text-orange-600 max-w-[150px] leading-tight italic border-l border-orange-200 pl-3">
-              O desvio é calculado automaticamente (Real / Meta). Se for negativo, reduz o orçamento nos indicadores.
+              <div className="text-[10px] text-orange-600 max-w-[150px] leading-tight italic border-l border-orange-200 pl-3">
+                O desvio é calculado automaticamente (Real / Meta). Se for negativo, reduz o orçamento nos indicadores.
+              </div>
             </div>
           </div>
         )}

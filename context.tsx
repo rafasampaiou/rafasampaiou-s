@@ -44,7 +44,7 @@ interface AppContextType {
   updateSystemConfig: (config: SystemConfig) => void;
   // Monthly Configs
   getMonthlyAppConfig: (monthKey: string) => MonthlyAppConfig;
-  updateMonthlyAppConfig: (config: MonthlyAppConfig) => void;
+  updateMonthlyAppConfig: (config: MonthlyAppConfig) => Promise<{ success: boolean; error?: string }>;
   calculateRequestTotal: (req: Partial<RequestItem>) => number;
   specialRoles: SpecialRole[];
   addSpecialRole: (name: string, rate: number) => void;
@@ -804,12 +804,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (!error) {
       setMonthlyAppConfigs(prev => ({ ...prev, [config.monthKey]: config }));
+      return { success: true };
     } else {
       console.error('[updateMonthlyAppConfig] Full Error Object:', error);
       console.error('[updateMonthlyAppConfig] Error Message:', error.message);
-      console.error('[updateMonthlyAppConfig] Error Hint:', error.hint);
-      console.error('[updateMonthlyAppConfig] Error Details:', error.details);
-      alert(`Erro Supabase (${error.code}): ${error.message}`);
+      return { success: false, error: error.message };
     }
   };
 

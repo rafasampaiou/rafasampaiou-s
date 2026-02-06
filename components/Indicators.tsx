@@ -163,7 +163,18 @@ export const Indicators: React.FC = () => {
 
     // Fallback: se o target final for zero mas o base era > 0, algo está errado no cálculo do desvio,
     // então mostramos o base para a linha não sumir.
-    return target > 0 ? target : base;
+    const finalTarget = target > 0 ? target : base;
+
+    console.log('[Indicators Debug]', {
+      chartMetric,
+      base,
+      moTargetExtra: config.moTargetExtra,
+      hasPaxInputs,
+      dev,
+      finalTarget
+    });
+
+    return finalTarget;
   }, [chartMetric, config]);
 
   // Debounced WFO saving is now replaced by WfoCell (onBlur saving)
