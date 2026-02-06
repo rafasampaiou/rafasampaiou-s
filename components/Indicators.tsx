@@ -121,8 +121,21 @@ export const Indicators: React.FC = () => {
     systemConfig, getMonthlyAppConfig, calculateRequestTotal,
     getMonthlyBudget
   } = useApp();
-  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
-  const [selectedMonth, setSelectedMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+  const [selectedYear, setSelectedYear] = useState(() => {
+    return localStorage.getItem('indicatorsSelectedYear') || String(new Date().getFullYear());
+  });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    return localStorage.getItem('indicatorsSelectedMonth') || String(new Date().getMonth() + 1).padStart(2, '0');
+  });
+
+  // Persist selections
+  useEffect(() => {
+    localStorage.setItem('indicatorsSelectedYear', selectedYear);
+  }, [selectedYear]);
+
+  useEffect(() => {
+    localStorage.setItem('indicatorsSelectedMonth', selectedMonth);
+  }, [selectedMonth]);
   const [selectedSector, setSelectedSector] = useState('Todos');
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');

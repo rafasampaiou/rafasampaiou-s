@@ -56,7 +56,21 @@ export const AdminPanel: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('sectors');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+
+  // Use local time for initial month to avoid UTC issues
+  const getInitialMonth = () => {
+    const saved = localStorage.getItem('adminSelectedMonth');
+    if (saved) return saved;
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const [selectedMonth, setSelectedMonth] = useState(getInitialMonth);
+
+  // Persist selectedMonth
+  useEffect(() => {
+    localStorage.setItem('adminSelectedMonth', selectedMonth);
+  }, [selectedMonth]);
 
   // Occupancy State
   const [occupancyYear, setOccupancyYear] = useState(new Date().getFullYear());
@@ -77,7 +91,6 @@ export const AdminPanel: React.FC = () => {
   const [userMsg, setUserMsg] = useState('');
 
   // Local state for MO Target input
-  const [moTargetMonth, setMoTargetMonth] = useState(new Date().toISOString().slice(0, 7));
   const [moTargetInput, setMoTargetInput] = useState('');
   const [moTargetExtraInput, setMoTargetExtraInput] = useState('');
   const [moTargetCltInput, setMoTargetCltInput] = useState('');
@@ -109,14 +122,14 @@ export const AdminPanel: React.FC = () => {
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
   // Sync MO Target from store to local state when targeted month changes
-  const currentAppConfig = getMonthlyAppConfig(moTargetMonth);
+  const currentAppConfig = getMonthlyAppConfig(selectedMonth);
   useEffect(() => {
     setMoTargetInput(currentAppConfig.moTarget ? currentAppConfig.moTarget.toString() : '');
     setMoTargetExtraInput(currentAppConfig.moTargetExtra ? currentAppConfig.moTargetExtra.toString() : '');
     setMoTargetCltInput(currentAppConfig.moTargetClt ? currentAppConfig.moTargetClt.toString() : '');
     setMoTargetTotalInput(currentAppConfig.moTargetTotal ? currentAppConfig.moTargetTotal.toString() : '');
     setOccupancyDeviationInput(currentAppConfig.occupancyDeviation ? currentAppConfig.occupancyDeviation.toString() : '0');
-  }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, moTargetMonth]);
+  }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, selectedMonth]);
 
   const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal' | 'occupancyDeviation', inputVal: string) => {
     const newVal = parseFloat(inputVal.replace(',', '.')) || 0;
@@ -450,8 +463,8 @@ export const AdminPanel: React.FC = () => {
               <input
                 type="month"
                 className="border border-orange-200 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-orange-500 text-orange-800 bg-white shadow-sm"
-                value={moTargetMonth}
-                onChange={(e) => setMoTargetMonth(e.target.value)}
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
               />
             </div>
 
@@ -692,7 +705,7 @@ export const AdminPanel: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1 mr-4 bg-white p-2 rounded border border-blue-200">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-blue-800 uppercase">Desvio Ocupação ({moTargetMonth})</label>
+                    <label className="text-[10px] font-bold text-blue-800 uppercase">Desvio Ocupação ({selectedMonth})</label>
                     <span className={`text-[10px] font-bold ${parseFloat(occupancyDeviationInput) < 0 ? 'text-red-500' : 'text-green-600'}`}>
                       {occupancyDeviationInput}%
                     </span>

@@ -794,7 +794,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       mo_target_clt: config.moTargetClt || 0,
       mo_target_total: config.moTargetTotal || 0,
       occupancy_deviation: config.occupancyDeviation || 0
-    });
+    }, { onConflict: 'month_key' });
 
     if (!error) {
       setMonthlyAppConfigs(prev => ({ ...prev, [config.monthKey]: config }));
