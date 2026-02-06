@@ -251,7 +251,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             moTargetExtra: Number(c.mo_target_extra || 0),
             moTargetClt: Number(c.mo_target_clt || 0),
             moTargetTotal: Number(c.mo_target_total || 0),
-            occupancyDeviation: Number(c.occupancy_deviation || 0)
+            occupancyDeviation: Number(c.occupancy_deviation || 0),
+            occupiedUhReal: Number(c.occupied_uh_real || 0),
+            occupiedUhMeta: Number(c.occupied_uh_meta || 0)
           };
         });
         setMonthlyAppConfigs(configMap);
@@ -793,7 +795,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       mo_target_extra: config.moTargetExtra || 0,
       mo_target_clt: config.moTargetClt || 0,
       mo_target_total: config.moTargetTotal || 0,
-      occupancy_deviation: config.occupancyDeviation || 0
+      occupancy_deviation: config.occupancyDeviation || 0,
+      occupied_uh_real: config.occupiedUhReal || 0,
+      occupied_uh_meta: config.occupiedUhMeta || 0
     }, { onConflict: 'month_key' });
 
     if (!error) {

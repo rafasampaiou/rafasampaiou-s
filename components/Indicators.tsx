@@ -1003,9 +1003,14 @@ export const Indicators: React.FC = () => {
                 const taxRate = config.taxRate || 0;
                 const originalMeta = budget.budgetValue * (1 + (taxRate / 100));
 
-                const deviation = config.occupancyDeviation || 0;
-                // Rule: Adjusted meta follows the occupancy deviation percentage
-                const adjustedMeta = originalMeta * (1 + (deviation / 100));
+                const devCalc = (config.occupiedUhMeta || 0) > 0
+                  ? ((config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0)) - 1
+                  : 0;
+
+                // Rule: If deviation < 0, reduce budget. If >= 0, keep original meta.
+                const adjustedMeta = devCalc < 0
+                  ? originalMeta * (1 + devCalc)
+                  : originalMeta;
 
                 const realValue = row.totalSectorValue;
                 const diff = realValue - adjustedMeta;
@@ -1048,8 +1053,11 @@ export const Indicators: React.FC = () => {
                   const taxRate = config.taxRate || 0;
                   const original = budget.budgetValue * (1 + (taxRate / 100));
 
-                  const deviation = config.occupancyDeviation || 0;
-                  const adjusted = original * (1 + (deviation / 100));
+                  const devCalc = (config.occupiedUhMeta || 0) > 0
+                    ? ((config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0)) - 1
+                    : 0;
+
+                  const adjusted = devCalc < 0 ? original * (1 + devCalc) : original;
 
                   totalReal += row.totalSectorValue;
                   totalOriginal += original;

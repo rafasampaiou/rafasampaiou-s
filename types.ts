@@ -132,5 +132,7 @@ export interface MonthlyAppConfig {
   moTargetExtra?: number; // Meta de MO / UH Extra
   moTargetClt?: number; // Meta de MO / UH (Quadro CLT)
   moTargetTotal?: number; // Meta de MO / UH (Total)
-  occupancyDeviation?: number; // NEW: Desvio da ocupação em relação a meta (% -50 a +50)
+  occupancyDeviation?: number; // Legacy: Desvio da ocupação em relação a meta (% -50 a +50)
+  occupiedUhReal?: number; // UH Ocupada Real (Manual)
+  occupiedUhMeta?: number; // UH Ocupada Meta (Manual)
 }

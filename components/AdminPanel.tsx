@@ -96,6 +96,8 @@ export const AdminPanel: React.FC = () => {
   const [moTargetCltInput, setMoTargetCltInput] = useState('');
   const [moTargetTotalInput, setMoTargetTotalInput] = useState('');
   const [occupancyDeviationInput, setOccupancyDeviationInput] = useState('');
+  const [occupiedUhRealInput, setOccupiedUhRealInput] = useState('');
+  const [occupiedUhMetaInput, setOccupiedUhMetaInput] = useState('');
 
   // Fetch profiles when tab is active
   useEffect(() => {
@@ -129,9 +131,11 @@ export const AdminPanel: React.FC = () => {
     setMoTargetCltInput(currentAppConfig.moTargetClt ? currentAppConfig.moTargetClt.toString() : '');
     setMoTargetTotalInput(currentAppConfig.moTargetTotal ? currentAppConfig.moTargetTotal.toString() : '');
     setOccupancyDeviationInput(currentAppConfig.occupancyDeviation ? currentAppConfig.occupancyDeviation.toString() : '0');
-  }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, selectedMonth]);
+    setOccupiedUhRealInput(currentAppConfig.occupiedUhReal ? currentAppConfig.occupiedUhReal.toString() : '');
+    setOccupiedUhMetaInput(currentAppConfig.occupiedUhMeta ? currentAppConfig.occupiedUhMeta.toString() : '');
+  }, [currentAppConfig.moTarget, currentAppConfig.moTargetExtra, currentAppConfig.moTargetClt, currentAppConfig.moTargetTotal, currentAppConfig.occupancyDeviation, currentAppConfig.occupiedUhReal, currentAppConfig.occupiedUhMeta, selectedMonth]);
 
-  const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal' | 'occupancyDeviation', inputVal: string) => {
+  const handleMoTargetBlur = (field: 'moTarget' | 'moTargetExtra' | 'moTargetClt' | 'moTargetTotal' | 'occupancyDeviation' | 'occupiedUhReal' | 'occupiedUhMeta', inputVal: string) => {
     const newVal = parseFloat(inputVal.replace(',', '.')) || 0;
     const currentVal = currentAppConfig[field];
     // Update config for the SPECIFIC input month, not the global one
@@ -508,20 +512,47 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
-              <label className="text-[10px] font-bold text-orange-900 uppercase">Desvio Ocupação (%)</label>
+              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Meta</label>
               <input
                 type="text"
-                className="border border-orange-300 rounded px-3 py-1.5 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-black text-orange-800 bg-white shadow-sm text-center text-lg"
-                value={occupancyDeviationInput}
-                onChange={(e) => setOccupancyDeviationInput(e.target.value)}
-                onBlur={() => handleMoTargetBlur('occupancyDeviation', occupancyDeviationInput)}
+                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
+                value={occupiedUhMetaInput}
+                onChange={(e) => setOccupiedUhMetaInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('occupiedUhMeta', occupiedUhMetaInput)}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 placeholder="0"
               />
             </div>
 
-            <div className="text-[10px] text-orange-600 max-w-[180px] leading-tight italic border-l border-orange-200 pl-3">
-              O desvio de ocupação impacta diretamente a "Meta Ajustada" nos indicadores para o mês de {selectedMonth}.
+            <div className="flex flex-col gap-1 items-center bg-orange-100/50 p-2 rounded-lg border border-orange-200 shadow-inner">
+              <label className="text-[10px] font-bold text-orange-900 uppercase">UH Ocupada Real</label>
+              <input
+                type="text"
+                className="border border-orange-300 rounded px-2 py-1 w-24 focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-800 bg-white shadow-sm text-center"
+                value={occupiedUhRealInput}
+                onChange={(e) => setOccupiedUhRealInput(e.target.value)}
+                onBlur={() => handleMoTargetBlur('occupiedUhReal', occupiedUhRealInput)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                placeholder="0"
+              />
+            </div>
+
+            {(() => {
+              const meta = parseFloat(occupiedUhMetaInput) || 0;
+              const real = parseFloat(occupiedUhRealInput) || 0;
+              const dev = meta > 0 ? ((real / meta) - 1) * 100 : 0;
+              return (
+                <div className="flex flex-col gap-1 items-center bg-white p-2 rounded-lg border border-orange-200 shadow-sm min-w-[100px]">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Desvio Calc.</label>
+                  <span className={`text-lg font-black ${dev < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    {dev > 0 ? '+' : ''}{dev.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })()}
+
+            <div className="text-[10px] text-orange-600 max-w-[150px] leading-tight italic border-l border-orange-200 pl-3">
+              O desvio é calculado automaticamente (Real / Meta). Se for negativo, reduz o orçamento nos indicadores.
             </div>
           </div>
         )}
