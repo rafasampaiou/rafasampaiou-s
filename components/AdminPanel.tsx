@@ -288,7 +288,7 @@ export const AdminPanel: React.FC = () => {
     });
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, startColIdx: number, startDay: number) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, monthIdx: number, startDay: number) => {
     e.preventDefault();
     const clipboardData = e.clipboardData.getData('text');
     if (!clipboardData) return;
@@ -298,33 +298,23 @@ export const AdminPanel: React.FC = () => {
     let hasChanges = false;
 
     rows.forEach((rowStr, rowIndex) => {
-      const cols = rowStr.split('\t');
-      cols.forEach((val, colOffset) => {
-        const totalColIdx = startColIdx + colOffset;
-        const day = startDay + rowIndex;
-        if (day > 31) return;
+      const colVal = rowStr.split('\t')[0]; // Just take first column since we are in one-column-per-month mode
+      const day = startDay + rowIndex;
+      if (day > 31) return;
 
-        const monthIdx = Math.floor(totalColIdx / 3);
-        const subColIdx = totalColIdx % 3; // 0=lazer, 1=eventos, 2=total
-        if (monthIdx > 11) return;
-        if (!isValidDate(occupancyYear, monthIdx, day)) return;
+      if (!isValidDate(occupancyYear, monthIdx, day)) return;
 
-        const dateKey = `${occupancyYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const current = newGridData[dateKey] || { lazer: '', eventos: '', total: '' };
-        const cleanVal = val.trim().replace(/[^\d.,]/g, '');
+      const dateKey = `${occupancyYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const current = newGridData[dateKey] || { lazer: '', eventos: '', total: '' };
+      const cleanVal = colVal.trim().replace(/[^\d.,]/g, '');
 
-        if (subColIdx === 0) current.lazer = cleanVal;
-        else if (subColIdx === 1) current.eventos = cleanVal;
-        // subColIdx 2 (Total) is auto-calc
+      current.total = cleanVal;
+      // Also clear lazer/eventos to avoid confusion since they are no longer visible
+      current.lazer = '';
+      current.eventos = '';
 
-        // Recalc Total
-        const l = parseFloat(current.lazer.replace(',', '.')) || 0;
-        const e = parseFloat(current.eventos.replace(',', '.')) || 0;
-        current.total = (l + e).toString();
-
-        newGridData[dateKey] = { ...current };
-        hasChanges = true;
-      });
+      newGridData[dateKey] = { ...current };
+      hasChanges = true;
     });
 
     if (hasChanges) {
@@ -782,18 +772,9 @@ export const AdminPanel: React.FC = () => {
               <table className="w-full text-center border-collapse min-w-[2000px]">
                 <thead className="bg-[#155645] text-white sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th rowSpan={2} className="p-3 text-xs uppercase border border-white/20 w-16 sticky left-0 bg-[#155645] z-20">Dia</th>
+                    <th className="p-3 text-xs uppercase border border-white/20 w-16 sticky left-0 bg-[#155645] z-20">Dia</th>
                     {months.map(m => (
-                      <th key={m} colSpan={3} className="p-2 text-xs uppercase border border-white/20">{m}</th>
-                    ))}
-                  </tr>
-                  <tr className="bg-[#104033] sticky top-[41px] z-10 shadow-sm">
-                    {months.map((m, i) => (
-                      <React.Fragment key={`${m}-sub`}>
-                        <th className="p-1 text-[9px] uppercase border border-white/10 w-20">Lazer</th>
-                        <th className="p-1 text-[9px] uppercase border border-white/10 w-20">Eventos</th>
-                        <th className="p-1 text-[9px] uppercase border border-white/10 w-20 bg-[#F8981C]/80">Total</th>
-                      </React.Fragment>
+                      <th key={m} className="p-2 text-xs uppercase border border-white/20 w-32">{m}</th>
                     ))}
                   </tr>
                 </thead>
@@ -819,27 +800,10 @@ export const AdminPanel: React.FC = () => {
                             <td className="p-0 border-r border-slate-200">
                               <input
                                 type="text"
-                                className="w-full p-1 text-center text-xs outline-none bg-transparent focus:bg-blue-50"
-                                value={vals.lazer}
-                                onChange={(e) => handleGridChange(day, mIdx, 'lazer', e.target.value)}
-                                onPaste={(e) => handlePaste(e, mIdx * 3 + 0, day)}
-                              />
-                            </td>
-                            <td className="p-0 border-r border-slate-200">
-                              <input
-                                type="text"
-                                className="w-full p-1 text-center text-xs outline-none bg-transparent focus:bg-blue-50"
-                                value={vals.eventos}
-                                onChange={(e) => handleGridChange(day, mIdx, 'eventos', e.target.value)}
-                                onPaste={(e) => handlePaste(e, mIdx * 3 + 1, day)}
-                              />
-                            </td>
-                            <td className="p-0 border-r border-slate-200 bg-slate-50/50">
-                              <input
-                                type="text"
-                                className="w-full p-1 text-center text-xs font-bold text-[#155645] outline-none bg-transparent"
+                                className="w-full p-2 text-center text-xs outline-none bg-transparent focus:bg-blue-50"
                                 value={vals.total}
-                                readOnly
+                                onChange={(e) => handleGridChange(day, mIdx, 'total', e.target.value)}
+                                onPaste={(e) => handlePaste(e, mIdx, day)}
                               />
                             </td>
                           </React.Fragment>
@@ -853,13 +817,7 @@ export const AdminPanel: React.FC = () => {
                     <td className="p-2 text-sm bg-slate-200 border-r border-slate-300 sticky left-0 z-20">TOTAL</td>
                     {months.map((_, mIdx) => (
                       <React.Fragment key={`${mIdx}-total`}>
-                        <td className="p-2 border-r border-slate-200 text-[#155645] text-xs">
-                          {monthlyTotals[mIdx].lazer.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-                        </td>
-                        <td className="p-2 border-r border-slate-200 text-[#155645] text-xs">
-                          {monthlyTotals[mIdx].eventos.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-                        </td>
-                        <td className="p-2 border-r border-slate-200 bg-orange-50/50 text-[#F8981C] text-xs">
+                        <td className="p-2 border-r border-slate-200 text-[#F8981C] text-xs">
                           {monthlyTotals[mIdx].total.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
                         </td>
                       </React.Fragment>

@@ -58,7 +58,8 @@ export const PrintableExtract: React.FC = () => {
   // Filter Requests
   const filteredRequests = requests.filter(req => {
     const matchesSector = selectedSector === 'Todos' || req.sector === selectedSector;
-    const matchesDate = req.dateEvent >= startDate && req.dateEvent <= endDate;
+    const reqCreationDate = req.createdAt.split('T')[0];
+    const matchesDate = reqCreationDate >= startDate && reqCreationDate <= endDate;
     // status check: ignore variants of 'Rejeitado'
     const statusLower = (req.status || '').toLowerCase();
     const isActive = statusLower === 'aprovado';
