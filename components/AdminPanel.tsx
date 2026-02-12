@@ -333,17 +333,22 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleSaveOccupancy = () => {
+  const handleSaveOccupancy = async () => {
     const batchToSave: Record<string, { total: number, lazer: number, eventos: number }> = {};
     (Object.entries(gridData) as [string, { lazer: string, eventos: string, total: string }][]).forEach(([key, vals]) => {
       batchToSave[key] = {
-        lazer: parseFloat(vals.lazer.replace(',', '.')) || 0,
-        eventos: parseFloat(vals.eventos.replace(',', '.')) || 0,
-        total: parseFloat(vals.total.replace(',', '.')) || 0
+        lazer: parseFloat(vals.lazer?.replace(',', '.') || '0') || 0,
+        eventos: parseFloat(vals.eventos?.replace(',', '.') || '0') || 0,
+        total: parseFloat(vals.total?.replace(',', '.') || '0') || 0
       };
     });
-    saveOccupancyBatch(batchToSave);
-    alert('Dados de ocupação salvos com sucesso!');
+
+    const result = await saveOccupancyBatch(batchToSave);
+    if (result.success) {
+      alert('Tabela de UH Ocupada salva com sucesso!');
+    } else {
+      alert('Erro ao salvar tabela: ' + (result.error?.message || 'Erro desconhecido'));
+    }
   };
 
   const handleAddRole = () => {
@@ -776,6 +781,7 @@ export const AdminPanel: React.FC = () => {
                     {months.map(m => (
                       <th key={m} className="p-2 text-xs uppercase border border-white/20 w-32">{m}</th>
                     ))}
+                    <th className="p-2 text-xs uppercase border border-white/20 w-32 bg-[#104033]">Total Ano</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -788,27 +794,34 @@ export const AdminPanel: React.FC = () => {
                         const vals = gridData[dateKey] || { lazer: '', eventos: '', total: '0' };
 
                         if (!valid) return (
-                          <React.Fragment key={`${mIdx}-${day}`}>
-                            <td className="bg-slate-100 border-r border-slate-200"></td>
-                            <td className="bg-slate-100 border-r border-slate-200"></td>
-                            <td className="bg-slate-100 border-r border-slate-200"></td>
-                          </React.Fragment>
+                          <td key={`${mIdx}-${day}`} className="bg-slate-100 border-r border-slate-200"></td>
                         );
 
                         return (
-                          <React.Fragment key={`${mIdx}-${day}`}>
-                            <td className="p-0 border-r border-slate-200">
-                              <input
-                                type="text"
-                                className="w-full p-2 text-center text-xs outline-none bg-transparent focus:bg-blue-50"
-                                value={vals.total}
-                                onChange={(e) => handleGridChange(day, mIdx, 'total', e.target.value)}
-                                onPaste={(e) => handlePaste(e, mIdx, day)}
-                              />
-                            </td>
-                          </React.Fragment>
+                          <td key={`${mIdx}-${day}`} className="p-0 border-r border-slate-200">
+                            <input
+                              type="text"
+                              className="w-full p-2 text-center text-xs outline-none bg-transparent focus:bg-blue-50"
+                              value={vals.total}
+                              onChange={(e) => handleGridChange(day, mIdx, 'total', e.target.value)}
+                              onPaste={(e) => handlePaste(e, mIdx, day)}
+                            />
+                          </td>
                         );
                       })}
+                      {(() => {
+                        let dayTotal = 0;
+                        months.forEach((_, mIdx) => {
+                          const dateKey = `${occupancyYear}-${String(mIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          const val = gridData[dateKey]?.total || '0';
+                          dayTotal += parseFloat(val.replace(',', '.')) || 0;
+                        });
+                        return (
+                          <td className="p-2 border-r border-slate-200 bg-slate-50 font-bold text-[#155645] text-xs">
+                            {dayTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                          </td>
+                        );
+                      })()}
                     </tr>
                   ))}
                 </tbody>
@@ -816,12 +829,18 @@ export const AdminPanel: React.FC = () => {
                   <tr>
                     <td className="p-2 text-sm bg-slate-200 border-r border-slate-300 sticky left-0 z-20">TOTAL</td>
                     {months.map((_, mIdx) => (
-                      <React.Fragment key={`${mIdx}-total`}>
-                        <td className="p-2 border-r border-slate-200 text-[#F8981C] text-xs">
-                          {monthlyTotals[mIdx].total.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-                        </td>
-                      </React.Fragment>
+                      <td key={`${mIdx}-total`} className="p-2 border-r border-slate-200 text-[#F8981C] text-xs">
+                        {monthlyTotals[mIdx].total.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                      </td>
                     ))}
+                    {(() => {
+                      const grandTotal = (Object.values(monthlyTotals) as { total: number }[]).reduce((sum, m) => sum + m.total, 0);
+                      return (
+                        <td key="grand-total" className="p-2 border-r border-slate-200 bg-slate-200 text-[#155645] text-xs">
+                          {grandTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 </tfoot>
               </table>
@@ -1044,6 +1063,6 @@ export const AdminPanel: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };

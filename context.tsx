@@ -37,7 +37,7 @@ interface AppContextType {
 
   // Occupancy
   occupancyData: Record<string, { total: number, lazer: number, eventos: number }>; // Date "YYYY-MM-DD" -> Values
-  saveOccupancyBatch: (data: Record<string, { total: number, lazer: number, eventos: number }>) => void;
+  saveOccupancyBatch: (data: Record<string, { total: number, lazer: number, eventos: number }>) => Promise<{ success: boolean, error?: any }>;
 
   // Configs
   systemConfig: SystemConfig;
@@ -452,14 +452,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const saveOccupancyBatch = async (data: Record<string, { total: number, lazer: number, eventos: number }>) => {
-    const batch = Object.entries(data).map(([date_key, vals]) => ({
-      date_key,
-      count: vals.total,
-      lazer: vals.lazer,
-      eventos: vals.eventos
-    }));
-    const { error } = await supabase.from('occupancy_data').upsert(batch);
-    if (!error) setOccupancyData(prev => ({ ...prev, ...data }));
+    try {
+      const batch = Object.entries(data).map(([date_key, vals]) => ({
+        date_key,
+        count: vals.total,
+        lazer: vals.lazer,
+        eventos: vals.eventos
+      }));
+      const { error } = await supabase.from('occupancy_data').upsert(batch);
+      if (error) {
+        console.error('[saveOccupancyBatch] Supabase error:', error);
+        return { success: false, error };
+      }
+      setOccupancyData(prev => ({ ...prev, ...data }));
+      return { success: true };
+    } catch (err) {
+      console.error('[saveOccupancyBatch] Unexpected error:', err);
+      return { success: false, error: err };
+    }
   };
 
   const updateRequestStatus = async (id: string, status: 'Aprovado' | 'Rejeitado' | 'Pendente') => {
