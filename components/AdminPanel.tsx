@@ -442,7 +442,7 @@ export const AdminPanel: React.FC = () => {
             }`}
         >
           <Activity size={16} />
-          Tabela de PAX
+          Tabela de UH Ocupada
         </button>
         <button
           onClick={() => setActiveTab('general')}
@@ -741,7 +741,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex items-center gap-6">
-                <h3 className="text-lg font-bold text-slate-800">Tabela de PAX ({occupancyYear})</h3>
+                <h3 className="text-lg font-bold text-slate-800">Tabela de UH Ocupada ({occupancyYear})</h3>
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-slate-600">Ano:</label>
                   <select
@@ -755,7 +755,7 @@ export const AdminPanel: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={handleSaveOccupancy} className="bg-[#155645] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#104033] transition-colors flex items-center gap-2 shadow-sm">
-                  <Save size={16} /> Salvar PAX
+                  <Save size={16} /> Salvar UH Ocupada
                 </button>
               </div>
             </div>
