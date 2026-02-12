@@ -124,6 +124,25 @@ export const AdminPanel: React.FC = () => {
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
+  const monthlyTotals = React.useMemo(() => {
+    const res: Record<number, { lazer: number; eventos: number; total: number }> = {};
+    months.forEach((_, i) => { res[i] = { lazer: 0, eventos: 0, total: 0 }; });
+
+    Object.entries(gridData).forEach(([dateKey, vals]) => {
+      const [y, m] = dateKey.split('-').map(Number);
+      if (y === occupancyYear) {
+        const mIdx = m - 1;
+        const v = vals as { lazer: string; eventos: string; total: string };
+        if (res[mIdx]) {
+          res[mIdx].lazer += parseFloat(v.lazer.replace(',', '.')) || 0;
+          res[mIdx].eventos += parseFloat(v.eventos.replace(',', '.')) || 0;
+          res[mIdx].total += parseFloat(v.total.replace(',', '.')) || 0;
+        }
+      }
+    });
+    return res;
+  }, [gridData, occupancyYear]);
+
   // Sync MO Target from store to local state when targeted month changes
   const currentAppConfig = getMonthlyAppConfig(selectedMonth);
   useEffect(() => {
@@ -829,6 +848,24 @@ export const AdminPanel: React.FC = () => {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
+                  <tr>
+                    <td className="p-2 text-sm bg-slate-200 border-r border-slate-300 sticky left-0 z-20">TOTAL</td>
+                    {months.map((_, mIdx) => (
+                      <React.Fragment key={`${mIdx}-total`}>
+                        <td className="p-2 border-r border-slate-200 text-[#155645] text-xs">
+                          {monthlyTotals[mIdx].lazer.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                        </td>
+                        <td className="p-2 border-r border-slate-200 text-[#155645] text-xs">
+                          {monthlyTotals[mIdx].eventos.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                        </td>
+                        <td className="p-2 border-r border-slate-200 bg-orange-50/50 text-[#F8981C] text-xs">
+                          {monthlyTotals[mIdx].total.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                        </td>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
