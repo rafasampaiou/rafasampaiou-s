@@ -222,6 +222,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               : undefined,
             loteIntermitentesValue: s.lote_intermitentes_value
               ? (typeof s.lote_intermitentes_value === 'string' ? JSON.parse(s.lote_intermitentes_value) : s.lote_intermitentes_value)
+              : undefined,
+            loteExtrasBhQty: s.lote_extras_bh_qty
+              ? (typeof s.lote_extras_bh_qty === 'string' ? JSON.parse(s.lote_extras_bh_qty) : s.lote_extras_bh_qty)
+              : undefined,
+            loteExtrasBhValue: s.lote_extras_bh_value
+              ? (typeof s.lote_extras_bh_value === 'string' ? JSON.parse(s.lote_extras_bh_value) : s.lote_extras_bh_value)
               : undefined
           };
         });
@@ -683,6 +689,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Add Intermitentes fields
     if (data.loteIntermitentesQty !== undefined) payload.lote_intermitentes_qty = data.loteIntermitentesQty;
     if (data.loteIntermitentesValue !== undefined) payload.lote_intermitentes_value = data.loteIntermitentesValue;
+
+    // Add Extras de BH fields
+    if (data.loteExtrasBhQty !== undefined) payload.lote_extras_bh_qty = data.loteExtrasBhQty;
+    if (data.loteExtrasBhValue !== undefined) payload.lote_extras_bh_value = data.loteExtrasBhValue;
 
     const { error } = await supabase.from('manual_real_stats').upsert(payload, { onConflict: 'sector_id, month_key' }).select();
 

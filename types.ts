@@ -82,6 +82,8 @@ export interface ManualRealStat {
   loteWfoValue?: Record<string | number, { value?: number; }>; // Independent Value Base
   loteIntermitentesQty?: Record<string | number, { qty?: number; }>; // Intermitentes Qty Base
   loteIntermitentesValue?: Record<string | number, { value?: number; }>; // Intermitentes Value Base
+  loteExtrasBhQty?: Record<string | number, { qty?: number; }>; // NEW: Extras de BH Qty Base
+  loteExtrasBhValue?: Record<string | number, { value?: number; }>; // NEW: Extras de BH Value Base
 }
 
 export interface LoteConfig {
