@@ -665,34 +665,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return manualRealStats[key];
   };
 
-  const updateManualRealStat = async (data: ManualRealStat) => {
+  const updateManualRealStat = async (data: Partial<ManualRealStat> & { sectorId: string, monthKey: string }) => {
     const key = `${data.sectorId}_${data.monthKey}`;
-    // Optimistic update
-    setManualRealStats(prev => ({ ...prev, [key]: data }));
 
-    console.log('[updateManualRealStat] Saving:', data);
-
-    const payload: any = {
-      sector_id: data.sectorId,
-      month_key: data.monthKey,
-      real_qty: data.realQty ?? 0,
-      real_value: data.realValue ?? 0,
-      afastados_qty: data.afastadosQty ?? 0,
-      apprentices_qty: data.apprenticesQty ?? 0,
-      wfo_qty: data.wfoQty ?? 0,
+    // Get current state to merge
+    const existing = manualRealStats[key] || {
+      sectorId: data.sectorId,
+      monthKey: data.monthKey,
+      realQty: 0,
+      realValue: 0,
+      afastadosQty: 0,
+      apprenticesQty: 0,
+      wfoQty: 0,
     };
 
-    if (data.loteWfo !== undefined) payload.wfo_lotes_json = data.loteWfo;
-    if (data.loteWfoQty !== undefined) payload.wfo_qty_lotes_json = data.loteWfoQty;
-    if (data.loteWfoValue !== undefined) payload.wfo_value_lotes_json = data.loteWfoValue;
+    // Merge new data with existing
+    const merged = { ...existing, ...data };
+
+    // Optimistic update
+    setManualRealStats(prev => ({ ...prev, [key]: merged }));
+
+    console.log('[updateManualRealStat] Saving merged data:', merged);
+
+    const payload: any = {
+      sector_id: merged.sectorId,
+      month_key: merged.monthKey,
+      real_qty: merged.realQty,
+      real_value: merged.realValue,
+      afastados_qty: merged.afastadosQty,
+      apprentices_qty: merged.apprenticesQty,
+      wfo_qty: merged.wfoQty,
+    };
+
+    if (merged.loteWfo !== undefined) payload.wfo_lotes_json = merged.loteWfo;
+    if (merged.loteWfoQty !== undefined) payload.wfo_qty_lotes_json = merged.loteWfoQty;
+    if (merged.loteWfoValue !== undefined) payload.wfo_value_lotes_json = merged.loteWfoValue;
 
     // Add Intermitentes fields
-    if (data.loteIntermitentesQty !== undefined) payload.lote_intermitentes_qty = data.loteIntermitentesQty;
-    if (data.loteIntermitentesValue !== undefined) payload.lote_intermitentes_value = data.loteIntermitentesValue;
+    if (merged.loteIntermitentesQty !== undefined) payload.lote_intermitentes_qty = merged.loteIntermitentesQty;
+    if (merged.loteIntermitentesValue !== undefined) payload.lote_intermitentes_value = merged.loteIntermitentesValue;
 
     // Add Extras de BH fields
-    if (data.loteExtrasBhQty !== undefined) payload.lote_extras_bh_qty = data.loteExtrasBhQty;
-    if (data.loteExtrasBhValue !== undefined) payload.lote_extras_bh_value = data.loteExtrasBhValue;
+    if (merged.loteExtrasBhQty !== undefined) payload.lote_extras_bh_qty = merged.loteExtrasBhQty;
+    if (merged.loteExtrasBhValue !== undefined) payload.lote_extras_bh_value = merged.loteExtrasBhValue;
 
     const { error } = await supabase.from('manual_real_stats').upsert(payload, { onConflict: 'sector_id, month_key' }).select();
 
