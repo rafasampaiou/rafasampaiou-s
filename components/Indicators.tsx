@@ -633,6 +633,24 @@ export const Indicators: React.FC = () => {
                   <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{(stat.avgIndex || 0).toFixed(3)}</td>
                 </tr>
               ))}
+              {loteStats.length > 0 && (
+                <tr className="bg-slate-100 font-bold">
+                  <td className="p-3 border-r border-slate-200" colSpan={2}>TOTAL GERAL</td>
+                  <td className="p-3 border-r border-slate-200">
+                    {loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0)}
+                  </td>
+                  <td className="p-3 border-r border-slate-200">
+                    {loteStats.reduce((acc, curr) => acc + curr.relevantTotalCount, 0)}
+                  </td>
+                  <td className="p-3 border-r border-slate-200 text-[#155645]">
+                    {(() => {
+                      const totalOcc = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
+                      const totalCount = loteStats.reduce((acc, curr) => acc + curr.relevantTotalCount, 0);
+                      return totalOcc > 0 ? (totalCount / totalOcc).toFixed(3) : '0,000';
+                    })()}
+                  </td>
+                </tr>
+              )}
               {loteStats.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-4 text-slate-400">Nenhum lote configurado para este mês.</td>
