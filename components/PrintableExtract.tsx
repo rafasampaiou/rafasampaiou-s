@@ -54,7 +54,7 @@ export const PrintableExtract: React.FC = () => {
   // Filter Requests
   const filteredRequests = requests.filter(req => {
     const matchesSector = selectedSector === 'Todos' || req.sector === selectedSector;
-    const matchesDate = req.dateEvent === selectedDate;
+    const matchesDate = req.createdAt && req.createdAt.split('T')[0] === selectedDate;
     // status check: ignore variants of 'Rejeitado'
     const statusLower = (req.status || '').toLowerCase();
     const isActive = statusLower === 'aprovado';
@@ -186,7 +186,7 @@ export const PrintableExtract: React.FC = () => {
                       {Array.from({ length: new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
                         const day = i + 1;
                         const dateKey = `${calendarViewDate.getFullYear()}-${String(calendarViewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const hasPending = requests.some(r => r.dateEvent === dateKey && r.status === 'Pendente');
+                        const hasPending = requests.some(r => r.createdAt && r.createdAt.split('T')[0] === dateKey && r.status === 'Pendente');
                         const isSelected = selectedDate === dateKey;
                         const isToday = new Date().toISOString().split('T')[0] === dateKey;
 
