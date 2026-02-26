@@ -21,6 +21,10 @@ export const Dashboard: React.FC = () => {
   const [editingRequest, setEditingRequest] = useState<RequestItem | null>(null);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
 
+  // New Management Filters
+  const [pendingSectorFilter, setPendingSectorFilter] = useState('Todos');
+  const [pendingDateFilter, setPendingDateFilter] = useState('');
+
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const availableLotes = getMonthlyLote(monthKey);
 
@@ -74,10 +78,17 @@ export const Dashboard: React.FC = () => {
 
   const approvedRequests = filteredRequests.filter(r => r.status === 'Aprovado');
 
-  // Requests that need attention (Independent of filters)
-  // Requests that need attention (Independent of filters)
+  // Requests that need attention (Independent of global filters, but has its own filters)
   const pendingRequests = useMemo(() => {
     let list = requests.filter(r => r.status === 'Pendente');
+
+    if (pendingSectorFilter !== 'Todos') {
+      list = list.filter(r => r.sector === pendingSectorFilter);
+    }
+    if (pendingDateFilter) {
+      list = list.filter(r => r.dateEvent === pendingDateFilter);
+    }
+
     list.sort((a, b) => {
       const valueA = a[sortConfig.key as keyof RequestItem] || '';
       const valueB = b[sortConfig.key as keyof RequestItem] || '';
@@ -87,7 +98,7 @@ export const Dashboard: React.FC = () => {
       return 0;
     });
     return list;
-  }, [requests, sortConfig]);
+  }, [requests, sortConfig, pendingSectorFilter, pendingDateFilter]);
 
   // --- KPI Calculations ---
   const totalDiarias = approvedRequests.reduce((acc, curr) => acc + (curr.daysQty * curr.extrasQty), 0);
@@ -430,9 +441,46 @@ export const Dashboard: React.FC = () => {
               <AlertCircle size={20} className={pendingRequests.length > 0 ? 'text-[#F8981C]' : 'text-[#155645]'} />
               Gerenciamento de Solicitações
             </h3>
-            <div className={`text-xs font-bold px-3 py-1 rounded-full ${pendingRequests.length > 0 ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
-              }`}>
-              {pendingRequests.length === 0 ? 'Tudo em dia' : `${pendingRequests.length} para analisar`}
+
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Management Specific Filters */}
+              <div className="flex items-center gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Setor</label>
+                <select
+                  value={pendingSectorFilter}
+                  onChange={(e) => setPendingSectorFilter(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] outline-none focus:ring-2 focus:ring-[#155645] text-slate-700 min-w-[120px]"
+                >
+                  <option value="Todos">Todos os Setores</option>
+                  {sectors.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Data</label>
+                <div className="relative flex items-center">
+                  <input
+                    type="date"
+                    value={pendingDateFilter}
+                    onChange={(e) => setPendingDateFilter(e.target.value)}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] outline-none focus:ring-2 focus:ring-[#155645] text-slate-700"
+                  />
+                  {pendingDateFilter && (
+                    <button
+                      onClick={() => setPendingDateFilter('')}
+                      className="absolute -right-6 text-slate-400 hover:text-red-500 transition-colors"
+                      title="Limpar data"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className={`text-xs font-bold px-3 py-1 rounded-full ${pendingRequests.length > 0 ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
+                }`}>
+                {pendingRequests.length === 0 ? 'Tudo em dia' : `${pendingRequests.length} para analisar`}
+              </div>
             </div>
           </div>
           <div className="overflow-x-auto max-h-[400px]">
