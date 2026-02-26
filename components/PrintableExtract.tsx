@@ -7,13 +7,9 @@ export const PrintableExtract: React.FC = () => {
   const componentRef = useRef<HTMLDivElement>(null);
   const [selectedSector, setSelectedSector] = useState('Todos');
 
-  // Default to current month start/end
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-  const [startDate, setStartDate] = useState(startOfMonth);
-  const [endDate, setEndDate] = useState(endOfMonth);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Column Widths State (px) - Fixed configuration
@@ -58,8 +54,7 @@ export const PrintableExtract: React.FC = () => {
   // Filter Requests
   const filteredRequests = requests.filter(req => {
     const matchesSector = selectedSector === 'Todos' || req.sector === selectedSector;
-    const reqCreationDate = req.createdAt.split('T')[0];
-    const matchesDate = reqCreationDate >= startDate && reqCreationDate <= endDate;
+    const matchesDate = req.dateEvent === selectedDate;
     // status check: ignore variants of 'Rejeitado'
     const statusLower = (req.status || '').toLowerCase();
     const isActive = statusLower === 'aprovado';
@@ -81,8 +76,7 @@ export const PrintableExtract: React.FC = () => {
   const totalRealValue = filteredRequests.reduce((acc, curr) => acc + calculateRequestTotal(curr), 0);
 
   // Tax Calculation
-  // Tax Calculation using current report month config
-  const reportMonthKey = startDate.slice(0, 7); // YYYY-MM
+  const reportMonthKey = selectedDate.slice(0, 7); // YYYY-MM
   const currentConfig = getMonthlyAppConfig(reportMonthKey);
   const taxAmount = totalRealValue * (currentConfig.taxRate / 100);
   const totalWithTax = totalRealValue + taxAmount;
@@ -140,21 +134,96 @@ export const PrintableExtract: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-[#155645]" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
-            />
-            <span className="text-slate-400">-</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
-            />
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-bold text-slate-500 uppercase ml-1">Data da Solicitação</span>
+            <div className="relative">
+              <div
+                className="flex items-center gap-2 border border-slate-300 rounded px-3 py-1.5 text-sm bg-white cursor-pointer hover:border-[#155645] transition-colors w-40"
+                onClick={() => setShowCalendar(!showCalendar)}
+              >
+                <Calendar size={16} className="text-[#155645]" />
+                <span>{new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+              </div>
+
+              {showCalendar && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowCalendar(false)}></div>
+                  <div className="absolute left-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 z-50 w-72 animate-in fade-in zoom-in duration-200 origin-top-left">
+                    <div className="flex justify-between items-center mb-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1));
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                      >
+                        &lt;
+                      </button>
+                      <span className="text-sm font-bold text-[#155645] capitalize">
+                        {calendarViewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1));
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                      >
+                        &gt;
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] items-center mb-2">
+                      {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+                        <div key={d} className="font-bold text-slate-400 p-1">{d}</div>
+                      ))}
+                      {Array.from({ length: new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1).getDay() }).map((_, i) => (
+                        <div key={`empty-${i}`} className="p-1"></div>
+                      ))}
+                      {Array.from({ length: new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                        const day = i + 1;
+                        const dateKey = `${calendarViewDate.getFullYear()}-${String(calendarViewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const hasPending = requests.some(r => r.dateEvent === dateKey && r.status === 'Pendente');
+                        const isSelected = selectedDate === dateKey;
+                        const isToday = new Date().toISOString().split('T')[0] === dateKey;
+
+                        return (
+                          <button
+                            key={day}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDate(dateKey);
+                              setShowCalendar(false);
+                            }}
+                            className={`
+                              h-8 w-8 rounded-lg text-[11px] transition-all flex items-center justify-center relative
+                              ${isSelected ? 'bg-[#155645] text-white font-bold shadow-md scale-110' : 'hover:bg-slate-100 text-slate-700'}
+                              ${hasPending && !isSelected ? 'bg-yellow-100 text-yellow-900 border border-yellow-200' : ''}
+                              ${isToday && !isSelected ? 'ring-1 ring-[#155645] ring-inset' : ''}
+                            `}
+                          >
+                            {day}
+                            {hasPending && (
+                              <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-yellow-500'}`}></span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                        <span className="text-[10px] text-slate-500 font-medium">(dia com solicitações pendentes)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-white border border-slate-200 rounded"></div>
+                        <span className="text-[10px] text-slate-400">Clique para selecionar uma data específica</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -211,7 +280,7 @@ export const PrintableExtract: React.FC = () => {
 
         <div className="mb-4 text-xs flex justify-between">
           <div>
-            <strong>Período:</strong> {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
+            <strong>Data:</strong> {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR')}
           </div>
           <div>
             <strong>Setor:</strong> {selectedSector === 'Todos' ? 'Todos' : selectedSector}
