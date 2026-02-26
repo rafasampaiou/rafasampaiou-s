@@ -120,18 +120,21 @@ export const PrintableExtract: React.FC = () => {
     <div className="w-full">
       <div className="mb-4 flex flex-col md:flex-row justify-between items-center no-print bg-white p-4 rounded-lg shadow-sm border border-slate-200 gap-4">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-[#155645]" />
-            <select
-              className="border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-            >
-              <option value="Todos">Todos (Visualização Global)</option>
-              {sectors.map(s => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-bold text-slate-500 uppercase ml-1">Filtro de Setor</span>
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="text-[#155645]" />
+              <select
+                className="border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#155645] outline-none"
+                value={selectedSector}
+                onChange={(e) => setSelectedSector(e.target.value)}
+              >
+                <option value="Todos">Todos (Visualização Global)</option>
+                {sectors.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
