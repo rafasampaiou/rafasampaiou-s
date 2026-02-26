@@ -201,13 +201,13 @@ export const PrintableExtract: React.FC = () => {
                             className={`
                               h-8 w-8 rounded-lg text-[11px] transition-all flex items-center justify-center relative
                               ${isSelected ? 'bg-[#155645] text-white font-bold shadow-md scale-110' : 'hover:bg-slate-100 text-slate-700'}
-                              ${hasPending && !isSelected ? 'bg-yellow-100 text-yellow-900 border border-yellow-200' : ''}
+                              ${hasPending && !isSelected ? 'bg-orange-100 text-orange-900' : ''}
                               ${isToday && !isSelected ? 'ring-1 ring-[#155645] ring-inset' : ''}
                             `}
                           >
                             {day}
                             {hasPending && (
-                              <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-yellow-500'}`}></span>
+                              <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-orange-500'}`}></span>
                             )}
                           </button>
                         );
@@ -215,7 +215,7 @@ export const PrintableExtract: React.FC = () => {
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                        <div className="w-3 h-3 bg-orange-100 rounded"></div>
                         <span className="text-[10px] text-slate-500 font-medium">(dia com solicitações pendentes)</span>
                       </div>
                       <div className="flex items-center gap-2">
