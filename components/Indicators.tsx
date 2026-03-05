@@ -140,6 +140,8 @@ export const Indicators: React.FC = () => {
   const [selectedType, setSelectedType] = useState('Todos');
   const [chartMetric, setChartMetric] = useState<'extras' | 'clt' | 'total'>('extras');
   const [matrixView, setMatrixView] = useState<'value' | 'qty' | 'index'>('value');
+  const [calculationBasis, setCalculationBasis] = useState<'total' | 'worked'>('total');
+  const [includeIntermittentExtras, setIncludeIntermittentExtras] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
@@ -228,11 +230,15 @@ export const Indicators: React.FC = () => {
     });
 
     const extrasCount = activeRequests.reduce((sum, r) => sum + Number(r.extrasQty), 0);
-    const totalHeadcount = extrasCount + netCltCount;
+
+    // Day Factor for CLT Workforce (86.66% if worked days selected)
+    const dayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
+    const adjustedCltCount = netCltCount * dayFactor;
+    const totalHeadcount = extrasCount + adjustedCltCount;
 
     // Calculate Indices
     const indexExtras = occupiedUH > 0 ? (extrasCount / occupiedUH) : 0;
-    const indexClt = occupiedUH > 0 ? (netCltCount / occupiedUH) : 0;
+    const indexClt = occupiedUH > 0 ? (adjustedCltCount / occupiedUH) : 0;
     const indexTotal = occupiedUH > 0 ? (totalHeadcount / occupiedUH) : 0;
 
     // Determine value based on selected metric
@@ -262,11 +268,24 @@ export const Indicators: React.FC = () => {
 
     // Summing headcount for averages
     const totalExtras = daysInLote.reduce((acc, curr) => acc + curr.extrasCount, 0);
+
+    // Consolidated Filter: Extras + Intermitentes + Extras de BH
+    let consolidatedCount = totalExtras;
+    if (includeIntermittentExtras) {
+      const loteIdStr = String(lote.id);
+      sectors.forEach(s => {
+        const stats = getManualRealStat(s.id, monthKey);
+        const intermitentes = (stats?.loteIntermitentesQty as any)?.[loteIdStr]?.qty || 0;
+        const extrasBh = (stats?.loteExtrasBhQty as any)?.[loteIdStr]?.qty || 0;
+        consolidatedCount += intermitentes + extrasBh;
+      });
+    }
+
     const totalCltSum = daysInLote.reduce((acc, curr) => acc + curr.netCltCount, 0);
-    const grandTotalHeadcount = totalExtras + totalCltSum;
+    const grandTotalHeadcount = consolidatedCount + totalCltSum;
 
     let relevantTotalCount = 0;
-    if (chartMetric === 'extras') relevantTotalCount = totalExtras;
+    if (chartMetric === 'extras') relevantTotalCount = consolidatedCount;
     if (chartMetric === 'clt') relevantTotalCount = totalCltSum;
     if (chartMetric === 'total') relevantTotalCount = grandTotalHeadcount;
 
@@ -522,6 +541,25 @@ export const Indicators: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <div className="flex">
+              <button
+                onClick={() => setCalculationBasis('total')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${calculationBasis === 'total' ? 'bg-white text-[#155645] shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+              >
+                Dias Totais
+              </button>
+              <button
+                onClick={() => setCalculationBasis('worked')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${calculationBasis === 'worked' ? 'bg-white text-[#155645] shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+              >
+                Dias Trabalhados
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <BarChart3 size={18} className="text-[#155645] ml-2" />
             <div className="flex">
               <button
@@ -609,8 +647,19 @@ export const Indicators: React.FC = () => {
 
       {/* Batch Summary (Extraordinários por Lotes) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 className="text-sm font-bold text-slate-800">Extraordinários por Lotes ({getMetricLabel()})</h3>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded text-[#155645] focus:ring-[#155645] border-slate-300"
+                checked={includeIntermittentExtras}
+                onChange={(e) => setIncludeIntermittentExtras(e.target.checked)}
+              />
+              Considerar Extras + Intermitentes + Extras de BH
+            </label>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-center">
