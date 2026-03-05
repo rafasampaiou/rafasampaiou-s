@@ -229,10 +229,11 @@ export const Indicators: React.FC = () => {
       return currentLoopDate >= startDate && currentLoopDate <= endDate;
     });
 
-    const extrasCount = activeRequests.reduce((sum, r) => sum + Number(r.extrasQty), 0);
+    const rawExtrasCount = activeRequests.reduce((sum, r) => sum + Number(r.extrasQty), 0);
 
-    // Day Factor for CLT Workforce (86.66% if worked days selected)
+    // Day Factor for Headcount (86.66% if worked days selected)
     const dayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
+    const extrasCount = rawExtrasCount * dayFactor;
     const adjustedCltCount = netCltCount * dayFactor;
     const totalHeadcount = extrasCount + adjustedCltCount;
 
@@ -252,7 +253,7 @@ export const Indicators: React.FC = () => {
       date: dateStr,
       occupiedUH,
       extrasCount,
-      netCltCount,
+      netCltCount: adjustedCltCount,
       totalHeadcount,
       displayValue: Number((displayValue || 0).toFixed(3))
     };
@@ -273,11 +274,12 @@ export const Indicators: React.FC = () => {
     let consolidatedCount = totalExtras;
     if (includeIntermittentExtras) {
       const loteIdStr = String(lote.id);
+      const dayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
       sectors.forEach(s => {
         const stats = getManualRealStat(s.id, monthKey);
         const intermitentes = (stats?.loteIntermitentesQty as any)?.[loteIdStr]?.qty || 0;
         const extrasBh = (stats?.loteExtrasBhQty as any)?.[loteIdStr]?.qty || 0;
-        consolidatedCount += intermitentes + extrasBh;
+        consolidatedCount += (intermitentes + extrasBh) * dayFactor;
       });
     }
 
