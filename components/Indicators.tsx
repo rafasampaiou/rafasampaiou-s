@@ -680,7 +680,7 @@ export const Indicators: React.FC = () => {
                   <td className="p-3 border-r border-slate-200 font-bold">{stat.name}</td>
                   <td className="p-3 border-r border-slate-200 text-slate-500 text-xs">{stat.range}</td>
                   <td className="p-3 border-r border-slate-200">{stat.totalOccupancy}</td>
-                  <td className="p-3 border-r border-slate-200">{Math.round(stat.relevantTotalCount)}</td>
+                  <td className="p-3 border-r border-slate-200">{stat.relevantTotalCount.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   <td className="p-3 border-r border-slate-200 font-bold text-[#155645]">{(stat.avgIndex || 0).toFixed(3)}</td>
                 </tr>
               ))}
@@ -691,7 +691,7 @@ export const Indicators: React.FC = () => {
                     {loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0)}
                   </td>
                   <td className="p-3 border-r border-slate-200">
-                    {Math.round(loteStats.reduce((acc, curr) => acc + curr.relevantTotalCount, 0))}
+                    {loteStats.reduce((acc, curr) => acc + curr.relevantTotalCount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
                   <td className="p-3 border-r border-slate-200 text-[#155645]">
                     {(() => {
