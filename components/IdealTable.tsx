@@ -3,12 +3,14 @@ import { useApp } from '../context';
 import { Calendar, Copy, ClipboardPaste, Check, AlertTriangle } from 'lucide-react';
 
 interface CurrencyInputProps {
+  id?: string;
   value: number;
   onChange: (value: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onPaste?: (e: React.ClipboardEvent) => void;
 }
 
-const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste }) => {
+const CurrencyInput: React.FC<CurrencyInputProps> = ({ id, value, onChange, onKeyDown, onPaste }) => {
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -21,6 +23,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste 
   if (isEditing) {
     return (
       <input
+        id={id}
         ref={inputRef}
         type="number"
         step="0.01"
@@ -29,6 +32,15 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste 
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => setIsEditing(false)}
         onPaste={onPaste}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setIsEditing(false);
+            // We need to wait for state to update or manually trigger the movement
+            // But usually, the focus loss on Enter is what user expects in this toggle-UI
+          }
+          onKeyDown?.(e);
+        }}
+        onWheel={(e) => e.currentTarget.blur()}
       />
     );
   }
@@ -44,14 +56,16 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, onPaste 
 };
 
 interface MatrixCellProps {
+  id?: string;
   value: number;
   onChange: (val: number) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onPaste: (e: React.ClipboardEvent) => void;
   disabled?: boolean;
   type: 'qty' | 'value';
 }
 
-const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disabled, type }) => {
+const MatrixCell: React.FC<MatrixCellProps> = ({ id, value, onChange, onKeyDown, onPaste, disabled, type }) => {
   const [localValue, setLocalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   // Ref to track if we should skip the next blur save (e.g. because we just pasted and blurred intentionally)
@@ -118,6 +132,7 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disab
 
   return (
     <input
+      id={id}
       type="text"
       className="w-full h-full p-2 text-center outline-none focus:bg-blue-50 transition-colors"
       value={localValue}
@@ -125,6 +140,8 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ value, onChange, onPaste, disab
       onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
       onPaste={handlePasteInternal}
+      onKeyDown={onKeyDown}
+      onWheel={(e) => e.currentTarget.blur()}
       disabled={disabled}
       placeholder={type === 'value' ? "0,00" : "0"}
     />
@@ -637,91 +654,121 @@ export const IdealTable: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {stats.map((row, index) => (
-                <tr key={row.sectorId} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
+              {stats.map((row, index) => {
+                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, fieldName: string) => {
+                  if (e.key === 'Enter') {
+                    // Check if it's a raw input or a component that will lose focus
+                    const nextId = `ideal-${fieldName}-${index + 1}`;
+                    const nextEl = document.getElementById(nextId);
+                    if (nextEl) {
+                      e.preventDefault();
+                      nextEl.focus();
+                    }
+                  }
+                };
 
-                  {/* Orçado */}
-                  <td className="p-0 border border-slate-300 bg-slate-50/50">
-                    <input
-                      type="number"
-                      className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors"
-                      value={row.budgetQty}
-                      onChange={(e) => handleBudgetChange(row.sectorId, 'cltBudgetQty', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'budgetQty')}
-                    // disabled={!isAdminUnlocked} // Allowing edit in top table too, why not
-                    />
-                  </td>
-                  <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
-                    <CurrencyInput
-                      value={row.budgetValue}
-                      onChange={(val) => handleBudgetChange(row.sectorId, 'cltBudgetValue', val)}
-                      onPaste={(e) => handlePaste(e, index, 'budgetValue')}
-                    />
-                  </td>
+                return (
+                  <tr key={row.sectorId} className="hover:bg-blue-50/30 transition-colors">
+                    <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
 
-                  {/* Real & Adjustments */}
-                  <td className="p-0 border border-slate-300">
-                    <input
-                      type="number"
-                      className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors ${row.isManual ? 'bg-orange-50/50' : ''}`}
-                      value={row.realQty}
-                      onChange={(e) => handleRealChange(row.sectorId, 'realQty', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'realQty')}
-                      disabled={!isAdminUnlocked}
-                    />
-                  </td>
-                  <td className="p-0 border border-slate-300 bg-orange-50/20">
-                    <input
-                      type="number"
-                      className="w-full h-full p-2 text-right outline-none focus:bg-orange-100/50 transition-colors text-orange-800"
-                      value={row.afastadosQty}
-                      onChange={(e) => handleRealChange(row.sectorId, 'afastadosQty', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'afastadosQty')}
-                      disabled={!isAdminUnlocked}
-                    />
-                  </td>
-                  <td className="p-0 border border-slate-300 bg-blue-50/20">
-                    <input
-                      type="number"
-                      className="w-full h-full p-2 text-right outline-none focus:bg-blue-100/50 transition-colors text-blue-800"
-                      value={row.apprenticesQty}
-                      onChange={(e) => handleRealChange(row.sectorId, 'apprenticesQty', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'apprenticesQty')}
-                      disabled={!isAdminUnlocked}
-                    />
-                  </td>
-                  <td className="p-0 border border-slate-300">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors font-medium ${row.isManual ? 'bg-orange-50/50' : ''}`}
-                      value={row.realValue}
-                      onChange={(e) => handleRealChange(row.sectorId, 'realValue', e.target.value)}
-                      onPaste={(e) => handlePaste(e, index, 'realValue')}
-                      disabled={!isAdminUnlocked}
-                    />
-                  </td>
+                    {/* Orçado */}
+                    <td className="p-0 border border-slate-300 bg-slate-50/50">
+                      <input
+                        id={`ideal-budgetQty-${index}`}
+                        type="number"
+                        className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors"
+                        value={row.budgetQty}
+                        onChange={(e) => handleBudgetChange(row.sectorId, 'cltBudgetQty', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'budgetQty')}
+                        onKeyDown={(e) => handleKeyDown(e, 'budgetQty')}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+                    <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
+                      <CurrencyInput
+                        id={`ideal-budgetValue-${index}`}
+                        value={row.budgetValue}
+                        onChange={(val) => handleBudgetChange(row.sectorId, 'cltBudgetValue', val)}
+                        onPaste={(e) => handlePaste(e, index, 'budgetValue')}
+                        onKeyDown={(e) => handleKeyDown(e, 'budgetValue')}
+                      />
+                    </td>
 
-                  {/* Differences */}
-                  <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                    <span className={`font-bold ${row.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {row.diffQty > 0 ? '+' : ''}{row.diffQty}
-                    </span>
-                  </td>
-                  <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.diffValue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                      R$ {row.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                    </span>
-                  </td>
-                  <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                    <span className={`font-bold text-xs ${row.diffPercent <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {row.diffPercent > 0 ? '+' : ''}{row.diffPercent.toFixed(1)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                    {/* Real & Adjustments */}
+                    <td className="p-0 border border-slate-300">
+                      <input
+                        id={`ideal-realQty-${index}`}
+                        type="number"
+                        className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors ${row.isManual ? 'bg-orange-50/50' : ''}`}
+                        value={row.realQty}
+                        onChange={(e) => handleRealChange(row.sectorId, 'realQty', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'realQty')}
+                        onKeyDown={(e) => handleKeyDown(e, 'realQty')}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        disabled={!isAdminUnlocked}
+                      />
+                    </td>
+                    <td className="p-0 border border-slate-300 bg-orange-50/20">
+                      <input
+                        id={`ideal-afastadosQty-${index}`}
+                        type="number"
+                        className="w-full h-full p-2 text-right outline-none focus:bg-orange-100/50 transition-colors text-orange-800"
+                        value={row.afastadosQty}
+                        onChange={(e) => handleRealChange(row.sectorId, 'afastadosQty', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'afastadosQty')}
+                        onKeyDown={(e) => handleKeyDown(e, 'afastadosQty')}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        disabled={!isAdminUnlocked}
+                      />
+                    </td>
+                    <td className="p-0 border border-slate-300 bg-blue-50/20">
+                      <input
+                        id={`ideal-apprenticesQty-${index}`}
+                        type="number"
+                        className="w-full h-full p-2 text-right outline-none focus:bg-blue-100/50 transition-colors text-blue-800"
+                        value={row.apprenticesQty}
+                        onChange={(e) => handleRealChange(row.sectorId, 'apprenticesQty', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'apprenticesQty')}
+                        onKeyDown={(e) => handleKeyDown(e, 'apprenticesQty')}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        disabled={!isAdminUnlocked}
+                      />
+                    </td>
+                    <td className="p-0 border border-slate-300">
+                      <input
+                        id={`ideal-realValue-${index}`}
+                        type="number"
+                        step="0.01"
+                        className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors font-medium ${row.isManual ? 'bg-orange-50/50' : ''}`}
+                        value={row.realValue}
+                        onChange={(e) => handleRealChange(row.sectorId, 'realValue', e.target.value)}
+                        onPaste={(e) => handlePaste(e, index, 'realValue')}
+                        onKeyDown={(e) => handleKeyDown(e, 'realValue')}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        disabled={!isAdminUnlocked}
+                      />
+                    </td>
+
+                    {/* Differences */}
+                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                      <span className={`font-bold ${row.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {row.diffQty > 0 ? '+' : ''}{row.diffQty}
+                      </span>
+                    </td>
+                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.diffValue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                        R$ {row.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      </span>
+                    </td>
+                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                      <span className={`font-bold text-xs ${row.diffPercent <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {row.diffPercent > 0 ? '+' : ''}{row.diffPercent.toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400">
               <tr>
@@ -782,12 +829,24 @@ export const IdealTable: React.FC = () => {
                     <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 sticky left-0 z-10 bg-white">{s.name}</td>
                     {months.map((m, monthIdx) => {
                       const budget = getMonthlyBudget(s.id, `${selectedYear}-${m}`);
+                      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === 'Enter') {
+                          const nextId = `matrix-qty-${sectIdx + 1}-${monthIdx}`;
+                          const nextEl = document.getElementById(nextId);
+                          if (nextEl) {
+                            e.preventDefault();
+                            nextEl.focus();
+                          }
+                        }
+                      };
                       return (
                         <td key={m} className="p-0 border border-slate-300">
                           <MatrixCell
+                            id={`matrix-qty-${sectIdx}-${monthIdx}`}
                             value={budget.cltBudgetQty || 0}
                             onChange={(val) => updateMonthlyBudget({ ...budget, cltBudgetQty: val })}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'qty')}
+                            onKeyDown={handleKeyDown}
                             disabled={!isAdminUnlocked}
                             type="qty"
                           />
@@ -823,12 +882,24 @@ export const IdealTable: React.FC = () => {
                     <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 sticky left-0 z-10 bg-white">{s.name}</td>
                     {months.map((m, monthIdx) => {
                       const budget = getMonthlyBudget(s.id, `${selectedYear}-${m}`);
+                      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === 'Enter') {
+                          const nextId = `matrix-val-${sectIdx + 1}-${monthIdx}`;
+                          const nextEl = document.getElementById(nextId);
+                          if (nextEl) {
+                            e.preventDefault();
+                            nextEl.focus();
+                          }
+                        }
+                      };
                       return (
                         <td key={m} className="p-0 border border-slate-300">
                           <MatrixCell
+                            id={`matrix-val-${sectIdx}-${monthIdx}`}
                             value={budget.cltBudgetValue || 0}
                             onChange={(val) => updateMonthlyBudget({ ...budget, cltBudgetValue: val })}
                             onPaste={(e) => handleMatrixPaste(e, sectIdx, monthIdx, 'value')}
+                            onKeyDown={handleKeyDown}
                             disabled={!isAdminUnlocked}
                             type="value"
                           />
