@@ -4,15 +4,17 @@ import { Settings, Activity, Database, Download, Plus, Trash2, Save, Sliders, Br
 import { MonthlyBudget, LoteConfig, UserRole } from '../types';
 
 interface BudgetCellProps {
+  id?: string;
   value: number;
   onChange: (val: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onPaste?: (e: React.ClipboardEvent) => void;
   step?: string;
   placeholder?: string;
   className?: string;
 }
 
-const BudgetCell: React.FC<BudgetCellProps> = ({ value, onChange, onPaste, step, placeholder, className }) => {
+const BudgetCell: React.FC<BudgetCellProps> = ({ id, value, onChange, onKeyDown, onPaste, step, placeholder, className }) => {
   const [localValue, setLocalValue] = useState(value?.toString() || '');
   const [isFocused, setIsFocused] = useState(false);
 
@@ -31,6 +33,7 @@ const BudgetCell: React.FC<BudgetCellProps> = ({ value, onChange, onPaste, step,
 
   return (
     <input
+      id={id}
       type="number"
       step={step}
       placeholder={placeholder}
@@ -40,6 +43,8 @@ const BudgetCell: React.FC<BudgetCellProps> = ({ value, onChange, onPaste, step,
       onBlur={handleBlur}
       onFocus={() => setIsFocused(true)}
       onPaste={onPaste}
+      onKeyDown={onKeyDown}
+      onWheel={(e) => e.currentTarget.blur()}
     />
   );
 };
@@ -629,36 +634,56 @@ export const AdminPanel: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {sectors.map((sector, idx) => {
                     const budget = getMonthlyBudget(sector.id, selectedMonth);
+
+                    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, fieldName: string) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const nextId = `budget-${fieldName}-${idx + 1}`;
+                        const nextEl = document.getElementById(nextId);
+                        if (nextEl) {
+                          nextEl.focus();
+                        } else {
+                          e.currentTarget.blur();
+                        }
+                      }
+                    };
+
                     return (
                       <tr key={sector.id} className="hover:bg-blue-50/30 transition-colors">
                         <td className="p-2 font-bold text-slate-700 border border-slate-300 bg-slate-50/50">{sector.name}</td>
                         <td className="p-0 border border-slate-300">
                           <BudgetCell
+                            id={`budget-value-${idx}`}
                             step="0.01"
                             placeholder="0,00"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
                             value={budget.budgetValue}
                             onChange={(val) => handleBudgetChange(sector.id, 'budgetValue', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
+                            onKeyDown={(e) => handleKeyDown(e, 'value')}
                           />
                         </td>
                         <td className="p-0 border border-slate-300">
                           <BudgetCell
+                            id={`budget-rate-${idx}`}
                             step="0.01"
                             placeholder="0,00"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-right transition-colors"
                             value={budget.hourRate}
                             onChange={(val) => handleBudgetChange(sector.id, 'hourRate', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
+                            onKeyDown={(e) => handleKeyDown(e, 'rate')}
                           />
                         </td>
                         <td className="p-0 border border-slate-300">
                           <BudgetCell
+                            id={`budget-hours-${idx}`}
                             placeholder="8"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
                             value={budget.workHoursPerDay}
                             onChange={(val) => handleBudgetChange(sector.id, 'workHoursPerDay', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
+                            onKeyDown={(e) => handleKeyDown(e, 'hours')}
                           />
                         </td>
                         <td className="p-2 font-bold text-[#155645] text-center border border-slate-300 bg-orange-50/30">
@@ -666,11 +691,13 @@ export const AdminPanel: React.FC = () => {
                         </td>
                         <td className="p-0 border border-slate-300">
                           <BudgetCell
+                            id={`budget-days-${idx}`}
                             placeholder="22"
                             className="w-full h-full p-2 outline-none focus:bg-blue-50 text-center transition-colors"
                             value={budget.workingDaysPerMonth}
                             onChange={(val) => handleBudgetChange(sector.id, 'workingDaysPerMonth', val)}
                             onPaste={(e) => handleBudgetPaste(e, idx)}
+                            onKeyDown={(e) => handleKeyDown(e, 'days')}
                           />
                         </td>
                         <td className="p-2 font-bold text-[#F8981C] text-center border border-slate-300 bg-orange-50/30">
@@ -679,6 +706,22 @@ export const AdminPanel: React.FC = () => {
                       </tr>
                     );
                   })}
+                  {/* Total Row */}
+                  <tr className="bg-slate-200 font-black text-center">
+                    <td className="p-2 border border-slate-300 text-left uppercase text-[10px]">Total</td>
+                    <td className="p-2 border border-slate-300 text-right">
+                      {sectors.reduce((sum, s) => sum + (getMonthlyBudget(s.id, selectedMonth).budgetValue || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-2 border border-slate-300"></td>
+                    <td className="p-2 border border-slate-300"></td>
+                    <td className="p-2 border border-slate-300 text-[#155645]">
+                      {sectors.reduce((sum, s) => sum + (getMonthlyBudget(s.id, selectedMonth).budgetQty || 0), 0)}
+                    </td>
+                    <td className="p-2 border border-slate-300"></td>
+                    <td className="p-2 border border-slate-300 text-[#F8981C]">
+                      {sectors.reduce((sum, s) => sum + (getMonthlyBudget(s.id, selectedMonth).extraQtyPerDay || 0), 0).toFixed(2)}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
