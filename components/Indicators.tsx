@@ -188,13 +188,13 @@ export const Indicators: React.FC = () => {
   }, [sectors, selectedSector, selectedType]);
 
   // Calculate Net CLT (Fixed Staff) for the selected month and sector
-  // Logic: Real Qty (from Ideal Table) - Afastados - Apprentices
+  // Logic: Real Qty (from Ideal Table) - Afastados (Inclui Aprendizes)
   const netCltCount = useMemo(() => {
     let total = 0;
     filteredSectors.forEach(s => {
       const stats = getManualRealStat(s.id, monthKey);
       if (stats) {
-        const net = stats.realQty - (stats.afastadosQty || 0) - (stats.apprenticesQty || 0);
+        const net = stats.realQty - (stats.afastadosQty || 0); // Include apprentices (apprenticesQty)
         total += Math.max(0, net); // Ensure no negative numbers
       }
     });
@@ -338,7 +338,7 @@ export const Indicators: React.FC = () => {
 
         const sectorObj = sectors.find(s => s.name === sector.name);
         const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : null;
-        const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0) - (sectorStats.apprenticesQty || 0)) : 0;
+        const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0)) : 0; // Include apprentices
         const cltValue = sectorStats ? sectorStats.realValue : 0;
         const daysInLoteMatch = lote.endDay - lote.startDay + 1;
         const cltLoteQty = cltHeadcount * daysInLoteMatch;
@@ -595,7 +595,7 @@ export const Indicators: React.FC = () => {
         <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex justify-between">
           <span>Evolução Diária do Índice ({getMetricLabel()} / UH)</span>
           <span className="text-xs normal-case text-slate-400">
-            {chartMetric === 'clt' && 'Nota: CLT Ativo = Real - Afastados - Aprendizes'}
+            {chartMetric === 'clt' && 'Nota: CLT Ativo = Real - Afastados (Inclui Aprendizes)'}
           </span>
         </h3>
         <div className="h-80">

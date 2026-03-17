@@ -503,7 +503,7 @@ export const IdealTable: React.FC = () => {
     const afastadosQty = manualReal?.afastadosQty || 0;
     const apprenticesQty = manualReal?.apprenticesQty || 0;
 
-    const activeRealQty = realQty - afastadosQty - apprenticesQty;
+    const activeRealQty = realQty - afastadosQty; // Include apprentices (apprenticesQty)
     const diffQty = activeRealQty - (budget.cltBudgetQty || 0);
     const diffValue = realValue - (budget.cltBudgetValue || 0);
     const diffPercent = (budget.cltBudgetValue || 0) > 0 ? (diffValue / (budget.cltBudgetValue || 0)) * 100 : 0;
