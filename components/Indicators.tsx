@@ -421,7 +421,7 @@ export const Indicators: React.FC = () => {
 
   // Calculate Totals for WFO, Intermitentes and Extras de BH per lote
   const loteWfoTotals = lotes.map(lote => {
-    return sectors.reduce((acc, s) => {
+    return filteredSectors.reduce((acc, s) => {
       const stats = getManualRealStat(s.id, monthKey);
       const loteIdStr = String(lote.id);
       const val = (stats?.loteWfoValue as any)?.[loteIdStr]?.value || 0;
@@ -434,7 +434,7 @@ export const Indicators: React.FC = () => {
   });
 
   const loteIntermitentesTotals = lotes.map(lote => {
-    return sectors.reduce((acc, s) => {
+    return filteredSectors.reduce((acc, s) => {
       const stats = getManualRealStat(s.id, monthKey);
       const loteIdStr = String(lote.id);
       const val = (stats?.loteIntermitentesValue as any)?.[loteIdStr]?.value || 0;
@@ -447,7 +447,7 @@ export const Indicators: React.FC = () => {
   });
 
   const loteExtrasBhTotals = lotes.map(lote => {
-    return sectors.reduce((acc, s) => {
+    return filteredSectors.reduce((acc, s) => {
       const stats = getManualRealStat(s.id, monthKey);
       const loteIdStr = String(lote.id);
       const val = (stats?.loteExtrasBhValue as any)?.[loteIdStr]?.value || 0;
@@ -459,30 +459,30 @@ export const Indicators: React.FC = () => {
     }, { value: 0, qty: 0 });
   });
 
-  const monthlyWfoTotals = sectors.reduce((acc, s) => {
+  const monthlyWfoTotals = filteredSectors.reduce((acc, s) => {
     const stats = getManualRealStat(s.id, monthKey);
-    const valTotal = (Object.values(stats?.loteWfoValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-    const qtyTotal = (Object.values(stats?.loteWfoQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+    const valTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteWfoValue as any)?.[String(lote.id)]?.value || 0), 0);
+    const qtyTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteWfoQty as any)?.[String(lote.id)]?.qty || 0), 0);
     return {
       value: acc.value + valTotal,
       qty: acc.qty + qtyTotal
     };
   }, { value: 0, qty: 0 });
 
-  const monthlyIntermitentesTotals = sectors.reduce((acc, s) => {
+  const monthlyIntermitentesTotals = filteredSectors.reduce((acc, s) => {
     const stats = getManualRealStat(s.id, monthKey);
-    const valTotal = (Object.values(stats?.loteIntermitentesValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-    const qtyTotal = (Object.values(stats?.loteIntermitentesQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+    const valTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteIntermitentesValue as any)?.[String(lote.id)]?.value || 0), 0);
+    const qtyTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteIntermitentesQty as any)?.[String(lote.id)]?.qty || 0), 0);
     return {
       value: acc.value + valTotal,
       qty: acc.qty + qtyTotal
     };
   }, { value: 0, qty: 0 });
 
-  const monthlyExtrasBhTotals = sectors.reduce((acc, s) => {
+  const monthlyExtrasBhTotals = filteredSectors.reduce((acc, s) => {
     const stats = getManualRealStat(s.id, monthKey);
-    const valTotal = (Object.values(stats?.loteExtrasBhValue || {}) as any).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-    const qtyTotal = (Object.values(stats?.loteExtrasBhQty || {}) as any).reduce((sum: number, item: any) => sum + (item.qty || 0), 0);
+    const valTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteExtrasBhValue as any)?.[String(lote.id)]?.value || 0), 0);
+    const qtyTotal = lotes.reduce((sum, lote) => sum + ((stats?.loteExtrasBhQty as any)?.[String(lote.id)]?.qty || 0), 0);
     return {
       value: acc.value + valTotal,
       qty: acc.qty + qtyTotal
@@ -1032,20 +1032,19 @@ export const Indicators: React.FC = () => {
 
                       if (matrixView === 'value') {
                         workforceTotal = row.totalSectorValue;
-                        wfoTotal = (Object.values(sectorStats?.loteWfoValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
-                        intermitentesTotal = (Object.values(sectorStats?.loteIntermitentesValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
-                        extrasBhTotal = (Object.values(sectorStats?.loteExtrasBhValue || {}) as { value?: number }[]).reduce((acc, curr) => acc + (curr.value || 0), 0);
+                        wfoTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteWfoValue as any)?.[String(lote.id)]?.value || 0), 0);
+                        intermitentesTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteIntermitentesValue as any)?.[String(lote.id)]?.value || 0), 0);
+                        extrasBhTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteExtrasBhValue as any)?.[String(lote.id)]?.value || 0), 0);
                       } else if (matrixView === 'qty') {
                         workforceTotal = row.totalSectorQty;
-                        wfoTotal = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
-                        intermitentesTotal = (Object.values(sectorStats?.loteIntermitentesQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
-                        extrasBhTotal = (Object.values(sectorStats?.loteExtrasBhQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        wfoTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteWfoQty as any)?.[String(lote.id)]?.qty || 0), 0);
+                        intermitentesTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteIntermitentesQty as any)?.[String(lote.id)]?.qty || 0), 0);
+                        extrasBhTotal = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteExtrasBhQty as any)?.[String(lote.id)]?.qty || 0), 0);
                       } else {
                         workforceTotal = row.totalSectorIndex;
-                        // Calculate total index for WFO: Total WFO Qty / Total Month Occupancy
-                        const totalWfoQty = (Object.values(sectorStats?.loteWfoQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
-                        const totalIntermitentesQty = (Object.values(sectorStats?.loteIntermitentesQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
-                        const totalExtrasBhQty = (Object.values(sectorStats?.loteExtrasBhQty || {}) as { qty?: number }[]).reduce((acc, curr) => acc + (curr.qty || 0), 0);
+                        const totalWfoQty = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteWfoQty as any)?.[String(lote.id)]?.qty || 0), 0);
+                        const totalIntermitentesQty = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteIntermitentesQty as any)?.[String(lote.id)]?.qty || 0), 0);
+                        const totalExtrasBhQty = lotes.reduce((sum, lote) => sum + ((sectorStats?.loteExtrasBhQty as any)?.[String(lote.id)]?.qty || 0), 0);
                         const totalOccupancy = loteStats.reduce((acc, curr) => acc + curr.totalOccupancy, 0);
                         wfoTotal = totalOccupancy > 0 ? totalWfoQty / totalOccupancy : 0;
                         intermitentesTotal = totalOccupancy > 0 ? totalIntermitentesQty / totalOccupancy : 0;
