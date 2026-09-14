@@ -169,6 +169,7 @@ export const IdealTable: React.FC = () => {
   const [showConfirmPaste, setShowConfirmPaste] = useState(false);
   const [pasteSourceMonth, setPasteSourceMonth] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'clt' | 'extra'>('clt');
 
   useEffect(() => {
     const checkClipboard = () => {
@@ -637,7 +638,24 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto border border-slate-300 rounded-lg">
+        <div className="flex border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab('clt')}
+            className={`px-6 py-3 font-bold text-sm transition-colors ${activeTab === 'clt' ? 'text-[#155645] border-b-2 border-[#155645]' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Quadro CLT
+          </button>
+          <button
+            onClick={() => setActiveTab('extra')}
+            className={`px-6 py-3 font-bold text-sm transition-colors ${activeTab === 'extra' ? 'text-[#155645] border-b-2 border-[#155645]' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Extraordinários
+          </button>
+        </div>
+
+        {activeTab === 'clt' && (
+          <>
+            <div className="overflow-x-auto border border-slate-300 rounded-b-lg">
           <table className="w-full text-sm text-right border-collapse">
             <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
               <tr>
@@ -798,11 +816,87 @@ export const IdealTable: React.FC = () => {
             </tfoot>
           </table>
         </div>
-        <div className="p-2 text-xs text-slate-400 text-center bg-slate-50 border-t border-slate-200">
-          * Cálculo: (Real - Afastados - Jovens) - Orçado. Negativo (Verde) = Vagas/Economia. Positivo (Vermelho) = Excedente.
-          <br />
-          ** Dica: Para colar do Excel (Realizado), use os botões acima. Para Orçado (Anual), use as tabelas abaixo.
-        </div>
+            <div className="p-2 text-xs text-slate-400 text-center bg-slate-50 border-t border-slate-200">
+              * Cálculo: (Real - Afastados - Jovens) - Orçado. Negativo (Verde) = Vagas/Economia. Positivo (Vermelho) = Excedente.
+              <br />
+              ** Dica: Para colar do Excel (Realizado), use os botões acima. Para Orçado (Anual), use as tabelas abaixo.
+            </div>
+          </>
+        )}
+
+        {activeTab === 'extra' && (
+          <div className="overflow-x-auto border border-slate-300 rounded-b-lg">
+            <table className="w-full text-sm text-right border-collapse">
+              <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
+                <tr>
+                  <th className="p-2 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor (CR Chave)</th>
+                  <th className="p-2 border border-slate-300">Real (Qtd)</th>
+                  <th className="p-2 border border-slate-300">Meta (Qtd)</th>
+                  <th className="p-2 border border-slate-300 text-center">Diferença</th>
+                  <th className="p-2 border border-slate-300 text-center">Diferença %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {stats.map((row) => {
+                  const extraReal = requests
+                    .filter(r => r.sector === row.sectorName && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
+                    .reduce((sum, r) => sum + r.extrasQty, 0);
+                  const extraMeta = getMonthlyBudget(row.sectorId, selectedMonthKey).budgetQty || 0;
+                  const extraDiff = extraReal - extraMeta;
+                  const extraDiffPercent = extraMeta > 0 ? (extraDiff / extraMeta) * 100 : 0;
+                  
+                  return (
+                    <tr key={`extra-${row.sectorId}`} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
+                      <td className="p-2 border border-slate-300">{extraReal}</td>
+                      <td className="p-2 border border-slate-300">{extraMeta}</td>
+                      <td className={`p-2 text-center border border-slate-300 font-bold ${extraDiff <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        {extraDiff > 0 ? '+' : ''}{extraDiff}
+                      </td>
+                      <td className={`p-2 text-center border border-slate-300 font-bold ${extraDiffPercent <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        {extraDiffPercent > 0 ? '+' : ''}{extraDiffPercent.toFixed(2).replace('.', ',')}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                <tr>
+                  <td className="p-2 text-left border border-slate-300">TOTAL</td>
+                  <td className="p-2 border border-slate-300">
+                    {stats.reduce((sum, row) => sum + requests
+                      .filter(r => r.sector === row.sectorName && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
+                      .reduce((s, r) => s + r.extrasQty, 0), 0)}
+                  </td>
+                  <td className="p-2 border border-slate-300">
+                    {stats.reduce((sum, row) => sum + (getMonthlyBudget(row.sectorId, selectedMonthKey).budgetQty || 0), 0)}
+                  </td>
+                  <td className="p-2 text-center border border-slate-300">
+                    {(() => {
+                      const totalReal = stats.reduce((sum, row) => sum + requests
+                        .filter(r => r.sector === row.sectorName && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
+                        .reduce((s, r) => s + r.extrasQty, 0), 0);
+                      const totalMeta = stats.reduce((sum, row) => sum + (getMonthlyBudget(row.sectorId, selectedMonthKey).budgetQty || 0), 0);
+                      const diff = totalReal - totalMeta;
+                      return <span className={diff <= 0 ? 'text-green-600' : 'text-red-600'}>{diff > 0 ? '+' : ''}{diff}</span>;
+                    })()}
+                  </td>
+                  <td className="p-2 text-center border border-slate-300">
+                    {(() => {
+                      const totalReal = stats.reduce((sum, row) => sum + requests
+                        .filter(r => r.sector === row.sectorName && r.dateEvent.startsWith(selectedMonthKey) && r.status === 'Aprovado')
+                        .reduce((s, r) => s + r.extrasQty, 0), 0);
+                      const totalMeta = stats.reduce((sum, row) => sum + (getMonthlyBudget(row.sectorId, selectedMonthKey).budgetQty || 0), 0);
+                      const diff = totalReal - totalMeta;
+                      const diffPercent = totalMeta > 0 ? (diff / totalMeta) * 100 : 0;
+                      return <span className={diffPercent <= 0 ? 'text-green-600' : 'text-red-600'}>{diffPercent > 0 ? '+' : ''}{diffPercent.toFixed(2).replace('.', ',')}%</span>;
+                    })()}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* NEW BUDGET MATRIX TABLES */}
