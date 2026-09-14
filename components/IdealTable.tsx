@@ -638,6 +638,86 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
 
+        {isAdminUnlocked && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 mb-4 rounded-lg flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-yellow-800">Ferramenta Temporária</p>
+              <p className="text-xs text-yellow-700">Clique para inserir a carga inicial de Metas dos Extraordinários do Excel (para o ano de 2026).</p>
+            </div>
+            <button
+              onClick={async () => {
+                const matrixData: Record<string, number[]> = {
+                  'Almoxarifado': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Bar piscina': [7,5,5,5,5,5,6,5,6,7,6,6],
+                  'Boliche': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Compras': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Cozinha': [23,17,18,16,14,16,21,17,19,21,19,20],
+                  'Escritorio Externo': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Escritorio Interno': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Esportes e lazer': [7,7,7,7,7,7,7,7,7,7,7,7],
+                  'Eventos aeb': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Eventos servicos': [0,1,1,1,0,1,0,1,1,1,1,1],
+                  'Financeiro': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Gerente Geral': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Governanca': [10,6,7,5,4,5,12,9,8,10,8,9],
+                  'Jardinagem': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Jota Candy e Cafe': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Jota city': [1,1,1,1,1,1,1,1,1,1,1,1],
+                  'Lavanderia': [1,1,1,1,1,1,1,1,1,1,1,1],
+                  'Limpeza': [2,1,1,1,1,1,1,1,1,1,1,1],
+                  'Lojas': [1,0,0,0,0,0,1,0,0,0,0,1],
+                  'Manutencao': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Minibar': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Parque aquatico': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Piscina termica': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Recepcao': [5,4,4,4,3,4,5,4,4,5,4,5],
+                  'Refeitorio': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Reservas': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Restaurante nigori': [0,0,0,0,0,0,0,0,0,0,0,0],
+                  'Restaurante principal': [31,19,19,21,18,22,28,22,24,27,25,26],
+                  'Scoth bar': [0,0,0,0,0,0,0,0,0,0,0,0]
+                };
+                
+                const updates: any[] = [];
+                const yearToUpdate = '2026';
+                
+                Object.entries(matrixData).forEach(([sectorName, qtys]) => {
+                  const sector = sectors.find(s => s.name === sectorName);
+                  if (sector) {
+                    qtys.forEach((qty, monthIdx) => {
+                      const m = String(monthIdx + 1).padStart(2, '0');
+                      const mKey = `${yearToUpdate}-${m}`;
+                      const current = getMonthlyBudget(sector.id, mKey);
+                      updates.push({
+                        ...current,
+                        sectorId: sector.id,
+                        monthKey: mKey,
+                        budgetQty: qty // Set the Extra Meta
+                      });
+                    });
+                  }
+                });
+
+                if (updates.length > 0) {
+                  try {
+                    setStatusMessage({ type: 'info', text: 'Processando inserção...' });
+                    await bulkUpdateMonthlyBudgets(updates);
+                    setStatusMessage({ type: 'success', text: 'Meta inserida com sucesso! Pode recarregar a página.' });
+                    alert('Meta de Extraordinários importada com sucesso!');
+                  } catch (e: any) {
+                    setStatusMessage({ type: 'error', text: 'Erro ao inserir metas: ' + e.message });
+                  }
+                } else {
+                  alert('Erro: nenhum setor encontrado!');
+                }
+              }}
+              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-sm font-bold"
+            >
+              Inserir Dados da Imagem
+            </button>
+          </div>
+        )}
+
         <div className="flex border-b border-slate-200">
           <button
             onClick={() => setActiveTab('clt')}
