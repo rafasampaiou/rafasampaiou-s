@@ -1210,7 +1210,7 @@ export const Indicators: React.FC = () => {
                   realAbsolute = row.totalSectorQty;
                 }
 
-                // Calcule o desvio de PAX (UH)
+                // Desvio de PAX (UH)
                 const hasPaxInputs = (config.occupiedUhMeta || 0) > 0 && (config.occupiedUhReal || 0) > 0;
                 const dev = hasPaxInputs
                   ? (config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0) - 1
@@ -1229,13 +1229,23 @@ export const Indicators: React.FC = () => {
                   realValue = realAbsolute;
                   adjustedMeta = finalAdjustedAbsolute;
                 } else {
-                  // KPI (Index)
-                  const metaOcc = config.occupiedUhMeta || 0;
+                  // KPI (Índice) — usa a mesma lógica do gráfico "MO / UH Ocupada"
+                  // activeMoTarget = índice global configurado no Admin (ex: 0.050)
+                  // A meta de cada setor é proporcional ao peso do seu orçamento de Qtd no total orçado
+                  const totalBudgetQty = sectors.reduce((sum, s) => {
+                    const b = getMonthlyBudget(s.id, monthKey);
+                    return sum + ((b.budgetQty || 0) * currentDayFactor);
+                  }, 0);
+                  const sectorWeight = totalBudgetQty > 0 ? originalAbsolute / totalBudgetQty : 0;
                   const realOcc = grandTotalOccupancy || config.occupiedUhReal || 0;
-                  
-                  originalMeta = metaOcc > 0 ? originalAbsolute / metaOcc : 0;
+
+                  // Meta Original = índice global × peso do setor
+                  originalMeta = activeMoTarget * sectorWeight;
+                  // Meta Ajustada = índice ajustado pelo desvio × peso do setor
+                  const adjustedGlobalTarget = (dev < 0) ? activeMoTarget * (1 + dev) : activeMoTarget;
+                  adjustedMeta = adjustedGlobalTarget * sectorWeight;
+                  // Real = qty do setor / UH Real total
                   realValue = realOcc > 0 ? realAbsolute / realOcc : 0;
-                  adjustedMeta = realOcc > 0 ? finalAdjustedAbsolute / realOcc : 0;
                 }
 
                 const diff = realValue - adjustedMeta;
@@ -1311,13 +1321,19 @@ export const Indicators: React.FC = () => {
                   totalOriginal = totalOriginalAbsolute;
                   totalAdjusted = totalAdjustedAbsolute;
                 } else {
-                  const metaOcc = config.occupiedUhMeta || 0;
+                  // KPI total: real = soma das qtds de todos setores / UH Real total
+                  // Meta total = activeMoTarget (o índice global configurado no Admin, igual à linha no gráfico)
                   const realOcc = grandTotalOccupancy || config.occupiedUhReal || 0;
-                  
-                  totalOriginal = metaOcc > 0 ? totalOriginalAbsolute / metaOcc : 0;
+                  const devCalcGlobal = (config.occupiedUhMeta || 0) > 0
+                    ? ((config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0)) - 1
+                    : 0;
+                  const adjustedGlobalTarget = devCalcGlobal < 0 ? activeMoTarget * (1 + devCalcGlobal) : activeMoTarget;
+
                   totalReal = realOcc > 0 ? totalRealAbsolute / realOcc : 0;
-                  totalAdjusted = realOcc > 0 ? totalAdjustedAbsolute / realOcc : 0;
+                  totalOriginal = activeMoTarget;
+                  totalAdjusted = adjustedGlobalTarget;
                 }
+
 
                 const totalDiff = totalReal - totalAdjusted;
                 const totalPercent = totalAdjusted > 0 ? (totalDiff / totalAdjusted) * 100 : 0;
