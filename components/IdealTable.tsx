@@ -666,40 +666,40 @@ export const IdealTable: React.FC = () => {
             <button
               onClick={async () => {
                 const matrixData: Record<string, number[]> = {
-                  'Almoxarifado': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Bar piscina': [7,5,5,5,5,5,6,5,6,7,6,6],
-                  'Boliche': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Compras': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Cozinha': [23,17,18,16,14,16,21,17,19,21,19,20],
-                  'Escritorio Externo': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Escritorio Interno': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Esportes e lazer': [7,7,7,7,7,7,7,7,7,7,7,7],
-                  'Eventos aeb': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Eventos servicos': [0,1,1,1,0,1,0,1,1,1,1,1],
-                  'Financeiro': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Gerente Geral': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Governanca': [10,6,7,5,4,5,12,9,8,10,8,9],
-                  'Jardinagem': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Jota Candy e Cafe': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Jota city': [1,1,1,1,1,1,1,1,1,1,1,1],
-                  'Lavanderia': [1,1,1,1,1,1,1,1,1,1,1,1],
-                  'Limpeza': [2,1,1,1,1,1,1,1,1,1,1,1],
-                  'Lojas': [1,0,0,0,0,0,1,0,0,0,0,1],
-                  'Manutencao': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Minibar': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Parque aquatico': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Piscina termica': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Recepcao': [5,4,4,4,3,4,5,4,4,5,4,5],
-                  'Refeitorio': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Reservas': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Restaurante nigori': [0,0,0,0,0,0,0,0,0,0,0,0],
-                  'Restaurante principal': [31,19,19,21,18,22,28,22,24,27,25,26],
-                  'Scoth bar': [0,0,0,0,0,0,0,0,0,0,0,0]
+                  'Almoxarifado': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Bar piscina': [7, 5, 5, 5, 5, 5, 6, 5, 6, 7, 6, 6],
+                  'Boliche': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Compras': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Cozinha': [23, 17, 18, 16, 14, 16, 21, 17, 19, 21, 19, 20],
+                  'Escritorio Externo': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Escritorio Interno': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Esportes e lazer': [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+                  'Eventos aeb': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Eventos servicos': [0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+                  'Financeiro': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Gerente Geral': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Governanca': [10, 6, 7, 5, 4, 5, 12, 9, 8, 10, 8, 9],
+                  'Jardinagem': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Jota Candy e Cafe': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Jota city': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  'Lavanderia': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  'Limpeza': [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  'Lojas': [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+                  'Manutencao': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Minibar': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Parque aquatico': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Piscina termica': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Recepcao': [5, 4, 4, 4, 3, 4, 5, 4, 4, 5, 4, 5],
+                  'Refeitorio': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Reservas': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Restaurante nigori': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  'Restaurante principal': [31, 19, 19, 21, 18, 22, 28, 22, 24, 27, 25, 26],
+                  'Scoth bar': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 };
-                
+
                 const updates: any[] = [];
                 const yearToUpdate = '2026';
-                
+
                 Object.entries(matrixData).forEach(([sectorName, qtys]) => {
                   const sector = sectors.find(s => s.name === sectorName);
                   if (sector) {
@@ -755,166 +755,166 @@ export const IdealTable: React.FC = () => {
         {activeTab === 'clt' && (
           <>
             <div className="overflow-x-auto border border-slate-300 rounded-b-lg">
-          <table className="w-full text-sm text-right border-collapse">
-            <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
-              <tr>
-                <th className="p-2 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor</th>
-                <th className="p-2 border border-slate-300 bg-slate-200/50">Qtd Orçada</th>
-                <th className="p-2 border border-slate-300 bg-slate-200/50">Salário Orçado</th>
-                <th className="p-2 border border-slate-300">Qtd Real (CLT)</th>
-                <th className="p-2 border border-slate-300 text-orange-700">Afastados</th>
-                <th className="p-2 border border-slate-300 text-blue-700">Jovem Ap.</th>
-                <th className="p-2 border border-slate-300">Salário Real</th>
-                <th className="p-2 border border-slate-300 text-center">Dif. Qtd</th>
-                <th className="p-2 border border-slate-300 text-center">Dif. Valor</th>
-                <th className="p-2 border border-slate-300 text-center">Dif. % Valor</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {stats.map((row, index) => {
-                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, fieldName: string) => {
-                  if (e.key === 'Enter') {
-                    // Check if it's a raw input or a component that will lose focus
-                    const nextId = `ideal-${fieldName}-${index + 1}`;
-                    const nextEl = document.getElementById(nextId);
-                    if (nextEl) {
-                      e.preventDefault();
-                      nextEl.focus();
-                    }
-                  }
-                };
+              <table className="w-full text-sm text-right border-collapse">
+                <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
+                  <tr>
+                    <th className="p-2 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor</th>
+                    <th className="p-2 border border-slate-300 bg-slate-200/50">Qtd Orçada</th>
+                    <th className="p-2 border border-slate-300 bg-slate-200/50">Salário Orçado</th>
+                    <th className="p-2 border border-slate-300">Qtd Real (CLT)</th>
+                    <th className="p-2 border border-slate-300 text-orange-700">Afastados</th>
+                    <th className="p-2 border border-slate-300 text-blue-700">Jovem Ap.</th>
+                    <th className="p-2 border border-slate-300">Salário Real</th>
+                    <th className="p-2 border border-slate-300 text-center">Dif. Qtd</th>
+                    <th className="p-2 border border-slate-300 text-center">Dif. Valor</th>
+                    <th className="p-2 border border-slate-300 text-center">Dif. % Valor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {stats.map((row, index) => {
+                    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, fieldName: string) => {
+                      if (e.key === 'Enter') {
+                        // Check if it's a raw input or a component that will lose focus
+                        const nextId = `ideal-${fieldName}-${index + 1}`;
+                        const nextEl = document.getElementById(nextId);
+                        if (nextEl) {
+                          e.preventDefault();
+                          nextEl.focus();
+                        }
+                      }
+                    };
 
-                return (
-                  <tr key={row.sectorId} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
+                    return (
+                      <tr key={row.sectorId} className="hover:bg-blue-50/30 transition-colors">
+                        <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
 
-                    {/* Orçado */}
-                    <td className="p-0 border border-slate-300 bg-slate-50/50">
-                      <input
-                        id={`ideal-budgetQty-${index}`}
-                        type="number"
-                        className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors"
-                        value={row.budgetQty}
-                        onChange={(e) => handleBudgetChange(row.sectorId, 'cltBudgetQty', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'budgetQty')}
-                        onKeyDown={(e) => handleKeyDown(e, 'budgetQty')}
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    </td>
-                    <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
-                      <CurrencyInput
-                        id={`ideal-budgetValue-${index}`}
-                        value={row.budgetValue}
-                        onChange={(val) => handleBudgetChange(row.sectorId, 'cltBudgetValue', val)}
-                        onPaste={(e) => handlePaste(e, index, 'budgetValue')}
-                        onKeyDown={(e) => handleKeyDown(e, 'budgetValue')}
-                      />
-                    </td>
+                        {/* Orçado */}
+                        <td className="p-0 border border-slate-300 bg-slate-50/50">
+                          <input
+                            id={`ideal-budgetQty-${index}`}
+                            type="number"
+                            className="w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors"
+                            value={row.budgetQty}
+                            onChange={(e) => handleBudgetChange(row.sectorId, 'cltBudgetQty', e.target.value)}
+                            onPaste={(e) => handlePaste(e, index, 'budgetQty')}
+                            onKeyDown={(e) => handleKeyDown(e, 'budgetQty')}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+                        <td className="p-0 border border-slate-300 bg-slate-50/50 relative group">
+                          <CurrencyInput
+                            id={`ideal-budgetValue-${index}`}
+                            value={row.budgetValue}
+                            onChange={(val) => handleBudgetChange(row.sectorId, 'cltBudgetValue', val)}
+                            onPaste={(e) => handlePaste(e, index, 'budgetValue')}
+                            onKeyDown={(e) => handleKeyDown(e, 'budgetValue')}
+                          />
+                        </td>
 
-                    {/* Real & Adjustments */}
-                    <td className="p-0 border border-slate-300">
-                      <input
-                        id={`ideal-realQty-${index}`}
-                        type="number"
-                        className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors ${row.isManual ? 'bg-orange-50/50' : ''}`}
-                        value={row.realQty}
-                        onChange={(e) => handleRealChange(row.sectorId, 'realQty', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'realQty')}
-                        onKeyDown={(e) => handleKeyDown(e, 'realQty')}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        disabled={!isAdminUnlocked}
-                      />
-                    </td>
-                    <td className="p-0 border border-slate-300 bg-orange-50/20">
-                      <input
-                        id={`ideal-afastadosQty-${index}`}
-                        type="number"
-                        className="w-full h-full p-2 text-right outline-none focus:bg-orange-100/50 transition-colors text-orange-800"
-                        value={row.afastadosQty}
-                        onChange={(e) => handleRealChange(row.sectorId, 'afastadosQty', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'afastadosQty')}
-                        onKeyDown={(e) => handleKeyDown(e, 'afastadosQty')}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        disabled={!isAdminUnlocked}
-                      />
-                    </td>
-                    <td className="p-0 border border-slate-300 bg-blue-50/20">
-                      <input
-                        id={`ideal-apprenticesQty-${index}`}
-                        type="number"
-                        className="w-full h-full p-2 text-right outline-none focus:bg-blue-100/50 transition-colors text-blue-800"
-                        value={row.apprenticesQty}
-                        onChange={(e) => handleRealChange(row.sectorId, 'apprenticesQty', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'apprenticesQty')}
-                        onKeyDown={(e) => handleKeyDown(e, 'apprenticesQty')}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        disabled={!isAdminUnlocked}
-                      />
-                    </td>
-                    <td className="p-0 border border-slate-300">
-                      <input
-                        id={`ideal-realValue-${index}`}
-                        type="number"
-                        step="0.01"
-                        className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors font-medium ${row.isManual ? 'bg-orange-50/50' : ''}`}
-                        value={row.realValue}
-                        onChange={(e) => handleRealChange(row.sectorId, 'realValue', e.target.value)}
-                        onPaste={(e) => handlePaste(e, index, 'realValue')}
-                        onKeyDown={(e) => handleKeyDown(e, 'realValue')}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        disabled={!isAdminUnlocked}
-                      />
-                    </td>
+                        {/* Real & Adjustments */}
+                        <td className="p-0 border border-slate-300">
+                          <input
+                            id={`ideal-realQty-${index}`}
+                            type="number"
+                            className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors ${row.isManual ? 'bg-orange-50/50' : ''}`}
+                            value={row.realQty}
+                            onChange={(e) => handleRealChange(row.sectorId, 'realQty', e.target.value)}
+                            onPaste={(e) => handlePaste(e, index, 'realQty')}
+                            onKeyDown={(e) => handleKeyDown(e, 'realQty')}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            disabled={!isAdminUnlocked}
+                          />
+                        </td>
+                        <td className="p-0 border border-slate-300 bg-orange-50/20">
+                          <input
+                            id={`ideal-afastadosQty-${index}`}
+                            type="number"
+                            className="w-full h-full p-2 text-right outline-none focus:bg-orange-100/50 transition-colors text-orange-800"
+                            value={row.afastadosQty}
+                            onChange={(e) => handleRealChange(row.sectorId, 'afastadosQty', e.target.value)}
+                            onPaste={(e) => handlePaste(e, index, 'afastadosQty')}
+                            onKeyDown={(e) => handleKeyDown(e, 'afastadosQty')}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            disabled={!isAdminUnlocked}
+                          />
+                        </td>
+                        <td className="p-0 border border-slate-300 bg-blue-50/20">
+                          <input
+                            id={`ideal-apprenticesQty-${index}`}
+                            type="number"
+                            className="w-full h-full p-2 text-right outline-none focus:bg-blue-100/50 transition-colors text-blue-800"
+                            value={row.apprenticesQty}
+                            onChange={(e) => handleRealChange(row.sectorId, 'apprenticesQty', e.target.value)}
+                            onPaste={(e) => handlePaste(e, index, 'apprenticesQty')}
+                            onKeyDown={(e) => handleKeyDown(e, 'apprenticesQty')}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            disabled={!isAdminUnlocked}
+                          />
+                        </td>
+                        <td className="p-0 border border-slate-300">
+                          <input
+                            id={`ideal-realValue-${index}`}
+                            type="number"
+                            step="0.01"
+                            className={`w-full h-full p-2 text-right outline-none focus:bg-blue-50 transition-colors font-medium ${row.isManual ? 'bg-orange-50/50' : ''}`}
+                            value={row.realValue}
+                            onChange={(e) => handleRealChange(row.sectorId, 'realValue', e.target.value)}
+                            onPaste={(e) => handlePaste(e, index, 'realValue')}
+                            onKeyDown={(e) => handleKeyDown(e, 'realValue')}
+                            onWheel={(e) => e.currentTarget.blur()}
+                            disabled={!isAdminUnlocked}
+                          />
+                        </td>
 
-                    {/* Differences */}
-                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                      <span className={`font-bold ${row.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {row.diffQty > 0 ? '+' : ''}{row.diffQty}
+                        {/* Differences */}
+                        <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                          <span className={`font-bold ${row.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {row.diffQty > 0 ? '+' : ''}{row.diffQty}
+                          </span>
+                        </td>
+                        <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.diffValue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                            R$ {row.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                          </span>
+                        </td>
+                        <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
+                          <span className={`font-bold text-xs ${row.diffPercent <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {row.diffPercent > 0 ? '+' : ''}{row.diffPercent.toFixed(1)}%
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                  <tr>
+                    <td className="p-2 text-left border border-slate-300">TOTAL</td>
+                    <td className="p-2 border border-slate-300">{totals.budgetQty}</td>
+                    <td className="p-2 border border-slate-300">R$ {totals.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="p-2 border border-slate-300">{totals.realQty}</td>
+                    <td className="p-2 border border-slate-300 text-orange-700">{totals.afastadosQty}</td>
+                    <td className="p-2 border border-slate-300 text-blue-700">{totals.apprenticesQty}</td>
+                    <td className="p-2 border border-slate-300">R$ {totals.realValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-center border border-slate-300">
+                      <span className={totals.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {totals.diffQty}
                       </span>
                     </td>
-                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.diffValue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                        R$ {row.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    <td className="p-2 text-center border border-slate-300">
+                      <span className={totals.diffValue <= 0 ? 'text-green-600' : 'text-red-600'}>
+                        R$ {totals.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </span>
                     </td>
-                    <td className="p-2 text-center border border-slate-300 bg-slate-50/30">
-                      <span className={`font-bold text-xs ${row.diffPercent <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {row.diffPercent > 0 ? '+' : ''}{row.diffPercent.toFixed(1)}%
+                    <td className="p-2 text-center border border-slate-300">
+                      <span className={totalDiffPercent <= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {totalDiffPercent > 0 ? '+' : ''}{totalDiffPercent.toFixed(1)}%
                       </span>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400">
-              <tr>
-                <td className="p-2 text-left border border-slate-300">TOTAL</td>
-                <td className="p-2 border border-slate-300">{totals.budgetQty}</td>
-                <td className="p-2 border border-slate-300">R$ {totals.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                <td className="p-2 border border-slate-300">{totals.realQty}</td>
-                <td className="p-2 border border-slate-300 text-orange-700">{totals.afastadosQty}</td>
-                <td className="p-2 border border-slate-300 text-blue-700">{totals.apprenticesQty}</td>
-                <td className="p-2 border border-slate-300">R$ {totals.realValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                <td className="p-2 text-center border border-slate-300">
-                  <span className={totals.diffQty <= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {totals.diffQty}
-                  </span>
-                </td>
-                <td className="p-2 text-center border border-slate-300">
-                  <span className={totals.diffValue <= 0 ? 'text-green-600' : 'text-red-600'}>
-                    R$ {totals.diffValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                  </span>
-                </td>
-                <td className="p-2 text-center border border-slate-300">
-                  <span className={totalDiffPercent <= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {totalDiffPercent > 0 ? '+' : ''}{totalDiffPercent.toFixed(1)}%
-                  </span>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+                </tfoot>
+              </table>
+            </div>
             <div className="p-2 text-xs text-slate-400 text-center bg-slate-50 border-t border-slate-200">
               * Cálculo: (Real - Afastados - Jovens) - Orçado. Negativo (Verde) = Vagas/Economia. Positivo (Vermelho) = Excedente.
               <br />
@@ -930,13 +930,12 @@ export const IdealTable: React.FC = () => {
               <button
                 onClick={handleExtraMetaSave}
                 disabled={savingExtraMeta['_all'] || Object.keys(extraMetaEdits).length === 0}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm ${
-                  savedExtraMeta['_all']
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm ${savedExtraMeta['_all']
                     ? 'bg-green-500 text-white'
                     : Object.keys(extraMetaEdits).length === 0
                       ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                       : 'bg-[#155645] hover:bg-[#104033] text-white'
-                }`}
+                  }`}
               >
                 {savingExtraMeta['_all'] ? (
                   <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Salvando...</>
@@ -965,18 +964,18 @@ export const IdealTable: React.FC = () => {
                   const extraMeta = getMonthlyBudget(row.sectorId, selectedMonthKey).budgetQty || 0;
                   const extraDiff = extraReal - extraMeta;
                   const extraDiffPercent = extraMeta > 0 ? (extraDiff / extraMeta) * 100 : 0;
-                  
+
                   return (
                     <tr key={`extra-${row.sectorId}`} className="hover:bg-blue-50/30 transition-colors">
                       <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
                       <td className="p-2 border border-slate-300">{extraReal}</td>
                       <td className="p-1 border border-slate-300">
-                          <input
-                            type="number"
-                            className="w-24 text-center border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#155645] focus:border-[#155645] transition-colors"
-                            value={extraMetaEdits[row.sectorId] ?? extraMeta}
-                            onChange={(e) => setExtraMetaEdits(prev => ({ ...prev, [row.sectorId]: e.target.value }))}
-                          />
+                        <input
+                          type="number"
+                          className="w-24 text-center border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#155645] focus:border-[#155645] transition-colors"
+                          value={extraMetaEdits[row.sectorId] ?? extraMeta}
+                          onChange={(e) => setExtraMetaEdits(prev => ({ ...prev, [row.sectorId]: e.target.value }))}
+                        />
                       </td>
                       <td className={`p-2 text-center border border-slate-300 font-bold ${extraDiff <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                         {extraDiff > 0 ? '+' : ''}{extraDiff}

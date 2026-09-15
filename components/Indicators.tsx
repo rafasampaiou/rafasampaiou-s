@@ -378,7 +378,7 @@ export const Indicators: React.FC = () => {
   };
 
   const financialMatrix = calculateMatrix(filteredSectors);
-  const fullExtrasMatrix = calculateMatrix(sectors, 'extras');
+  const fullExtrasMatrix = calculateMatrix(sectors, chartMetric);
 
   const loteTotals = lotes.map(lote => {
     return financialMatrix.reduce((acc, row) => {
@@ -1156,7 +1156,7 @@ export const Indicators: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Extraordinário por Setor Real x Meta</h3>
+            <h3 className="text-sm font-bold text-slate-800">Extraordinário por Setor Real x Meta ({getMetricLabel()})</h3>
             <p className="text-[10px] text-slate-500">Orçamento flexível de acordo com a ocupação (Desvio: {config.occupancyDeviation || 0}%)</p>
           </div>
           <div className="flex bg-white border border-slate-300 rounded-lg p-1">
@@ -1198,15 +1198,27 @@ export const Indicators: React.FC = () => {
                 const taxRate = config.taxRate || 0;
                 const isValue = flexibleBudgetMetric === 'value';
                 const currentDayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
+
+                // Select budget fields based on chartMetric
+                const budgetQtyForMetric = chartMetric === 'extras'
+                  ? (budget.budgetQty || 0)
+                  : chartMetric === 'clt'
+                    ? (budget.cltBudgetQty || 0)
+                    : (budget.budgetQty || 0) + (budget.cltBudgetQty || 0);
+                const budgetValueForMetric = chartMetric === 'extras'
+                  ? (budget.budgetValue || 0)
+                  : chartMetric === 'clt'
+                    ? (budget.cltBudgetValue || 0)
+                    : (budget.budgetValue || 0) + (budget.cltBudgetValue || 0);
                 
                 let originalAbsolute = 0;
                 let realAbsolute = 0;
                 
                 if (isValue) {
-                  originalAbsolute = (budget.budgetValue || 0) * (1 + (taxRate / 100)) * currentDayFactor;
+                  originalAbsolute = budgetValueForMetric * (1 + (taxRate / 100)) * currentDayFactor;
                   realAbsolute = row.totalSectorValue;
                 } else {
-                  originalAbsolute = (budget.budgetQty || 0) * currentDayFactor;
+                  originalAbsolute = budgetQtyForMetric * currentDayFactor;
                   realAbsolute = row.totalSectorQty;
                 }
 
@@ -1234,7 +1246,12 @@ export const Indicators: React.FC = () => {
                   // A meta de cada setor é proporcional ao peso do seu orçamento de Qtd no total orçado
                   const totalBudgetQty = sectors.reduce((sum, s) => {
                     const b = getMonthlyBudget(s.id, monthKey);
-                    return sum + ((b.budgetQty || 0) * currentDayFactor);
+                    const qtyForMetric = chartMetric === 'extras'
+                      ? (b.budgetQty || 0)
+                      : chartMetric === 'clt'
+                        ? (b.cltBudgetQty || 0)
+                        : (b.budgetQty || 0) + (b.cltBudgetQty || 0);
+                    return sum + (qtyForMetric * currentDayFactor);
                   }, 0);
                   const sectorWeight = totalBudgetQty > 0 ? originalAbsolute / totalBudgetQty : 0;
                   const realOcc = grandTotalOccupancy || config.occupiedUhReal || 0;
@@ -1291,14 +1308,25 @@ export const Indicators: React.FC = () => {
                   const sectorObj = sectors.find(s => s.name === row.sectorName);
                   if (!sectorObj) return;
 
-                  const budget = useApp().getMonthlyBudget(sectorObj.id, monthKey);
+                  const budget = getMonthlyBudget(sectorObj.id, monthKey);
                   const taxRate = config.taxRate || 0;
+
+                  const budgetQtyForMetric = chartMetric === 'extras'
+                    ? (budget.budgetQty || 0)
+                    : chartMetric === 'clt'
+                      ? (budget.cltBudgetQty || 0)
+                      : (budget.budgetQty || 0) + (budget.cltBudgetQty || 0);
+                  const budgetValueForMetric = chartMetric === 'extras'
+                    ? (budget.budgetValue || 0)
+                    : chartMetric === 'clt'
+                      ? (budget.cltBudgetValue || 0)
+                      : (budget.budgetValue || 0) + (budget.cltBudgetValue || 0);
                   
                   let original = 0;
                   if (isValue) {
-                    original = (budget.budgetValue || 0) * (1 + (taxRate / 100)) * currentDayFactor;
+                    original = budgetValueForMetric * (1 + (taxRate / 100)) * currentDayFactor;
                   } else {
-                    original = (budget.budgetQty || 0) * currentDayFactor;
+                    original = budgetQtyForMetric * currentDayFactor;
                   }
 
                   const devCalc = (config.occupiedUhMeta || 0) > 0
