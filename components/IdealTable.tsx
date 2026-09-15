@@ -175,15 +175,19 @@ export const IdealTable: React.FC = () => {
   const [savingExtraMeta, setSavingExtraMeta] = useState<Record<string, boolean>>({});
   const [savedExtraMeta, setSavedExtraMeta] = useState<Record<string, boolean>>({});
 
-  const handleExtraMetaSave = async (sectorId: string) => {
-    const newQty = parseInt(extraMetaEdits[sectorId] ?? '', 10);
-    if (isNaN(newQty)) return;
-    setSavingExtraMeta(prev => ({ ...prev, [sectorId]: true }));
-    const current = getMonthlyBudget(sectorId, selectedMonthKey);
-    await updateMonthlyBudget({ ...current, budgetQty: newQty });
-    setSavingExtraMeta(prev => ({ ...prev, [sectorId]: false }));
-    setSavedExtraMeta(prev => ({ ...prev, [sectorId]: true }));
-    setTimeout(() => setSavedExtraMeta(prev => ({ ...prev, [sectorId]: false })), 2000);
+  const handleExtraMetaSave = async () => {
+    const entries = Object.entries(extraMetaEdits);
+    if (entries.length === 0) return;
+    setSavingExtraMeta(prev => ({ ...prev, _all: true }));
+    await Promise.all(entries.map(async ([sectorId, val]) => {
+      const newQty = parseInt(val, 10);
+      if (isNaN(newQty)) return;
+      const current = getMonthlyBudget(sectorId, selectedMonthKey);
+      await updateMonthlyBudget({ ...current, budgetQty: newQty });
+    }));
+    setSavingExtraMeta({ _all: false });
+    setSavedExtraMeta({ _all: true });
+    setTimeout(() => setSavedExtraMeta({}), 2500);
   };
 
   useEffect(() => {
@@ -921,12 +925,34 @@ export const IdealTable: React.FC = () => {
 
         {activeTab === 'extra' && (
           <div className="overflow-x-auto border border-slate-300 rounded-b-lg">
+            <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200">
+              <p className="text-xs text-slate-400">Edite os valores da coluna Meta (Qtd) e clique em Salvar para persistir no banco.</p>
+              <button
+                onClick={handleExtraMetaSave}
+                disabled={savingExtraMeta['_all'] || Object.keys(extraMetaEdits).length === 0}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm ${
+                  savedExtraMeta['_all']
+                    ? 'bg-green-500 text-white'
+                    : Object.keys(extraMetaEdits).length === 0
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-[#155645] hover:bg-[#104033] text-white'
+                }`}
+              >
+                {savingExtraMeta['_all'] ? (
+                  <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Salvando...</>
+                ) : savedExtraMeta['_all'] ? (
+                  <>✓ Salvo!</>
+                ) : (
+                  <>↑ Salvar Metas</>
+                )}
+              </button>
+            </div>
             <table className="w-auto text-sm text-center border-collapse bg-white">
               <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
                 <tr>
                   <th className="p-2 px-4 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor (CR Chave)</th>
                   <th className="p-2 px-4 border border-slate-300">Real (Qtd)</th>
-                  <th className="p-2 px-4 border border-slate-300">Meta (Qtd) <span className="text-[#F8981C] normal-case font-normal">(editável)</span></th>
+                  <th className="p-2 px-4 border border-slate-300">Meta (Qtd) <span className="text-[#F8981C] normal-case font-normal italic">(editável)</span></th>
                   <th className="p-2 px-4 border border-slate-300">Diferença</th>
                   <th className="p-2 px-4 border border-slate-300">Diferença %</th>
                 </tr>
@@ -945,27 +971,12 @@ export const IdealTable: React.FC = () => {
                       <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
                       <td className="p-2 border border-slate-300">{extraReal}</td>
                       <td className="p-1 border border-slate-300">
-                        <div className="flex items-center gap-1">
                           <input
                             type="number"
-                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#155645] focus:border-[#155645] transition-colors"
+                            className="w-24 text-center border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#155645] focus:border-[#155645] transition-colors"
                             value={extraMetaEdits[row.sectorId] ?? extraMeta}
                             onChange={(e) => setExtraMetaEdits(prev => ({ ...prev, [row.sectorId]: e.target.value }))}
-                            onKeyDown={(e) => e.key === 'Enter' && handleExtraMetaSave(row.sectorId)}
                           />
-                          <button
-                            onClick={() => handleExtraMetaSave(row.sectorId)}
-                            disabled={savingExtraMeta[row.sectorId]}
-                            className={`flex items-center justify-center w-6 h-6 rounded text-white text-xs transition-colors shrink-0 ${
-                              savedExtraMeta[row.sectorId]
-                                ? 'bg-green-500'
-                                : 'bg-[#155645] hover:bg-[#104033]'
-                            }`}
-                            title="Salvar meta"
-                          >
-                            {savingExtraMeta[row.sectorId] ? '...' : savedExtraMeta[row.sectorId] ? '✓' : '↑'}
-                          </button>
-                        </div>
                       </td>
                       <td className={`p-2 text-center border border-slate-300 font-bold ${extraDiff <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                         {extraDiff > 0 ? '+' : ''}{extraDiff}
