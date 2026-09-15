@@ -143,7 +143,7 @@ export const Indicators: React.FC = () => {
   const [calculationBasis, setCalculationBasis] = useState<'total' | 'worked'>('total');
   const [includeIntermittentExtras, setIncludeIntermittentExtras] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [flexibleBudgetMetric, setFlexibleBudgetMetric] = useState<'value' | 'qty'>('value');
+  const [flexibleBudgetMetric, setFlexibleBudgetMetric] = useState<'value' | 'index'>('value');
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
@@ -1166,10 +1166,10 @@ export const Indicators: React.FC = () => {
               <DollarSign size={14} /> Valor (R$)
             </button>
             <button
-              onClick={() => setFlexibleBudgetMetric('qty')}
-              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${flexibleBudgetMetric === 'qty' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'}`}
+              onClick={() => setFlexibleBudgetMetric('index')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${flexibleBudgetMetric === 'index' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'}`}
             >
-              <Users size={14} /> KPI (Qtd)
+              <Activity size={14} /> KPI (Índice)
             </button>
           </div>
         </div>
@@ -1178,10 +1178,10 @@ export const Indicators: React.FC = () => {
             <thead className="bg-[#F8981C]/5 text-[#F8981C] text-xs font-bold uppercase">
               <tr>
                 <th className="p-3 border-r border-slate-200 text-left w-32 min-w-[120px]">Setor</th>
-                <th className="p-3 border-r border-slate-200">Real ({flexibleBudgetMetric === 'value' ? 'R$' : 'Qtd'})</th>
+                <th className="p-3 border-r border-slate-200">Real ({flexibleBudgetMetric === 'value' ? 'R$' : 'KPI'})</th>
                 <th className="p-3 border-r border-slate-200 text-slate-500 font-normal">Meta Original</th>
                 <th className="p-3 border-r border-slate-200">Meta Ajustada</th>
-                <th className="p-3 border-r border-slate-200">Dif. {flexibleBudgetMetric === 'value' ? 'Valor' : 'Qtd'}</th>
+                <th className="p-3 border-r border-slate-200">Dif. {flexibleBudgetMetric === 'value' ? 'Valor' : 'KPI'}</th>
                 <th className="p-3">%</th>
               </tr>
             </thead>
@@ -1195,40 +1195,54 @@ export const Indicators: React.FC = () => {
                   : { budgetValue: 0, budgetQty: 0 };
 
                 const taxRate = config.taxRate || 0;
+                const isValue = flexibleBudgetMetric === 'value';
                 
-                let originalMeta = 0;
-                let realValue = 0;
+                let originalAbsolute = 0;
+                let realAbsolute = 0;
                 
-                if (flexibleBudgetMetric === 'value') {
-                  originalMeta = (budget.budgetValue || 0) * (1 + (taxRate / 100));
-                  realValue = row.totalSectorValue;
+                if (isValue) {
+                  originalAbsolute = (budget.budgetValue || 0) * (1 + (taxRate / 100));
+                  realAbsolute = row.totalSectorValue;
                 } else {
-                  originalMeta = budget.budgetQty || 0;
-                  realValue = row.totalSectorQty;
+                  originalAbsolute = budget.budgetQty || 0;
+                  realAbsolute = row.totalSectorQty;
                 }
 
                 // Calcule o desvio de PAX (UH)
-                // Só aplicamos o desvio se houver Meta E Real preenchidos (maiores que 0)
                 const hasPaxInputs = (config.occupiedUhMeta || 0) > 0 && (config.occupiedUhReal || 0) > 0;
                 const dev = hasPaxInputs
                   ? (config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0) - 1
                   : 0;
 
-                // Se o desvio for negativo (menos gente que a meta), reduz a meta de índice proporcionalmente
-                // Se não houver desvio (ou for positivo), mantém a meta base original
-                const adjustedMeta = (dev < 0) ? originalMeta * (1 + dev) : originalMeta;
+                // Meta Ajustada Absoluta
+                const adjustedAbsolute = (dev < 0) ? originalAbsolute * (1 + dev) : originalAbsolute;
+                const finalAdjustedAbsolute = adjustedAbsolute > 0 ? adjustedAbsolute : originalAbsolute;
 
-                // Fallback: se o adjustedMeta final for zero mas o originalMeta era > 0, algo está errado no cálculo do desvio,
-                // então mostramos o originalMeta para a linha não sumir.
-                const finalAdjustedMeta = adjustedMeta > 0 ? adjustedMeta : originalMeta;
+                let originalMeta = 0;
+                let realValue = 0;
+                let adjustedMeta = 0;
 
-                const diff = realValue - finalAdjustedMeta;
-                const diffPercent = finalAdjustedMeta > 0 ? (diff / finalAdjustedMeta) * 100 : 0;
+                if (isValue) {
+                  originalMeta = originalAbsolute;
+                  realValue = realAbsolute;
+                  adjustedMeta = finalAdjustedAbsolute;
+                } else {
+                  // KPI (Index)
+                  const metaOcc = config.occupiedUhMeta || 0;
+                  const realOcc = grandTotalOccupancy || config.occupiedUhReal || 0;
+                  
+                  originalMeta = metaOcc > 0 ? originalAbsolute / metaOcc : 0;
+                  realValue = realOcc > 0 ? realAbsolute / realOcc : 0;
+                  adjustedMeta = realOcc > 0 ? finalAdjustedAbsolute / realOcc : 0;
+                }
+
+                const diff = realValue - adjustedMeta;
+                const diffPercent = adjustedMeta > 0 ? (diff / adjustedMeta) * 100 : 0;
                 
-                const prefix = flexibleBudgetMetric === 'value' ? 'R$ ' : '';
-                const formatOpts = flexibleBudgetMetric === 'value' 
+                const prefix = isValue ? 'R$ ' : '';
+                const formatOpts = isValue 
                   ? { maximumFractionDigits: 0 } 
-                  : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+                  : { minimumFractionDigits: 3, maximumFractionDigits: 3 };
 
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
@@ -1255,9 +1269,10 @@ export const Indicators: React.FC = () => {
             {/* Totals Row */}
             <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
               {(() => {
-                let totalReal = 0;
-                let totalOriginal = 0;
-                let totalAdjusted = 0;
+                let totalRealAbsolute = 0;
+                let totalOriginalAbsolute = 0;
+                let totalAdjustedAbsolute = 0;
+                const isValue = flexibleBudgetMetric === 'value';
 
                 fullExtrasMatrix.forEach(row => {
                   const sectorObj = sectors.find(s => s.name === row.sectorName);
@@ -1267,7 +1282,7 @@ export const Indicators: React.FC = () => {
                   const taxRate = config.taxRate || 0;
                   
                   let original = 0;
-                  if (flexibleBudgetMetric === 'value') {
+                  if (isValue) {
                     original = (budget.budgetValue || 0) * (1 + (taxRate / 100));
                   } else {
                     original = budget.budgetQty || 0;
@@ -1279,18 +1294,35 @@ export const Indicators: React.FC = () => {
 
                   const adjusted = devCalc < 0 ? original * (1 + devCalc) : original;
 
-                  totalReal += flexibleBudgetMetric === 'value' ? row.totalSectorValue : row.totalSectorQty;
-                  totalOriginal += original;
-                  totalAdjusted += adjusted;
+                  totalRealAbsolute += isValue ? row.totalSectorValue : row.totalSectorQty;
+                  totalOriginalAbsolute += original;
+                  totalAdjustedAbsolute += adjusted;
                 });
+
+                let totalReal = 0;
+                let totalOriginal = 0;
+                let totalAdjusted = 0;
+
+                if (isValue) {
+                  totalReal = totalRealAbsolute;
+                  totalOriginal = totalOriginalAbsolute;
+                  totalAdjusted = totalAdjustedAbsolute;
+                } else {
+                  const metaOcc = config.occupiedUhMeta || 0;
+                  const realOcc = grandTotalOccupancy || config.occupiedUhReal || 0;
+                  
+                  totalOriginal = metaOcc > 0 ? totalOriginalAbsolute / metaOcc : 0;
+                  totalReal = realOcc > 0 ? totalRealAbsolute / realOcc : 0;
+                  totalAdjusted = realOcc > 0 ? totalAdjustedAbsolute / realOcc : 0;
+                }
 
                 const totalDiff = totalReal - totalAdjusted;
                 const totalPercent = totalAdjusted > 0 ? (totalDiff / totalAdjusted) * 100 : 0;
                 
-                const prefix = flexibleBudgetMetric === 'value' ? 'R$ ' : '';
-                const formatOpts = flexibleBudgetMetric === 'value' 
+                const prefix = isValue ? 'R$ ' : '';
+                const formatOpts = isValue 
                   ? { maximumFractionDigits: 0 } 
-                  : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+                  : { minimumFractionDigits: 3, maximumFractionDigits: 3 };
 
                 return (
                   <tr>
