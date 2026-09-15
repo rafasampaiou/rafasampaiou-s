@@ -906,14 +906,14 @@ export const IdealTable: React.FC = () => {
 
         {activeTab === 'extra' && (
           <div className="overflow-x-auto border border-slate-300 rounded-b-lg">
-            <table className="w-full text-sm text-right border-collapse">
+            <table className="w-auto text-sm text-center border-collapse bg-white">
               <thead className="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10 shadow-sm font-bold">
                 <tr>
-                  <th className="p-2 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor (CR Chave)</th>
-                  <th className="p-2 border border-slate-300">Real (Qtd)</th>
-                  <th className="p-2 border border-slate-300">Meta (Qtd)</th>
-                  <th className="p-2 border border-slate-300 text-center">Diferença</th>
-                  <th className="p-2 border border-slate-300 text-center">Diferença %</th>
+                  <th className="p-2 px-4 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor (CR Chave)</th>
+                  <th className="p-2 px-4 border border-slate-300">Real (Qtd)</th>
+                  <th className="p-2 px-4 border border-slate-300">Meta (Qtd)</th>
+                  <th className="p-2 px-4 border border-slate-300">Diferença</th>
+                  <th className="p-2 px-4 border border-slate-300">Diferença %</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
