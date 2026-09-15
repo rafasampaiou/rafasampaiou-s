@@ -171,6 +171,20 @@ export const IdealTable: React.FC = () => {
   const [pasteSourceMonth, setPasteSourceMonth] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'clt' | 'extra'>('clt');
+  const [extraMetaEdits, setExtraMetaEdits] = useState<Record<string, string>>({});
+  const [savingExtraMeta, setSavingExtraMeta] = useState<Record<string, boolean>>({});
+  const [savedExtraMeta, setSavedExtraMeta] = useState<Record<string, boolean>>({});
+
+  const handleExtraMetaSave = async (sectorId: string) => {
+    const newQty = parseInt(extraMetaEdits[sectorId] ?? '', 10);
+    if (isNaN(newQty)) return;
+    setSavingExtraMeta(prev => ({ ...prev, [sectorId]: true }));
+    const current = getMonthlyBudget(sectorId, selectedMonthKey);
+    await updateMonthlyBudget({ ...current, budgetQty: newQty });
+    setSavingExtraMeta(prev => ({ ...prev, [sectorId]: false }));
+    setSavedExtraMeta(prev => ({ ...prev, [sectorId]: true }));
+    setTimeout(() => setSavedExtraMeta(prev => ({ ...prev, [sectorId]: false })), 2000);
+  };
 
   useEffect(() => {
     const checkClipboard = () => {
@@ -912,7 +926,7 @@ export const IdealTable: React.FC = () => {
                 <tr>
                   <th className="p-2 px-4 border border-slate-300 text-left sticky left-0 z-20 bg-slate-100">Setor (CR Chave)</th>
                   <th className="p-2 px-4 border border-slate-300">Real (Qtd)</th>
-                  <th className="p-2 px-4 border border-slate-300">Meta (Qtd)</th>
+                  <th className="p-2 px-4 border border-slate-300">Meta (Qtd) <span className="text-[#F8981C] normal-case font-normal">(editável)</span></th>
                   <th className="p-2 px-4 border border-slate-300">Diferença</th>
                   <th className="p-2 px-4 border border-slate-300">Diferença %</th>
                 </tr>
@@ -930,7 +944,29 @@ export const IdealTable: React.FC = () => {
                     <tr key={`extra-${row.sectorId}`} className="hover:bg-blue-50/30 transition-colors">
                       <td className="p-2 text-left font-bold text-slate-700 border border-slate-300 bg-slate-50/50 sticky left-0 z-10">{row.sectorName}</td>
                       <td className="p-2 border border-slate-300">{extraReal}</td>
-                      <td className="p-2 border border-slate-300">{extraMeta}</td>
+                      <td className="p-1 border border-slate-300">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[#155645] focus:border-[#155645] transition-colors"
+                            value={extraMetaEdits[row.sectorId] ?? extraMeta}
+                            onChange={(e) => setExtraMetaEdits(prev => ({ ...prev, [row.sectorId]: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleExtraMetaSave(row.sectorId)}
+                          />
+                          <button
+                            onClick={() => handleExtraMetaSave(row.sectorId)}
+                            disabled={savingExtraMeta[row.sectorId]}
+                            className={`flex items-center justify-center w-6 h-6 rounded text-white text-xs transition-colors shrink-0 ${
+                              savedExtraMeta[row.sectorId]
+                                ? 'bg-green-500'
+                                : 'bg-[#155645] hover:bg-[#104033]'
+                            }`}
+                            title="Salvar meta"
+                          >
+                            {savingExtraMeta[row.sectorId] ? '...' : savedExtraMeta[row.sectorId] ? '✓' : '↑'}
+                          </button>
+                        </div>
+                      </td>
                       <td className={`p-2 text-center border border-slate-300 font-bold ${extraDiff <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                         {extraDiff > 0 ? '+' : ''}{extraDiff}
                       </td>
