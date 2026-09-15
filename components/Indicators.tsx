@@ -493,7 +493,7 @@ export const Indicators: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-xl shadow-md border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-[77px] z-30">
         <h2 className="text-lg font-bold text-[#155645]">Indicador: Mão de Obra por UH Ocupada</h2>
 
         <div className="flex flex-wrap gap-4 items-center">
