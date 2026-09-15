@@ -195,7 +195,7 @@ export const Indicators: React.FC = () => {
     filteredSectors.forEach(s => {
       const stats = getManualRealStat(s.id, monthKey);
       if (stats) {
-        const net = stats.realQty - (stats.afastadosQty || 0); // Include apprentices (apprenticesQty)
+        const net = stats.realQty - (stats.afastadosQty || 0) + (stats.apprenticesQty || 0); // CLT Ativo = Real - Afastados + Aprendizes
         total += Math.max(0, net); // Ensure no negative numbers
       }
     });
@@ -339,7 +339,7 @@ export const Indicators: React.FC = () => {
 
         const sectorObj = sectors.find(s => s.name === sector.name);
         const sectorStats = sectorObj ? getManualRealStat(sectorObj.id, monthKey) : null;
-        const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0)) : 0; // Include apprentices
+        const cltHeadcount = sectorStats ? Math.max(0, sectorStats.realQty - (sectorStats.afastadosQty || 0) + (sectorStats.apprenticesQty || 0)) : 0; // CLT Ativo = Real - Afastados + Aprendizes
         const cltValue = sectorStats ? sectorStats.realValue : 0;
         const daysInLoteMatch = lote.endDay - lote.startDay + 1;
         const cltLoteQty = cltHeadcount * daysInLoteMatch;
@@ -597,7 +597,7 @@ export const Indicators: React.FC = () => {
         <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex justify-between">
           <span>Evolução Diária do Índice ({getMetricLabel()} / UH)</span>
           <span className="text-xs normal-case text-slate-400">
-            {chartMetric === 'clt' && 'Nota: CLT Ativo = Real - Afastados (Inclui Aprendizes)'}
+            {chartMetric === 'clt' && 'Nota: CLT Ativo = Real - Afastados + Jovens Aprendizes'}
           </span>
         </h3>
         <div className="h-80">
