@@ -348,16 +348,17 @@ export const Indicators: React.FC = () => {
         let finalValue = 0;
         let finalQty = 0;
         const activeMetric = metricOverride || chartMetric;
+        const currentDayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
 
         if (activeMetric === 'extras') {
-          finalValue = loteTotalBaseValue;
-          finalQty = loteTotalQty;
+          finalValue = loteTotalBaseValue * currentDayFactor;
+          finalQty = loteTotalQty * currentDayFactor;
         } else if (activeMetric === 'clt') {
-          finalValue = cltLoteValue;
-          finalQty = cltLoteQty;
+          finalValue = cltLoteValue * currentDayFactor;
+          finalQty = cltLoteQty * currentDayFactor;
         } else {
-          finalValue = loteTotalBaseValue + cltLoteValue;
-          finalQty = loteTotalQty + cltLoteQty;
+          finalValue = (loteTotalBaseValue + cltLoteValue) * currentDayFactor;
+          finalQty = (loteTotalQty + cltLoteQty) * currentDayFactor;
         }
 
         const taxRate = getMonthlyAppConfig(monthKey).taxRate;
@@ -1196,15 +1197,16 @@ export const Indicators: React.FC = () => {
 
                 const taxRate = config.taxRate || 0;
                 const isValue = flexibleBudgetMetric === 'value';
+                const currentDayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
                 
                 let originalAbsolute = 0;
                 let realAbsolute = 0;
                 
                 if (isValue) {
-                  originalAbsolute = (budget.budgetValue || 0) * (1 + (taxRate / 100));
+                  originalAbsolute = (budget.budgetValue || 0) * (1 + (taxRate / 100)) * currentDayFactor;
                   realAbsolute = row.totalSectorValue;
                 } else {
-                  originalAbsolute = budget.budgetQty || 0;
+                  originalAbsolute = (budget.budgetQty || 0) * currentDayFactor;
                   realAbsolute = row.totalSectorQty;
                 }
 
@@ -1273,6 +1275,7 @@ export const Indicators: React.FC = () => {
                 let totalOriginalAbsolute = 0;
                 let totalAdjustedAbsolute = 0;
                 const isValue = flexibleBudgetMetric === 'value';
+                const currentDayFactor = calculationBasis === 'worked' ? 0.8666 : 1;
 
                 fullExtrasMatrix.forEach(row => {
                   const sectorObj = sectors.find(s => s.name === row.sectorName);
@@ -1283,9 +1286,9 @@ export const Indicators: React.FC = () => {
                   
                   let original = 0;
                   if (isValue) {
-                    original = (budget.budgetValue || 0) * (1 + (taxRate / 100));
+                    original = (budget.budgetValue || 0) * (1 + (taxRate / 100)) * currentDayFactor;
                   } else {
-                    original = budget.budgetQty || 0;
+                    original = (budget.budgetQty || 0) * currentDayFactor;
                   }
 
                   const devCalc = (config.occupiedUhMeta || 0) > 0
