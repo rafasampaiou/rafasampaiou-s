@@ -143,6 +143,7 @@ export const Indicators: React.FC = () => {
   const [calculationBasis, setCalculationBasis] = useState<'total' | 'worked'>('total');
   const [includeIntermittentExtras, setIncludeIntermittentExtras] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [flexibleBudgetMetric, setFlexibleBudgetMetric] = useState<'value' | 'qty'>('value');
 
   const monthKey = `${selectedYear}-${selectedMonth}`;
   const config = getMonthlyAppConfig(monthKey);
@@ -1152,19 +1153,35 @@ export const Indicators: React.FC = () => {
       </div>
       {/* Flexible Budget Comparison Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-sm font-bold text-slate-800">Extraordinário por Setor Real x Meta</h3>
-          <p className="text-[10px] text-slate-500">Orçamento flexível de acordo com a ocupação (Desvio: {config.occupancyDeviation || 0}%)</p>
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Extraordinário por Setor Real x Meta</h3>
+            <p className="text-[10px] text-slate-500">Orçamento flexível de acordo com a ocupação (Desvio: {config.occupancyDeviation || 0}%)</p>
+          </div>
+          <div className="flex bg-white border border-slate-300 rounded-lg p-1">
+            <button
+              onClick={() => setFlexibleBudgetMetric('value')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${flexibleBudgetMetric === 'value' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              <DollarSign size={14} /> Valor (R$)
+            </button>
+            <button
+              onClick={() => setFlexibleBudgetMetric('qty')}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${flexibleBudgetMetric === 'qty' ? 'bg-[#155645]/10 text-[#155645]' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              <Users size={14} /> KPI (Qtd)
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
             <thead className="bg-[#F8981C]/5 text-[#F8981C] text-xs font-bold uppercase">
               <tr>
                 <th className="p-3 border-r border-slate-200 text-left w-32 min-w-[120px]">Setor</th>
-                <th className="p-3 border-r border-slate-200">Real (R$)</th>
+                <th className="p-3 border-r border-slate-200">Real ({flexibleBudgetMetric === 'value' ? 'R$' : 'Qtd'})</th>
                 <th className="p-3 border-r border-slate-200 text-slate-500 font-normal">Meta Original</th>
                 <th className="p-3 border-r border-slate-200">Meta Ajustada</th>
-                <th className="p-3 border-r border-slate-200">Dif. Valor</th>
+                <th className="p-3 border-r border-slate-200">Dif. {flexibleBudgetMetric === 'value' ? 'Valor' : 'Qtd'}</th>
                 <th className="p-3">%</th>
               </tr>
             </thead>
@@ -1175,11 +1192,20 @@ export const Indicators: React.FC = () => {
 
                 const budget = getMonthlyAppConfig(monthKey).standardHourRate > 0
                   ? getMonthlyBudget(sectorObj.id, monthKey)
-                  : { budgetValue: 0 };
+                  : { budgetValue: 0, budgetQty: 0 };
 
-                // Budget in Admin already exists, but we need to factor in tax for comparison with "Real"
                 const taxRate = config.taxRate || 0;
-                const originalMeta = budget.budgetValue * (1 + (taxRate / 100));
+                
+                let originalMeta = 0;
+                let realValue = 0;
+                
+                if (flexibleBudgetMetric === 'value') {
+                  originalMeta = (budget.budgetValue || 0) * (1 + (taxRate / 100));
+                  realValue = row.totalSectorValue;
+                } else {
+                  originalMeta = budget.budgetQty || 0;
+                  realValue = row.totalSectorQty;
+                }
 
                 // Calcule o desvio de PAX (UH)
                 // Só aplicamos o desvio se houver Meta E Real preenchidos (maiores que 0)
@@ -1196,24 +1222,28 @@ export const Indicators: React.FC = () => {
                 // então mostramos o originalMeta para a linha não sumir.
                 const finalAdjustedMeta = adjustedMeta > 0 ? adjustedMeta : originalMeta;
 
-                const realValue = row.totalSectorValue;
                 const diff = realValue - finalAdjustedMeta;
                 const diffPercent = finalAdjustedMeta > 0 ? (diff / finalAdjustedMeta) * 100 : 0;
+                
+                const prefix = flexibleBudgetMetric === 'value' ? 'R$ ' : '';
+                const formatOpts = flexibleBudgetMetric === 'value' 
+                  ? { maximumFractionDigits: 0 } 
+                  : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
 
                 return (
                   <tr key={idx} className="hover:bg-slate-50">
                     <td className="p-3 border-r border-slate-200 text-left font-medium text-slate-800 w-32 min-w-[120px] truncate" title={row.sectorName}>{row.sectorName}</td>
                     <td className="p-3 border-r border-slate-200 font-bold text-slate-700">
-                      R$ {realValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {prefix}{realValue.toLocaleString('pt-BR', formatOpts)}
                     </td>
                     <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">
-                      R$ {originalMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {prefix}{originalMeta.toLocaleString('pt-BR', formatOpts)}
                     </td>
                     <td className="p-3 border-r border-slate-200 font-bold text-[#155645] bg-green-50/20">
-                      R$ {adjustedMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {prefix}{adjustedMeta.toLocaleString('pt-BR', formatOpts)}
                     </td>
                     <td className={`p-3 border-r border-slate-200 font-bold ${diff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      R$ {diff.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {prefix}{diff.toLocaleString('pt-BR', formatOpts)}
                     </td>
                     <td className={`p-3 font-bold ${diff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {diff > 0 ? '+' : ''}{diffPercent.toFixed(1)}%
@@ -1235,7 +1265,13 @@ export const Indicators: React.FC = () => {
 
                   const budget = useApp().getMonthlyBudget(sectorObj.id, monthKey);
                   const taxRate = config.taxRate || 0;
-                  const original = budget.budgetValue * (1 + (taxRate / 100));
+                  
+                  let original = 0;
+                  if (flexibleBudgetMetric === 'value') {
+                    original = (budget.budgetValue || 0) * (1 + (taxRate / 100));
+                  } else {
+                    original = budget.budgetQty || 0;
+                  }
 
                   const devCalc = (config.occupiedUhMeta || 0) > 0
                     ? ((config.occupiedUhReal || 0) / (config.occupiedUhMeta || 0)) - 1
@@ -1243,22 +1279,27 @@ export const Indicators: React.FC = () => {
 
                   const adjusted = devCalc < 0 ? original * (1 + devCalc) : original;
 
-                  totalReal += row.totalSectorValue;
+                  totalReal += flexibleBudgetMetric === 'value' ? row.totalSectorValue : row.totalSectorQty;
                   totalOriginal += original;
                   totalAdjusted += adjusted;
                 });
 
                 const totalDiff = totalReal - totalAdjusted;
                 const totalPercent = totalAdjusted > 0 ? (totalDiff / totalAdjusted) * 100 : 0;
+                
+                const prefix = flexibleBudgetMetric === 'value' ? 'R$ ' : '';
+                const formatOpts = flexibleBudgetMetric === 'value' 
+                  ? { maximumFractionDigits: 0 } 
+                  : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
 
                 return (
                   <tr>
                     <td className="p-3 border-r border-slate-200 text-left w-32">TOTAL MENSAL</td>
-                    <td className="p-3 border-r border-slate-200">R$ {totalReal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
-                    <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">R$ {totalOriginal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
-                    <td className="p-3 border-r border-slate-200 text-[#155645]">R$ {totalAdjusted.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td className="p-3 border-r border-slate-200">{prefix}{totalReal.toLocaleString('pt-BR', formatOpts)}</td>
+                    <td className="p-3 border-r border-slate-200 text-slate-400 font-normal">{prefix}{totalOriginal.toLocaleString('pt-BR', formatOpts)}</td>
+                    <td className="p-3 border-r border-slate-200 text-[#155645]">{prefix}{totalAdjusted.toLocaleString('pt-BR', formatOpts)}</td>
                     <td className={`p-3 border-r border-slate-200 ${totalDiff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      R$ {totalDiff.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {prefix}{totalDiff.toLocaleString('pt-BR', formatOpts)}
                     </td>
                     <td className={totalDiff <= 0 ? 'text-green-600' : 'text-red-600'}>
                       {totalDiff > 0 ? '+' : ''}{totalPercent.toFixed(1)}%
