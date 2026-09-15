@@ -150,6 +150,7 @@ const MatrixCell: React.FC<MatrixCellProps> = ({ id, value, onChange, onKeyDown,
 
 export const IdealTable: React.FC = () => {
   const {
+    user,
     sectors,
     requests,
     getMonthlyBudget,
@@ -638,7 +639,7 @@ export const IdealTable: React.FC = () => {
           </div>
         </div>
 
-        {isAdminUnlocked && (
+        {isAdminUnlocked && user?.email === 'rafael.souza@taua.com.br' && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 mb-4 rounded-lg flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-yellow-800">Ferramenta Temporária</p>
